@@ -3,9 +3,11 @@ Deep learning-based approaches to HLA matching
 
 ## Introduction
 
+There are currently several computational approaches to quantifying the risk of the development of donor-specific antibodies during organ transplantation. These include [HLAmatchmaker](http://www.epitopes.net/) for eplet quantification and [PIRCH-II](https://www.pirche.com/) for CD4+ T cell epitope prediction, which have demonstrated predictive ability across the literature. Newer deep learning methods for structure predictions, eplet/epitope immunogenicity estimates, and classification can be leveraged to produce a clinical tool for patients. deepMatchR aims to be a centralized repository for tools and models to help in assisting HLA matching. 
+
 <img align="right" src="https://github.com/ncborcherding/deepMatchR/blob/main/www/deepMatchR_hex.png" width="305" height="352">
 
-# System requirements 
+## System requirements 
 
 deepMatchR has been tested on R versions >= 4.0. Please consult the DESCRIPTION file for more details on required R packages. deepMatchR has been tested on OS X and Windows platforms.
 
@@ -25,7 +27,7 @@ install_tensorflow()
 
 An alternative to this approach above (especially if you want to avoid conda) is to use reticulate to generate a virtualenv, using ```virtualenv_create()``` and subsequently installing the above python packages using ```virtualenv_install()```.
 
-# Installation
+## Installation
 
 To run deepMatchR, open R and install deepMatchR from github: 
 

@@ -9,7 +9,7 @@
 
 # Loading csv or xls/xlsx data
 #' @importFrom readxl read_excel
-.loadData <- <- function(file_path) {
+.loadData <- function(file_path) {
   # Ensure the file exists
   if (!file.exists(file_path)) {
     stop("The specified file does not exist.")

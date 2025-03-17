@@ -1,7 +1,7 @@
 #' Calculate Eplet AUC Based on MFI
 #'
 #' @description
-#' This function reads in SAB (Single Antigen Bead) data from either a data frame
+#' This function reads in Single Antigen Bead (SAB) data from either a data frame
 #' or a file path (CSV, XLS, or XLSX). It cleans and organizes the data, 
 #' calculates how many eplets are positive above a range of MFI cutoffs,
 #' computes the percentage of positive eplets, optionally filters them based on 
@@ -13,7 +13,8 @@
 #'   string specifying the path to a SAB file in CSV, XLS, or XLSX format.
 #' @param evidence_level A character string or vector of character strings
 #'   indicating the desired evidence levels to keep. Defaults to 
-#'   `c("A1", "A2")`, representing antibody-confirmed eplets.
+#'   `c("A1", "A2")`, representing antibody-confirmed eplets. 
+#'   Other levels include: `B`, `D`, or `NULL` if no filter is desired.
 #' @param eplet_filter An integer specifying the minimum number of times an 
 #'   eplet must appear in the assay before calculating the AUC. Defaults to `3`.
 #' @param percPos_filter A numeric value between 0 and 1 representing the 

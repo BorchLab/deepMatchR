@@ -194,6 +194,7 @@ epletAUC <- function(result_file,
       group_by(epitope) %>%
       summarize(
         AUC      = trapz(x = cut, y = percent_positive),
+        norm_AUC = AUC/cut_max,
         subtotal = first(subtotal)
       ) %>%
       ungroup()

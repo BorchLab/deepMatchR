@@ -1,113 +1,142 @@
+#' Plot SAB Data with Optional Antigen-Level Table
+#'
+#' This function generates a bar plot of SAB (Single Antigen Beads) results 
+#' using a provided data frame or a file path. It processes the input data by 
+#' cleaning and categorizing MFI values based on specified cutoffs and applies 
+#' a chosen color palette. Optionally, it can add an antigen-level table below 
+#' the plot with specific antigens highlighted.
+#'
 #' @param result_file A data frame containing SAB results or a character string specifying
 #'   the path to a SAB file in CSV, XLS, or XLSX format.
-#' @param bead_cutoffs Numeric vector. Categories of colors to use for visualizing 
-#' groups based on the MFI values.
-#' @param add_table Logical. Whether to add the antigen-level information in the form
-#' of a table to the bottom on the plot. 
-#' @param palette Character. A color palette name (from \link[grDevices]{hcl.pals}) or a custom
-#'   palette function to use for the plot. Defaults to \code{"spectral"}.
-
+#' @param bead_cutoffs Numeric vector. Cutoff values for categorizing MFI 
+#' values. Defaults to \code{c(2000, 1000, 500, 250)}.
+#' @param add_table Logical. Whether to add the antigen-level information as a 
+#' table to the bottom of the plot. Defaults to \code{TRUE}.
+#' @param palette Character. A color palette name (from \link[grDevices]{hcl.pals}) 
+#' or a custom palette function to use for the plot. Defaults to \code{"spectral"}.
+#' @param highlight_antigen Character vector. Optional antigen(s) to highlight 
+#' in the table. If provided, matching antigens will be highlighted in red. 
+#' Defaults to \code{NULL}.
+#'
+#' @return A \code{ggplot} object representing the SAB plot (and table, 
+#' if \code{add_table} is \code{TRUE}).
+#'
+#' @examples
+#' # Example using a data frame
+#' plotSAB(deepMatchR_example[[1], 
+#'         bead_cutoffs = c(2000, 1000, 500, 250), 
+#'         add_table = TRUE, 
+#'         palette = "spectral")
+#'
+#' @export
 plotSAB <- function(result_file,
                     bead_cutoffs = c(2000, 1000, 500, 250), 
-                    add_table = TRUE
-                    palette = "spectral")
-# 1. Read in data (data frame or file path)
+                    add_table = TRUE,
+                    palette = "spectral",
+                    highlight_antigen = NULL) {
+  
+  # 1. Read in data (data frame or file path)
   if (inherits(result_file, "character")) {
     result0 <- .loadData(result_file)
   } else {
     result0 <- result_file
   }
   
-  # 2. Check and Clean SAB results
+  # 2. Check and clean SAB results
   .checkSAB(result0)
   result <- .processSAB(result0)
   
-  if(all(grep("A|B|C", result$loci))) {
+  # Process loci and antigen information based on SAB type
+  if (all(result$loci %in% c("A", "B", "C"))) {
     result <- result %>%
-      mutate(loci = str_extract(allele, "^[^*]+"))
+      mutate(loci = stringr::str_extract(allele, "^[^*]+"))
+    
     bw.subset <- result %>%
-                  subset(!is.na(bw46)) %>%
-                  mutate(loci = "Bw",
-                         antigen = as.numeric(sub("[A-Za-z]+", "", bw46)))
+      dplyr::filter(!is.na(bw46)) %>%
+      dplyr::mutate(loci = "Bw",
+                    antigen = as.numeric(sub("[A-Za-z]+", "", bw46)))
+    
     result <- rbind.data.frame(result, bw.subset)
     result$loci <- factor(result$loci, levels = c("A", "B", "Bw", "C"))
   } else {
     result <- result %>%
-      mutate(loci = str_extract(antigen, "^[^0-9]+"))
+      dplyr::mutate(loci = stringr::str_extract(antigen, "^[^0-9]+"))
     
     DQ.subset <- result %>%
-      subset(grepl("DQA1", allele)) %>%
-      mutate(loci = "DQA1",
-             antigen = str_extract(allele, "(?<=\\*)[0-9]{2}:[0-9]{2}"))
+      dplyr::filter(grepl("DQA1", allele)) %>%
+      dplyr::mutate(loci = "DQA1",
+                    antigen = stringr::str_extract(allele, "(?<=\\*)[0-9]{2}:[0-9]{2}"))
     
     DP.subset <- result %>%
-      subset(grepl("DPA1", allele)) %>%
-      mutate(loci = "DPA1",
-             antigen = str_extract(allele, "(?<=\\*)[0-9]{2}:[0-9]{2}"))         
-            
+      dplyr::filter(grepl("DPA1", allele)) %>%
+      dplyr::mutate(loci = "DPA1",
+                    antigen = stringr::str_extract(allele, "(?<=\\*)[0-9]{2}:[0-9]{2}"))         
+    
     result <- rbind.data.frame(result, DQ.subset)
     result <- rbind.data.frame(result, DP.subset)
     result$loci <- factor(result$loci, levels = c("DR", "DQA1", "DQ", "DPA1", "DP"))
   }
   
+  # Generate categories dynamically based on bead_cutoffs, with "Below Threshold" as the first category.
+  categories <- c("Below Threshold", purrr::map2_chr(bead_cutoffs, seq_along(bead_cutoffs), ~ paste0("Level ", .y)))
   
-  
-  #Generate categories dynamically based on cut.offs, with Above Threshold at the end
-  categories <- c("Below Threshold", map2_chr(bead_cutoffs, seq_along(bead_cutoffs), ~ paste0("Level ", .y)))
-  
-  # Adjust cut.offs to include -Inf and Inf to cover the open-ended ranges
+  # Categorize MFI values using findInterval to cover open-ended ranges
   result <- result %>%
-    mutate(
-      category = categories[findInterval(NormalValue, vec = c(-Inf, sort(bead_cutoffs), Inf), rightmost.closed = TRUE)]
-    )
+    dplyr::mutate(category = categories[findInterval(NormalValue, vec = c(-Inf, sort(bead_cutoffs), Inf), rightmost.closed = TRUE)])
   
-  # Generate the color palette using internal helper function
-  color.palette <- .colorizer(palette = palette, 
-                              n = length(unique(result$category)))
+  # Generate the color palette using an internal helper function
+  color.palette <- .colorizer(palette = palette, n = length(unique(result$category)))
   
-  bead.result <- unique(result[,c("BeadID", "NormalValue", "category")])
-  plot <- ggplot(bead.result, aes(x = reorder(BeadID, -NormalValue), y = NormalValue)) + 
-    geom_bar(stat = "identity", aes(fill = category), 
-             color = "black", 
-             lwd = 0.2, 
-             width = 0.7) + 
-    scale_fill_manual(values = rev(color.palette)) + 
+  # Prepare data for the main bar plot
+  bead.result <- unique(result[, c("BeadID", "NormalValue", "category")])
+  main_plot <- ggplot2::ggplot(bead.result, ggplot2::aes(x = reorder(BeadID, -NormalValue), y = NormalValue)) + 
+    ggplot2::geom_bar(stat = "identity", ggplot2::aes(fill = category), 
+                      color = "black", 
+                      lwd = 0.2, 
+                      width = 0.7) + 
+    ggplot2::scale_fill_manual(values = rev(color.palette)) + 
     theme_clean() + 
-    ylab("MFI Values") + 
-    guides(fill = "none") + 
-    theme(plot.background = element_blank(),
-          axis.title.x = element_blank(),
-          axis.text.x = element_blank(), 
-          axis.ticks.x = element_blank())
+    ggplot2::ylab("MFI Values") + 
+    ggplot2::guides(fill = "none") + 
+    ggplot2::theme(plot.background = ggplot2::element_blank(),
+                   axis.title.x = ggplot2::element_blank(),
+                   axis.text.x = ggplot2::element_blank(), 
+                   axis.ticks.x = ggplot2::element_blank())
   
-  if(add_table) {
+  # Optionally add antigen-level table as an additional plot component
+  if (add_table) {
     if (!is.null(highlight_antigen)) {
-      if (any(grepl(highlight_antigen, result$antigen))) {
-        result$highlight <- apply(result, 1, function(row) {
-          any(highlight_antigen == row["antigen"])
-        })
-      } else {
+      if (!any(result$antigen %in% highlight_antigen) & !highlight_antigen %in% c("Bw4", "Bw6")) {
         stop("highlight_antigen selection is not within the data.frame")
       }
+      if(highlight_antigen %in% c("Bw4", "Bw6")) {
+        result$highlight <- result$bw46 %in% highlight_antigen
+      } else {
+        result$highlight <- result$antigen %in% highlight_antigen
+      }
     } else {
-      table$highlight <- FALSE
+      result$highlight <- FALSE
     }
     
-    table.plot <- ggplot(result, aes(x = reorder(BeadID, -NormalValue), y = loci)) + 
-      geom_tile(fill = "white") + 
-      geom_text(aes(label = antigen, color = highlight), 
-                angle = 90, 
-                size = 1.5) + 
-      scale_y_discrete(limits=rev) + 
+    table_plot <- ggplot2::ggplot(result, ggplot2::aes(x = reorder(BeadID, -NormalValue), y = loci)) + 
+      ggplot2::geom_tile(fill = "white") + 
+      ggplot2::geom_text(ggplot2::aes(label = antigen, color = highlight), 
+                         angle = 90, 
+                         size = 1.5) + 
+      ggplot2::scale_y_discrete(limits = rev) + 
       theme_clean() + 
-      theme(plot.background = element_blank(),
-            axis.title.x = element_blank(),
-            axis.title.y = element_blank(),
-            axis.text.x = element_blank(), 
-            axis.ticks.x = element_blank()) +
-      scale_color_manual(values = c("TRUE" = "red", "FALSE" = "black")) + 
-      guides(color = "none")
-    plot <- plot + table.plot
+      ggplot2::theme(plot.background = ggplot2::element_blank(),
+                     axis.title.x = ggplot2::element_blank(),
+                     axis.title.y = ggplot2::element_blank(),
+                     axis.text.x = ggplot2::element_blank(), 
+                     axis.ticks.x = ggplot2::element_blank()) +
+      ggplot2::scale_color_manual(values = c("TRUE" = "red", "FALSE" = "black")) + 
+      ggplot2::guides(color = "none")
+    
+    # Combine the main plot and the table plot using patchwork (requires the patchwork package)
+    combined_plot <- main_plot / table_plot
+    return(combined_plot)
   }
-  return(plot)
+  
+  return(main_plot)
 }

@@ -54,6 +54,27 @@ head(deepMatchR_example[[1]])
 head(deepMatchR_example[[2]])
 ```
 
+## plotSAB 
+
+The ```plotSAB()``` function is designed to simplify the visualization of SAB data. It accepts either a data frame of SAB results or a file path, processes the data by cleaning, categorizing MFI values based on provided bead cutoff values, and applies a customizable color palette. Optionally, you can append an antigen-level table to the plot for further detail, with the ability to highlight specific antigens.
+
+Below is an example of how to use plotSAB with the deepMatchR_example[[1]] object. In this example, we set custom bead cutoffs and highlight antigens "A1" and "B8".
+
+```{r}
+# Generate the SAB plot with antigen-level details and highlight specific antigens
+plotSAB(result_file = deepMatchR_example[[1]],
+             bead_cutoffs = c(2000, 1000, 500, 250),
+             add_table = TRUE,
+             palette = "spectral",
+             highlight_antigen = c("Bw4"))
+```
+
+### Interpretation
+
+* **Bar Plot**: The main plot displays the MFI values of each bead, categorized into various levels. The color of each bar corresponds to its MFI category, helping you quickly identify beads that are above or below defined thresholds.
+
+* **Antigen-Level Table**: When `add_table` is set to TRUE, a table is added below the main plot. This table lists the loci and antigen information for each bead. Antigens specified in the `highlight_antigen` parameter (here, "Bw4") are highlighted in red, making it easier to identify them within the dataset.
+
 ## epletAUC
 
 The `epletAUC()` function provides a flexible way to assess eplet-level reactivity across a range of MFI cutoffs in SAB assays. 

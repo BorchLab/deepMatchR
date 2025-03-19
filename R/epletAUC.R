@@ -30,9 +30,8 @@
 #'   \code{ggplot} object illustrating the proportion of positive eplets at 
 #'   each cutoff. If `FALSE`, the function returns a summarized tibble.
 #'   Defaults to `TRUE`.
-#' @param palette A character string indicating the color palette to use when 
-#'   plotting. Should be one of the palettes available through 
-#'   \link[grDevices]{hcl.pals} or a custom function. Defaults to `"inferno"`.
+#' @param palette palette Character. A color palette name (from \link[grDevices]{hcl.pals}) or a custom
+#'   palette function to use for the plot. Defaults to \code{"spectral"}.
 #'
 #' @return If \code{plot_results = TRUE}, a \code{ggplot} object is returned. 
 #'   If \code{plot_results = FALSE}, a tibble (data frame) is returned. If 

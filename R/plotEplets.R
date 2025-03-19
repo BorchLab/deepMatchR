@@ -27,7 +27,7 @@
 #' @param top.eplets Integer. The maximum number of top eplets to display in the bar or AUC plot.
 #'   Defaults to 20.
 #' @param palette Character. A color palette name (from \link[grDevices]{hcl.pals}) or a custom
-#'   palette function to use for the plot. Defaults to \code{"inferno"}.
+#'   palette function to use for the plot. Defaults to \code{"spectral"}.
 #'
 #' @return A \code{ggplot} object visualizing eplet counts (or AUC values) according to the
 #'   specified parameters.

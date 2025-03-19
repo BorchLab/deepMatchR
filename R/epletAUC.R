@@ -75,7 +75,7 @@ epletAUC <- function(result_file,
                      cut_max = 10000,
                      cut_step = 250,
                      plot_results = TRUE,
-                     palette = "inferno") {
+                     palette = "spectral") {
   
   # Load required eplet database 
   data(deepMatchR_eplets)

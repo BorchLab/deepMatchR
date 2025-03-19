@@ -105,6 +105,56 @@ epletAUC(
   percPos_filter = 1.0
 )
 ```
+## plotEplets
+
+The ```plotEplets()``` function is designed to facilitate the visualization of eplet-specific assay results from single antigen bead (SAB) experiments. It streamlines the process of reading SAB data, merging it with an internal eplet annotation database, and then generating one of three different plot types: a treemap, a bar plot, or an AUC plot. Each plot type highlights different aspects of the data:
+
+* **Treemap**: Displays eplet counts with areas proportional to the product of the positive bead count and the positive bead percentage.
+* **Bar Plot**: Ranks eplets based on the proportion of positive beads, providing a clear ranking of top eplets.
+* **AUC** Plot: Ranks eplets by their normalized AUC across a range of MFI cutoffs, offering a dynamic view of eplet performance over the full assay range.
+
+### Generating a Treemap
+
+In the treemap visualization, the area of each rectangle represents the product of the number of positive beads and the positive bead percentage for each eplet. This plot is ideal for getting an overall sense of eplet performance across the assay.
+
+```{r}
+plotEplets(result_file = deepMatchR_example[[1]],
+           plot.type = "treemap",
+           cutoff = 2000,
+           evidence_level = c("A1", "A2", "B"),
+           percPos_filter = 0.4,
+           palette = "spectral")
+```
+
+### Generating a Barplot
+
+The bar plot ranks eplets by the proportion of positive beads defined by the cutoff. This visualization is useful when you want to focus on the top-performing eplets based on their positivity rate
+
+```{r}
+plotEplets(result_file = deepMatchR_example[[1]],
+           plot.type = "bar",
+           cutoff = 2000,
+           evidence_level = c("A1", "A2", "B"),
+           percPos_filter = 0.4,
+           top.eplets = 20,
+           palette = "spectral")
+```
+
+### Generating AUC Barplot
+
+The AUC plot visualizes the normalized area under the curve for eplets across a range of MFI cutoffs. This approach provides insight into the performance consistency of each eplet across different assay thresholds.
+
+```{r}
+plotEplets(result_file = deepMatchR_example[[1]],
+           plot.type = "AUC",
+           percPos_filter = 0.4,
+           cut_min = 250,
+           cut_max = 10000,
+           cut_step = 250,
+           top.eplets = 20,
+           palette = "inferno")
+```
+
 
 ***
 

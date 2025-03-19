@@ -31,8 +31,34 @@
 #Pulling a color palette for visualizations
 #' @importFrom grDevices hcl.colors
 #' @keywords internal
-.colorizer <- function(palette = "inferno", 
+.colorizer <- function(palette = "spectral", 
                        n= NULL) {
   colors <- hcl.colors(n=n, palette = palette, fixup = TRUE)
   return(colors)
+}
+
+#' @importFrom dplyr filter mutate select distinct arrange group_by ungroup 
+#'   summarise relocate left_join n
+#' @importFrom stringr str_extrext function str_replace_all
+#' @importFrom tidyr separate_longer_delim
+.processSAB <- function(results0) {
+  result <- result0 %>%
+    select(BeadID, SpecAbbr, Specificity, NormalValue) %>%
+    distinct(Specificity, .keep_all = TRUE) %>%
+    mutate(
+      antigen               = str_extract(SpecAbbr, '[ABCDRQP][:alnum:]+'),
+      bw46                  = str_extract(SpecAbbr, 'Bw[46]'),
+      Specificity_truncated = str_extract(Specificity, '[ABCD].*[0-9]')
+    ) %>%
+    mutate(
+      allele = str_replace_all(Specificity_truncated, ",-,", "_")
+    ) %>%
+    select(-SpecAbbr, -Specificity, -Specificity_truncated) %>%
+    relocate(BeadID, antigen, bw46, allele, NormalValue) %>%
+    separate_longer_delim(allele, "_") %>%
+    mutate(mfi_min = min(NormalValue), .by = allele) %>%
+    arrange(allele, desc(NormalValue)) %>%
+    filter(!is.na(allele)) %>%
+    distinct(allele, .keep_all = TRUE) 
+  return(result)
 }

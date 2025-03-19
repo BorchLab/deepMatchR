@@ -77,7 +77,7 @@ epletAUC <- function(result_file,
                      plot_results = TRUE,
                      palette = "inferno") {
   
-  # Load required data from your package/environment
+  # Load required eplet database 
   data(deepMatchR_eplets)
   
   # 1. Read in data (data frame or file path)
@@ -92,24 +92,7 @@ epletAUC <- function(result_file,
   .checkSAB(result0)
   
   # 3. Clean up and organize the screening result
-  result <- result0 %>%
-    select(BeadID, SpecAbbr, Specificity, NormalValue) %>%
-    distinct(Specificity, .keep_all = TRUE) %>%
-    mutate(
-      antigen               = str_extract(SpecAbbr, '[ABCDRQP][:alnum:]+'),
-      bw46                  = str_extract(SpecAbbr, 'Bw[46]'),
-      Specificity_truncated = str_extract(Specificity, '[ABCD].*[0-9]')
-    ) %>%
-    mutate(
-      allele = str_replace_all(Specificity_truncated, ",-,", "_")
-    ) %>%
-    select(-SpecAbbr, -Specificity, -Specificity_truncated) %>%
-    relocate(BeadID, antigen, bw46, allele, NormalValue) %>%
-    separate_longer_delim(allele, "_") %>%
-    mutate(mfi_min = min(NormalValue), .by = allele) %>%
-    arrange(allele, desc(NormalValue)) %>%
-    filter(!is.na(allele)) %>%
-    distinct(allele, .keep_all = TRUE) 
+  result <- .processSAB(result0)
   
   # 4. Create all combinations of alleles and user-specified MFI cutoffs
   cutoffs <- seq(cut_min, cut_max, cut_step)
@@ -144,6 +127,7 @@ epletAUC <- function(result_file,
   # 6. Join the sab data with eplet dictionary to analyze eplet reactivity
   ep_analysis <- summary_df %>%
     left_join(assay_alleles, by = "allele", relationship = "many-to-many") %>%
+    mutate(loci = str_extract(allele, "^[^*]+")) %>% 
     filter(!is.na(cut)) %>%
     group_by(epitope, cut) %>%
     mutate(
@@ -195,7 +179,9 @@ epletAUC <- function(result_file,
       summarize(
         AUC      = trapz(x = cut, y = percent_positive),
         norm_AUC = AUC/cut_max,
-        subtotal = first(subtotal)
+        total_count = first(subtotal),
+        antibody_reactivity = unique(antibody_reactivity), 
+        loci = str_c(unique(loci), collapse = "; ")
       ) %>%
       ungroup()
     

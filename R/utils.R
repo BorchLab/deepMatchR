@@ -41,7 +41,7 @@
 #'   summarise relocate left_join n
 #' @importFrom stringr str_extrext function str_replace_all
 #' @importFrom tidyr separate_longer_delim
-.processSAB <- function(results0) {
+.processSAB <- function(result0) {
   result <- result0 %>%
     select(BeadID, SpecAbbr, Specificity, NormalValue) %>%
     distinct(Specificity, .keep_all = TRUE) %>%

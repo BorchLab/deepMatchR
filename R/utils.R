@@ -51,7 +51,8 @@
       Specificity_truncated = str_extract(Specificity, '[ABCD].*[0-9]')
     ) %>%
     mutate(
-      allele = str_replace_all(Specificity_truncated, ",-,", "_")
+      allele = str_replace_all(Specificity_truncated, ",-,", "_"),
+      loci = str_extract(allele, "^[^*]+")
     ) %>%
     select(-SpecAbbr, -Specificity, -Specificity_truncated) %>%
     relocate(BeadID, antigen, bw46, allele, NormalValue) %>%

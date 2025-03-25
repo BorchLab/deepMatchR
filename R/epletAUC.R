@@ -18,7 +18,8 @@
 #' @ @param label Logical. If `TRUE`, the function returns a plot with the eplets 
 #'   labeled at the end of the curves.
 #' @param group_by A character string or indicating the coloring grouping for 
-#'   the plot, default is `epitope`.
+#'   the plot, default is `eplet`. Other options include `loci` or 
+#'   `evidence_level`.
 #' @param eplet_filter An integer specifying the minimum number of times an 
 #'   eplet must appear in the assay before calculating the AUC. Defaults to `3`.
 #' @param percPos_filter A numeric value between 0 and 1 representing the 
@@ -72,7 +73,7 @@
 #' @export
 epletAUC <- function(result_file,
                      evidence_level = c("A1", "A2"),
-                     group_by = "epitope",
+                     group_by = "eplet",
                      label = TRUE,
                      eplet_filter = 3,
                      percPos_filter = 0.8,
@@ -117,15 +118,15 @@ epletAUC <- function(result_file,
   # Filter by evidence level if specified
   if (!is.null(evidence_level)) {
     assay_alleles <- assay_alleles %>%
-      filter(antibody_reactivity %in% evidence_level)
+      filter(evidence_level %in% evidence_level)
   }
   
-  # For each epitope-allele pair, note how many times it appears
+  # For each eplet-allele pair, note how many times it appears
   assay_alleles <- assay_alleles %>%
-    group_by(epitope, allele) %>%
+    group_by(eplet, allele) %>%
     mutate(count = n()) %>%
     ungroup() %>%
-    group_by(epitope) %>%
+    group_by(eplet) %>%
     mutate(subtotal = n()) %>%
     ungroup()
   
@@ -134,12 +135,12 @@ epletAUC <- function(result_file,
     left_join(assay_alleles, by = "allele", relationship = "many-to-many") %>%
     mutate(loci = str_extract(allele, "^[^*]+")) %>% 
     filter(!is.na(cut)) %>%
-    group_by(epitope, cut) %>%
+    group_by(eplet, cut) %>%
     mutate(
       positive_count   = sum(count, na.rm = TRUE),
       percent_positive = positive_count / subtotal
     ) %>%
-    group_by(epitope) %>%
+    group_by(eplet) %>%
     mutate(pp_max = max(percent_positive, na.rm = TRUE)) %>%
     arrange(desc(subtotal), desc(percent_positive)) %>%
     ungroup()
@@ -159,7 +160,7 @@ epletAUC <- function(result_file,
   if (plot_results) {
     
     plot <- ggplot(ep_analysis, aes(x = cut, y = percent_positive)) +
-      geom_line(aes(color = epitope)) +
+      geom_line(aes(color = .data[[group_by]], group = eplet)) +
       xlim(0, ifelse(label, cut_max + 1500, cut_max)) +
       ylim(0, 1) +
       theme_minimal() +
@@ -169,7 +170,7 @@ epletAUC <- function(result_file,
       ) + 
       scale_color_manual(
         values = .colorizer(palette, length(unique(ep_analysis[[group_by]])))) + 
-      if (label) list(geom_dl(aes(label = epitope), method = list("last.points", cex = 0.8))) else list()
+      if (label) list(geom_dl(aes(label = eplet), method = list("last.points", cex = 0.8))) else list()
     
     
     return(plot)
@@ -177,12 +178,12 @@ epletAUC <- function(result_file,
   } else {
     # 9. Otherwise, compute area under the curve (AUC) and return a tibble
     ep_auc <- ep_analysis %>%
-      group_by(epitope) %>%
+      group_by(eplet) %>%
       summarize(
         AUC      = trapz(x = cut, y = percent_positive),
         norm_AUC = AUC/cut_max,
         total_count = first(subtotal),
-        antibody_reactivity = unique(antibody_reactivity), 
+        evidence_level = unique(evidence_level), 
         loci = str_c(unique(loci), collapse = "; ")
       ) %>%
       ungroup()

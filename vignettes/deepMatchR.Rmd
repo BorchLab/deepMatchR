@@ -120,7 +120,8 @@ We can use more advanced filtering strategies to extract clinically actionable d
 
 ```{r}
 epletAUC(
-  result_file   = sab_data_example,
+  result_file   = deepMatchR_example[[1]],
+  label = FALSE,
   plot_results  = TRUE,
   eplet_filter  = 10,
   percPos_filter = 1.0

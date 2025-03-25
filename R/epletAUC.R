@@ -15,6 +15,10 @@
 #'   indicating the desired evidence levels to keep. Defaults to 
 #'   `c("A1", "A2")`, representing antibody-confirmed eplets. 
 #'   Other levels include: `B`, `D`, or `NULL` if no filter is desired.
+#' @ @param label Logical. If `TRUE`, the function returns a plot with the eplets 
+#'   labeled at the end of the curves.
+#' @param group_by A character string or indicating the coloring grouping for 
+#'   the plot, default is `epitope`.
 #' @param eplet_filter An integer specifying the minimum number of times an 
 #'   eplet must appear in the assay before calculating the AUC. Defaults to `3`.
 #' @param percPos_filter A numeric value between 0 and 1 representing the 
@@ -68,6 +72,8 @@
 #' @export
 epletAUC <- function(result_file,
                      evidence_level = c("A1", "A2"),
+                     group_by = "epitope",
+                     label = TRUE,
                      eplet_filter = 3,
                      percPos_filter = 0.8,
                      cut_min = 250,
@@ -154,20 +160,17 @@ epletAUC <- function(result_file,
     
     plot <- ggplot(ep_analysis, aes(x = cut, y = percent_positive)) +
       geom_line(aes(color = epitope)) +
-      scale_colour_discrete(guide = 'none') +
-      xlim(0, 12000) +
+      xlim(0, ifelse(label, cut_max + 1500, cut_max)) +
       ylim(0, 1) +
       theme_minimal() +
-      theme(aspect.ratio = 1) +
-      geom_dl(aes(label = epitope), method = list(dl.combine("last.points"))) +
       labs(
         x = "Cutoff (MFI)",
         y = "Proportion Positive"
       ) + 
-      guides(color = "none") + 
       scale_color_manual(
-        values = .colorizer(palette, length(unique(ep_analysis$epitope)))
-      )
+        values = .colorizer(palette, length(unique(ep_analysis[[group_by]])))) + 
+      if (label) list(geom_dl(aes(label = epitope), method = list("last.points", cex = 0.8))) else list()
+    
     
     return(plot)
     

@@ -117,8 +117,7 @@ epletAUC <- function(result_file,
   
   # Filter by evidence level if specified
   if (!is.null(evidence_level)) {
-    assay_alleles <- assay_alleles %>%
-      filter(evidence_level %in% evidence_level)
+    assay_alleles <- assay_alleles[assay_alleles[["evidence_level"]] %in% evidence_level,]
   }
   
   # For each eplet-allele pair, note how many times it appears
@@ -155,6 +154,11 @@ epletAUC <- function(result_file,
     ep_analysis <- ep_analysis %>%
       filter(pp_max >= percPos_filter)
   }
+  
+  # Relevel Eplet Loci after all filter and calculations
+  ep_analysis <- ep_analysis %>%
+      group_by(eplet) %>%
+      mutate(loci = str_c(unique(loci), collapse = "; "))
   
   # 8. If the user wants to plot results, generate a ggplot
   if (plot_results) {

@@ -186,7 +186,7 @@ epletAUC <- function(result_file,
       summarize(
         AUC      = trapz(x = cut, y = percent_positive),
         norm_AUC = AUC/cut_max,
-        total_count = first(subtotal),
+        total_count = unique(subtotal)[1],
         evidence_level = unique(evidence_level), 
         loci = str_c(unique(loci), collapse = "; ")
       ) %>%

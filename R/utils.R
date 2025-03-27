@@ -43,8 +43,8 @@
 #' @importFrom tidyr separate_longer_delim
 .processSAB <- function(result0) {
   result <- result0 %>%
-    select(BeadID, SpecAbbr, Specificity, NormalValue) %>%
-    distinct(Specificity, .keep_all = TRUE) %>%
+    dplyr::select(BeadID, SpecAbbr, Specificity, NormalValue) %>%
+    dplyr::distinct(Specificity, .keep_all = TRUE) %>%
     mutate(
       antigen               = str_extract(SpecAbbr, '[ABCDRQP][:alnum:]+'),
       bw46                  = str_extract(SpecAbbr, 'Bw[46]'),
@@ -54,7 +54,7 @@
       allele = str_replace_all(Specificity_truncated, ",-,", "_"),
       loci = str_extract(allele, "^[^*]+")
     ) %>%
-    select(-SpecAbbr, -Specificity, -Specificity_truncated) %>%
+    dplyr::select(-SpecAbbr, -Specificity, -Specificity_truncated) %>%
     relocate(BeadID, antigen, bw46, allele, NormalValue) %>%
     separate_longer_delim(allele, "_") %>%
     mutate(mfi_min = min(NormalValue), .by = allele) %>%

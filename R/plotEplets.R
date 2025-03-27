@@ -144,7 +144,7 @@ plotEplets <- function(result_file,
       geom_treemap_subgroup_text(place = "centre", grow = TRUE, alpha = 0.3, colour = "black") +
       scale_fill_manual(values = color.palette) +
       theme_minimal() +
-      labs(title = "Eplet Counts", fill = group_by) +
+      labs(fill = group_by) +
       theme(plot.background = element_blank())
     
   } else if (plot_type == "bar") {  
@@ -175,7 +175,7 @@ plotEplets <- function(result_file,
       mutate(rank = row_number()) %>%
       filter(rank <= top_eplets)
     
-    plot <- ggplot(ranked_data, aes(x = reorder(eplet, desc(rank)), y = .data[[y]], 
+    plot <- ggplot(ranked_data, aes(x = reorder(eplet, dplyr::desc(rank)), y = .data[[y]], 
                                     fill = .data[[group_by]])) +
       geom_bar(stat = "identity", color = "black", size = 0.25) +
       coord_flip(clip = "off") +

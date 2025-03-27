@@ -106,13 +106,17 @@ plotSAB <- function(result_file,
   # Optionally add antigen-level table as an additional plot component
   if (add_table) {
     if (!is.null(highlight_antigen)) {
-      if (!any(result$antigen %in% highlight_antigen) & !highlight_antigen %in% c("Bw4", "Bw6")) {
-        stop("highlight_antigen selection is not within the data.frame")
+      if (!any(grepl(paste0(result$antigen, collapse = "|"), highlight_antigen) & !highlight_antigen %in% c("Bw4", "Bw6"))) {
+        stop("highlight_antigen selection is not within the resulting data.frame")
       }
       if(highlight_antigen %in% c("Bw4", "Bw6")) {
         result$highlight <- result$bw46 %in% highlight_antigen
       } else {
-        result$highlight <- result$antigen %in% highlight_antigen
+        if(grepl("*", highlight_antigen)) {
+          result$highlight <- result$allele %in% highlight_antigen
+        } else {
+          result$highlight <- result$antigen %in% highlight_antigen
+        }
       }
     } else {
       result$highlight <- FALSE

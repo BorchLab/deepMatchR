@@ -38,7 +38,6 @@
 #'
 #' @return A \code{ggplot} object visualizing eplet counts (or AUC values) according to the
 #'   specified parameters.
-
 #' @examples
 #' # Using a data frame:
 #' plotEplets(deepMatchR_example[[1]], 
@@ -46,7 +45,7 @@
 #'            evidence_level = c("A1", "A2", "B"),
 #'            percPos_filter = 0.4, 
 #'            plot_type = "treemap")
-#'
+#' @importFrom stringr str_sort
 #' @export
 plotEplets <- function(result_file,
                        cutoff = 2000,
@@ -127,6 +126,8 @@ plotEplets <- function(result_file,
     }
   }
   
+  summary_df[[group_by]] <- factor(summary_df[[group_by]], 
+                                   levels = str_sort(unique(summary_df[[group_by]]), numeric = TRUE))
   # Generate the color palette using internal helper function
   color.palette <- .colorizer(palette, length(unique(summary_df[[group_by]])))
   

@@ -103,14 +103,14 @@ epletAUC <- function(result_file,
   # 4. Create all combinations of alleles and user-specified MFI cutoffs
   cutoffs <- seq(cut_min, cut_max, cut_step)
   class_alleles <- result %>%
-    select(allele, mfi_min)
+    dplyr::select(allele, mfi_min)
   
   # Generate a grid of each allele x cutoff
   summary_df <- expand.grid(allele = class_alleles$allele, cut = cutoffs) %>%
     as_tibble() %>%
     left_join(class_alleles, by = "allele") %>%
-    filter(mfi_min > cut) %>%
-    select(allele, cut)
+    dplyr::filter(mfi_min > cut) %>%
+    dplyr::select(allele, cut)
   
   # 5. Subset Eplet Dictionary to only those alleles found in the SAB data
   assay_alleles <- deepMatchR_eplets[deepMatchR_eplets$allele %in% class_alleles$allele, ]
@@ -133,7 +133,7 @@ epletAUC <- function(result_file,
   ep_analysis <- summary_df %>%
     left_join(assay_alleles, by = "allele", relationship = "many-to-many") %>%
     mutate(loci = str_extract(allele, "^[^*]+")) %>% 
-    filter(!is.na(cut)) %>%
+    dplyr::filter(!is.na(cut)) %>%
     group_by(eplet, cut) %>%
     mutate(
       positive_count   = sum(count, na.rm = TRUE),

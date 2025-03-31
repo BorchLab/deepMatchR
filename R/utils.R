@@ -63,3 +63,67 @@
     distinct(allele, .keep_all = TRUE) 
   return(result)
 }
+
+
+.processPRA <- function(result0, class = "I") {
+  # Step 0: Determine class-specific rows
+  Spec.pattern <- str_split(result0$SpecAbbr, ",", simplify = TRUE)
+  classI.pos <- grep("A", Spec.pattern[,1])
+  
+  if (class == "I") {
+    result <- result0[classI.pos,]
+  } else {
+    result <- result0[-classI.pos,]
+  }
+  
+  # Step 1: Split and pad antigen & allele vectors
+  result_expanded <- result %>%
+    select(BeadID, SpecAbbr, Specificity, NormalValue) %>%
+    rowwise() %>%
+    mutate(
+      antigen_vec = str_split(SpecAbbr, ","),
+      allele_vec  = str_split(Specificity, ","),
+      max_len     = max(length(antigen_vec), length(allele_vec)),
+      antigen_vec = list(str_pad(antigen_vec, max_len, side = "right", pad = "-")),
+      allele_vec  = list(str_pad(allele_vec,  max_len, side = "right", pad = "-"))
+    ) %>%
+    ungroup() %>%
+    select(BeadID, NormalValue, antigen_vec, allele_vec) %>%
+    unnest_longer(antigen_vec, values_to = "antigen", indices_to = "position")
+  
+  # Step 2: Adjust position and duplicate if needed (Class II logic)
+  if (class != "I") {
+    # Duplicate rows for positions >=5 with adjusted positions
+    result_expanded2 <- result_expanded %>% filter(position >= 5)
+    result_expanded  <- result_expanded %>%
+      mutate(position = ifelse(position %in% c(7, 8), position + 4, position))
+    result_expanded2 <- result_expanded2 %>%
+      mutate(position = position + 2)
+    result_expanded <- bind_rows(result_expanded, result_expanded2)
+  } else {
+    # For Class I, normalize position for downstream indexing
+    result_expanded <- result_expanded %>%
+      group_by(BeadID) %>%
+      mutate(position = ifelse(position > 4, position - 2, position)) %>%
+      ungroup()
+  }
+  
+  # Step 3: Map alleles by position and clean up
+  result_expanded <- result_expanded %>%
+    rowwise() %>%
+    mutate(allele = allele_vec[position]) %>%
+    ungroup() %>%
+    mutate(pairs   = rep(c(1,2), length.out = n())) %>%
+    filter(antigen != "-", allele != "-") %>%
+    mutate(
+      antigen = str_remove_all(antigen, "-"),
+      allele  = str_remove_all(allele, "-"),
+      bw46    = ifelse(str_detect(antigen, "Bw[46]"), antigen, NA_character_),
+      loci    = str_extract(allele, "^[^*]+"),
+      mfi_min = min(NormalValue, na.rm = TRUE), .by = allele) %>%
+    filter(antigen != "--------", antigen != "------------", allele != "", antigen != "") %>%
+    distinct(BeadID, antigen, allele, .keep_all = TRUE) %>%
+    select(BeadID, antigen, bw46, allele, loci, NormalValue, pairs)
+  
+  return(result_expanded)
+}

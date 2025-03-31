@@ -1,13 +1,13 @@
-#' Plot SAB Data with Optional Antigen-Level Table
+#' Plot PRA Data with Optional Antigen-Level Table
 #'
-#' This function generates a bar plot of SAB (Single Antigen Beads) results 
+#' This function generates a bar plot of PRA (Panel-Reactive Antibody) results 
 #' using a provided data frame or a file path. It processes the input data by 
 #' cleaning and categorizing MFI values based on specified cutoffs and applies 
 #' a chosen color palette. Optionally, it can add an antigen-level table below 
 #' the plot with specific antigens highlighted.
 #'
-#' @param result_file A data frame containing SAB results or a character string specifying
-#'   the path to a SAB file in CSV, XLS, or XLSX format.
+#' @param result_file A data frame containing PRA results or a character string specifying
+#'   the path to a PRA file in CSV, XLS, or XLSX format.
 #' @param bead_cutoffs Numeric vector. Cutoff values for categorizing MFI 
 #' values. Defaults to \code{c(2000, 1000, 500, 250)}.
 #' @param add_table Logical. Whether to add the antigen-level information as a 
@@ -18,19 +18,20 @@
 #' in the table. If provided, matching antigens will be highlighted in red. 
 #' Defaults to \code{NULL}.
 #'
-#' @return A \code{ggplot} object representing the SAB plot (and table, 
+#' @return A \code{ggplot} object representing the PRA plot (and table, 
 #' if \code{add_table} is \code{TRUE}).
 #'
 #' @examples
 #' # Example using a data frame
-#' plotSAB(deepMatchR_example[[1], 
+#' plotPRA(deepMatchR_example[[1], 
 #'         bead_cutoffs = c(2000, 1000, 500, 250), 
 #'         add_table = TRUE, 
 #'         palette = "spectral")
 #'
 #' @export
-plotSAB <- function(result_file,
+plotPRA <- function(result_file,
                     bead_cutoffs = c(2000, 1000, 500, 250), 
+                    class = "I",
                     add_table = TRUE,
                     palette = "spectral",
                     highlight_antigen = NULL) {
@@ -42,22 +43,13 @@ plotSAB <- function(result_file,
     result0 <- result_file
   }
   
-  # 2. Check and clean SAB results
+  # 2. Check and clean PRA results
   .checkSAB(result0)
-  result <- .processSAB(result0)
+  result <- .processPRA(result0, class = class)
   
   # Process loci and antigen information based on SAB type
-  if (all(result$loci %in% c("A", "B", "C"))) {
-    result <- result %>%
-      mutate(loci = stringr::str_extract(allele, "^[^*]+"))
-    
-    bw.subset <- result %>%
-      dplyr::filter(!is.na(bw46)) %>%
-      dplyr::mutate(loci = "Bw",
-                    antigen = as.numeric(sub("[A-Za-z]+", "", bw46)))
-    
-    result <- rbind.data.frame(result, bw.subset)
-    result$loci <- factor(result$loci, levels = c("A", "B", "Bw", "C"))
+  if (class == "I") {
+    result <- result[result$antigen != "Bw6" & result$antigen != "Bw4",]
   } else {
     result <- result %>%
       dplyr::mutate(loci = stringr::str_extract(antigen, "^[^0-9]+"))
@@ -122,7 +114,7 @@ plotSAB <- function(result_file,
       result$highlight <- FALSE
     }
     
-    table_plot <- ggplot2::ggplot(result, ggplot2::aes(x = reorder(BeadID, -NormalValue), y = loci)) + 
+    table_plot <- ggplot2::ggplot(result, ggplot2::aes(x = reorder(BeadID, -NormalValue), y = interaction(loci, pairs))) + 
       ggplot2::geom_tile(fill = "white") + 
       ggplot2::geom_text(ggplot2::aes(label = antigen, color = highlight), 
                          angle = 90, 

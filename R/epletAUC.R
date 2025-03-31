@@ -147,12 +147,12 @@ epletAUC <- function(result_file,
   # 7. Apply user-specified filters:
   if (!is.null(eplet_filter)) {
     ep_analysis <- ep_analysis %>%
-      filter(subtotal >= eplet_filter)
+      dplyr::filter(subtotal >= eplet_filter)
   }
   
   if (!is.null(percPos_filter)) {
     ep_analysis <- ep_analysis %>%
-      filter(pp_max >= percPos_filter)
+      dplyr::filter(pp_max >= percPos_filter)
   }
   
   # Relevel Eplet Loci after all filter and calculations

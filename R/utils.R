@@ -100,13 +100,31 @@
     result_expanded2 <- result_expanded2 %>%
       mutate(position = position + 2)
     result_expanded <- bind_rows(result_expanded, result_expanded2)
+    string.pattern <- "------------"
   } else {
     # For Class I, normalize position for downstream indexing
     result_expanded <- result_expanded %>%
       group_by(BeadID) %>%
       mutate(position = ifelse(position > 4, position - 2, position)) %>%
       ungroup()
+    string.pattern <- "--------"
   }
+  
+  # Imputing antigen level info for lazy load
+  result_expanded <- result_expanded %>%
+    mutate(
+      prev_antigen = lag(antigen)
+    ) %>%
+    rowwise() %>%
+    mutate(
+      antigen = if (antigen == string.pattern && allele_vec[[position]] != string.pattern) {
+        prev_antigen
+      } else {
+        antigen
+      }
+    ) %>%
+    select(-prev_antigen) %>%
+    ungroup()
   
   # Step 3: Map alleles by position and clean up
   result_expanded <- result_expanded %>%
@@ -121,7 +139,7 @@
       bw46    = ifelse(str_detect(antigen, "Bw[46]"), antigen, NA_character_),
       loci    = str_extract(allele, "^[^*]+"),
       mfi_min = min(NormalValue, na.rm = TRUE), .by = allele) %>%
-    filter(antigen != "--------", antigen != "------------", allele != "", antigen != "") %>%
+    filter(antigen != string.pattern, allele != "", antigen != "") %>%
     distinct(BeadID, antigen, allele, .keep_all = TRUE) %>%
     select(BeadID, antigen, bw46, allele, loci, NormalValue, pairs)
   

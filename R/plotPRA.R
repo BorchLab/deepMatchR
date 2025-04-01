@@ -49,7 +49,10 @@ plotPRA <- function(result_file,
   
   # Process loci and antigen information based on SAB type
   if (class == "I") {
-    result <- result[result$antigen != "Bw6" & result$antigen != "Bw4",]
+    result$loci[grep("Bw", result$antigen)] <- "Bw"
+    result$antigen <- str_remove(result$antigen, "Bw")
+    result$group <- interaction(result$loci, result$pairs)
+    custom_order <- c("A.1", "A.2", "B.1", "B.2", "Bw.1", "Bw.2", "C.1", "C.2")
   } else {
     result <- result %>%
       dplyr::mutate(loci = stringr::str_extract(antigen, "^[^0-9]+"))
@@ -113,13 +116,17 @@ plotPRA <- function(result_file,
     } else {
       result$highlight <- FALSE
     }
+    #Set order of axis labels
+    result$group <- factor(result$group, levels = rev(custom_order))
+    # Strip out the numeric portion of labels
+    axis_labels <- gsub("\\..*", "", levels(result$group))
     
-    table_plot <- ggplot2::ggplot(result, ggplot2::aes(x = reorder(BeadID, -NormalValue), y = interaction(loci, pairs))) + 
+    ggplot2::ggplot(result, ggplot2::aes(x = reorder(BeadID, -NormalValue), y = group)) + 
       ggplot2::geom_tile(fill = "white") + 
       ggplot2::geom_text(ggplot2::aes(label = antigen, color = highlight), 
                          angle = 90, 
                          size = 1.5) + 
-      ggplot2::scale_y_discrete(limits = rev) + 
+      ggplot2::scale_y_discrete(labels = axis_labels) +
       theme_clean() + 
       ggplot2::theme(plot.background = ggplot2::element_blank(),
                      axis.title.x = ggplot2::element_blank(),

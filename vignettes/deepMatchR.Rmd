@@ -35,7 +35,7 @@ suppressMessages(library(deepMatchR))
 
 ## Loading Built-In Data
 
-**deepMatchR** has a set of 2 simulated class I and class II SAB assay results with clear patterns of reactivity and eplets. We will explore the analysis of these data sets further in later sections. It is important to note that both examples have fixed formatting that is important to follow. 
+**deepMatchR** has a set of 3 simulated assay outputs, 1) class I SAB, 2) class II SAB, and 3) PRA assay results with clear patterns of reactivity and eplets. We will explore the analysis of these data sets further in later sections. It is important to note that that the examples have fixed formatting.
 
 Specifically required for downstream analysis: 
 
@@ -47,11 +47,14 @@ Specifically required for downstream analysis:
 ```{r}
 data("deepMatchR_example")
 
-#SAB Class I example Data
+#SAB Class I example data
 head(deepMatchR_example[[1]])
 
-#SAB Class II example Data
+#SAB Class II example data
 head(deepMatchR_example[[2]])
+
+#PRA example data
+head(deepMatchR_example[[3]])
 ```
 
 ## plotSAB 
@@ -61,7 +64,6 @@ The ```plotSAB()``` function is designed to simplify the visualization of SAB da
 Below is an example of how to use plotSAB with the deepMatchR_example[[1]] object. In this example, we set custom bead cutoffs and highlight antigens "A1" and "B8".
 
 ```{r}
-# Generate the SAB plot with antigen-level details and highlight specific antigens
 plotSAB(result_file = deepMatchR_example[[1]],
              bead_cutoffs = c(2000, 1000, 500, 250),
              add_table = TRUE,
@@ -74,6 +76,19 @@ plotSAB(result_file = deepMatchR_example[[1]],
 * **Bar Plot**: The main plot displays the MFI values of each bead, categorized into various levels. The color of each bar corresponds to its MFI category, helping you quickly identify beads that are above or below defined thresholds.
 
 * **Antigen-Level Table**: When `add_table` is set to TRUE, a table is added below the main plot. This table lists the loci and antigen information for each bead. Antigens specified in the `highlight_antigen` parameter (here, "Bw4") are highlighted in red, making it easier to identify them within the dataset.
+
+## plotPRA
+
+The ```plotPRA()``` has similar functionality to ```plotSAB()``` with the exception that `class` needs to be specifically called as either `class = "I"` for HLA Class I and `class = "II"` for HLA Class II results. 
+
+Below is an example of how to use plotSAB with the deepMatchR_example[[4]] object. 
+
+```{r}
+plotPRA(result_file = deepMatchR_example[[3]],
+        class = "I",
+        add_table = TRUE,
+        palette = "spectral")
+```
 
 ## epletAUC
 
@@ -101,6 +116,7 @@ plot_result <- epletAUC(
 
 plot_result
 ```
+
 If you prefer a data table with the computed AUC values, simply set plot_results = FALSE. The function will then compute and return a tidy data frame (tibble):
 
 ```{r}
@@ -117,7 +133,6 @@ auc_result
 
 We can use more advanced filtering strategies to extract clinically actionable data. `eplet_filter` allows us to consider eplets that appear at least a certain number of times in your assay. Likewise, `percPos_filter` can be used to threshold the maximumn positivity for each eplet across the cutoffs.
 
-
 ```{r}
 epletAUC(
   result_file   = deepMatchR_example[[1]],
@@ -127,6 +142,7 @@ epletAUC(
   percPos_filter = 1.0
 )
 ```
+
 ## plotEplets
 
 The ```plotEplets()``` function is designed to facilitate the visualization of eplet-specific assay results from single antigen bead (SAB) experiments. It streamlines the process of reading SAB data, merging it with an internal eplet annotation database, and then generating one of three different plot types: a treemap, a bar plot, or an AUC plot. Each plot type highlights different aspects of the data:

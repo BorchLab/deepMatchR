@@ -57,6 +57,8 @@ plotPRA <- function(result_file,
     result <- result %>%
       dplyr::mutate(loci = stringr::str_extract(antigen, "^[^0-9]+"))
     
+    result$loci[grep("DR51|DR52|DR53", result$antigen)] <- "DR5"
+    
     DQ.subset <- result %>%
       dplyr::filter(grepl("DQA1", allele)) %>%
       dplyr::mutate(loci = "DQA1",
@@ -69,7 +71,9 @@ plotPRA <- function(result_file,
     
     result <- rbind.data.frame(result, DQ.subset)
     result <- rbind.data.frame(result, DP.subset)
-    result$loci <- factor(result$loci, levels = c("DR", "DQA1", "DQ", "DPA1", "DP"))
+    result$antigen <- sub("^(DR|DQ|DP)", "", result$antigen)
+    result$group <- interaction(result$loci, result$pairs)
+    custom_order <- c("DR.1", "DR.2", "DR5.1", "DR5.2", "DQ.1", "DQ.2", "DQA1.1", "DQA2.2", "DP.1", "DP.2", "DPA1.1", "DPA1.2")
   }
   
   # Generate categories dynamically based on bead_cutoffs, with "Below Threshold" as the first category.

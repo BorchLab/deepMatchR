@@ -137,7 +137,7 @@ plotSAB <- function(result_file,
       ggplot2::scale_color_manual(values = c("TRUE" = "red", "FALSE" = "black")) + 
       ggplot2::guides(color = "none")
     
-    # Combine the main plot and the table plot using patchwork (requires the patchwork package)
+    # Combine the main plot and the table plot using patchwork 
     combined_plot <- main_plot / table_plot
     return(combined_plot)
   }

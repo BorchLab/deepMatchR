@@ -9,7 +9,7 @@
 #' @param result_file A data frame containing PRA results or a character string specifying
 #'   the path to a PRA file in CSV, XLS, or XLSX format.
 #' @param bead_cutoffs Numeric vector. Cutoff values for categorizing MFI 
-#' values. Defaults to \code{c(2000, 1000, 500, 250)}.
+#' values. Defaults to \code{c(1500, 1000, 500, 250)}.
 #' @param add_table Logical. Whether to add the antigen-level information as a 
 #' table to the bottom of the plot. Defaults to \code{TRUE}.
 #' @param palette Character. A color palette name (from \link[grDevices]{hcl.pals}) 
@@ -24,13 +24,13 @@
 #' @examples
 #' # Example using a data frame
 #' plotPRA(deepMatchR_example[[1], 
-#'         bead_cutoffs = c(2000, 1000, 500, 250), 
+#'         bead_cutoffs = c(1500, 1000, 500, 250), 
 #'         add_table = TRUE, 
 #'         palette = "spectral")
 #'
 #' @export
 plotPRA <- function(result_file,
-                    bead_cutoffs = c(2000, 1000, 500, 250), 
+                    bead_cutoffs = c(1500, 1000, 500, 250), 
                     class = "I",
                     add_table = TRUE,
                     palette = "spectral",
@@ -71,9 +71,8 @@ plotPRA <- function(result_file,
     
     result <- rbind.data.frame(result, DQ.subset)
     result <- rbind.data.frame(result, DP.subset)
-    result$antigen <- sub("^(DR|DQ|DP)", "", result$antigen)
     result$group <- interaction(result$loci, result$pairs)
-    custom_order <- c("DR.1", "DR.2", "DR5.1", "DR5.2", "DQ.1", "DQ.2", "DQA1.1", "DQA2.2", "DP.1", "DP.2", "DPA1.1", "DPA1.2")
+    custom_order <- c("DR.1", "DR.2", "DR5.1", "DR5.2", "DQ.1", "DQ.2", "DQA1.1", "DQA1.2", "DP.1", "DP.2", "DPA1.1", "DPA1.2")
   }
   
   # Generate categories dynamically based on bead_cutoffs, with "Below Threshold" as the first category.
@@ -112,7 +111,11 @@ plotPRA <- function(result_file,
         result$highlight <- result$bw46 %in% highlight_antigen
       } else {
         if(all(grepl("[*]", highlight_antigen))) {
-          result$highlight <- result$allele %in% highlight_antigen
+          if(class == "II") {
+            result$highlight <- result$allele %in% highlight_antigen & grepl(":", result$antigen)
+          } else {
+            result$highlight <- result$allele %in% highlight_antigen
+          }
         } else {
           result$highlight <- result$antigen %in% highlight_antigen
         }
@@ -120,16 +123,25 @@ plotPRA <- function(result_file,
     } else {
       result$highlight <- FALSE
     }
-    #Set order of axis labels
+    
+    # Removing loci prefix on antigen
+    if (class == "II") {
+      result$antigen <- sub("^(DR|DQ|DP)", "", result$antigen)
+      ratio <- 1
+    } else {
+      result$antigen <- sub("^(A|B|Bw|Cw)", "", result$antigen)
+      ratio <- 2
+    }
+    # Set order of axis labels
     result$group <- factor(result$group, levels = rev(custom_order))
+    result$sizing <- 1/ifelse(grepl(":", result$antigen), nchar(result$antigen), 1)
     # Strip out the numeric portion of labels
     axis_labels <- gsub("\\..*", "", levels(result$group))
     
-    ggplot2::ggplot(result, ggplot2::aes(x = reorder(BeadID, -NormalValue), y = group)) + 
+    table_plot <- ggplot2::ggplot(result, ggplot2::aes(x = reorder(BeadID, -NormalValue), y = group)) + 
       ggplot2::geom_tile(fill = "white") + 
-      ggplot2::geom_text(ggplot2::aes(label = antigen, color = highlight), 
-                         angle = 90, 
-                         size = 1.5) + 
+      ggplot2::geom_text(ggplot2::aes(label = antigen, color = highlight, size = sizing), 
+                         angle = 90) + 
       ggplot2::scale_y_discrete(labels = axis_labels) +
       theme_clean() + 
       ggplot2::theme(plot.background = ggplot2::element_blank(),
@@ -138,10 +150,11 @@ plotPRA <- function(result_file,
                      axis.text.x = ggplot2::element_blank(), 
                      axis.ticks.x = ggplot2::element_blank()) +
       ggplot2::scale_color_manual(values = c("TRUE" = "red", "FALSE" = "black")) + 
-      ggplot2::guides(color = "none")
+      scale_size(range = c(1.2, 2)) + 
+      ggplot2::guides(color = "none", size = "none")
     
-    # Combine the main plot and the table plot using patchwork (requires the patchwork package)
-    combined_plot <- main_plot / table_plot
+    # Combine the main plot and the table plot using patchwork 
+    combined_plot <- main_plot / table_plot + plot_layout(heights = c(ratio, 1), ncol = 1)
     return(combined_plot)
   }
   

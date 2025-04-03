@@ -80,6 +80,7 @@ plotEplets <- function(result_file,
   if (plot_type == "AUC") {
     # For AUC plot, calculate AUC values using the internal function
     summary_df <- epletAUC(result_file = result0,
+                           evidence_level = evidence_level,
                            plot_results = FALSE,
                            eplet_filter = eplet_filter,
                            percPos_filter = percPos_filter,

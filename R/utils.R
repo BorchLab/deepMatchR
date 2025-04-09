@@ -78,7 +78,7 @@
   
   # Step 1: Split and pad antigen & allele vectors
   result_expanded <- result %>%
-    select(BeadID, SpecAbbr, Specificity, NormalValue) %>%
+    dplyr::select(BeadID, SpecAbbr, Specificity, NormalValue) %>%
     rowwise() %>%
     mutate(
       antigen_vec = str_split(SpecAbbr, ","),
@@ -88,7 +88,7 @@
       allele_vec  = list(str_pad(allele_vec,  max_len, side = "right", pad = "-"))
     ) %>%
     ungroup() %>%
-    select(BeadID, NormalValue, antigen_vec, allele_vec) %>%
+    dplyr::select(BeadID, NormalValue, antigen_vec, allele_vec) %>%
     unnest_longer(antigen_vec, values_to = "antigen", indices_to = "position")
   
   # Step 2: Adjust position and duplicate if needed (Class II logic)
@@ -123,7 +123,7 @@
         antigen
       }
     ) %>%
-    select(-prev_antigen) %>%
+    dplyr::select(-prev_antigen) %>%
     ungroup()
   
   # Step 3: Map alleles by position and clean up
@@ -141,7 +141,7 @@
       mfi_min = min(NormalValue, na.rm = TRUE), .by = allele) %>%
     filter(antigen != string.pattern, allele != "", antigen != "") %>%
     distinct(BeadID, antigen, allele, .keep_all = TRUE) %>%
-    select(BeadID, antigen, bw46, allele, loci, NormalValue, pairs)
+    dplyr::select(BeadID, antigen, bw46, allele, loci, NormalValue, pairs)
   
   return(result_expanded)
 }

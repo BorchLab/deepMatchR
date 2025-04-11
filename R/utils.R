@@ -59,8 +59,7 @@
     separate_longer_delim(allele, "_") %>%
     mutate(mfi_min = min(NormalValue), .by = allele) %>%
     arrange(allele, desc(NormalValue)) %>%
-    filter(!is.na(allele)) %>%
-    distinct(allele, .keep_all = TRUE) 
+    filter(!is.na(allele)) 
   return(result)
 }
 

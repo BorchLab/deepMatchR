@@ -85,7 +85,7 @@ plotSAB <- function(result_file,
     dplyr::mutate(category = categories[findInterval(NormalValue, vec = c(-Inf, sort(bead_cutoffs), Inf), rightmost.closed = TRUE)])
   
   # Generate the color palette using an internal helper function
-  color.palette <- .colorizer(palette = palette, n = length(unique(result$category)))
+  color.palette <- .colorizer(palette = palette, n = length(bead_cutoffs))
   
   # Prepare data for the main bar plot
   bead.result <- unique(result[, c("BeadID", "NormalValue", "category")])

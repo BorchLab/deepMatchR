@@ -145,7 +145,7 @@ plotEplets <- function(result_file,
       geom_treemap_subgroup_border(color = "black", size = 2) +
       geom_treemap_subgroup_text(place = "centre", grow = TRUE, alpha = 0.3, colour = "black") +
       scale_fill_manual(values = color.palette) +
-      theme_minimal() +
+      .dmrTheme() + 
       labs(fill = group_by) +
       theme(plot.background = element_blank())
     
@@ -164,7 +164,7 @@ plotEplets <- function(result_file,
       coord_flip(clip = "off") +
       geom_text(aes(label = loci), size = 2, hjust = -0.05) +
       labs(fill = group_by, y = y.label) +
-      theme_minimal() +
+      .dmrTheme() + 
       theme(axis.title.y = element_blank()) + 
       scale_fill_manual(values = color.palette)
     
@@ -183,7 +183,7 @@ plotEplets <- function(result_file,
       coord_flip(clip = "off") +
       geom_text(aes(label = loci), size = 2, hjust = -0.05) +
       labs(fill = group_by, y = y.label) +
-      theme_minimal() + 
+      .dmrTheme() + 
       theme(axis.title.y = element_blank()) + 
       scale_fill_manual(values = color.palette)
   }

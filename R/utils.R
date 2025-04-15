@@ -1,5 +1,49 @@
 "%!in%" <- Negate("%in%")
 
+# Basic theme for ggplot modified from plotthis R package
+.dmrTheme <- function(aspect.ratio = NULL, base_size = 12, font_family = NULL, ...) {
+  text_size_scale <- base_size / 12
+  args1 <- list(
+    aspect.ratio = aspect.ratio,
+    text = element_text(size = 12 * text_size_scale, family = font_family, color = "black"),
+    plot.title = element_text(size = 14 * text_size_scale, family = font_family, colour = "black", vjust = 1),
+    plot.subtitle = element_text(size = 13 * text_size_scale, family = font_family, hjust = 0, margin = margin(b = 3)),
+    plot.background = element_rect(fill = "white", color = "white"),
+    plot.margin = margin(10, 10, 10, 10),
+    axis.line = element_blank(),
+    axis.title = element_text(size = 13 * text_size_scale, family = font_family, colour = "black"),
+    axis.text = element_text(size = 12 * text_size_scale, family = font_family, colour = "black"),
+    strip.text = element_text(size = 12.5 * text_size_scale, family = font_family, colour = "black", hjust = 0.5, margin = margin(3, 3, 3, 3)),
+    strip.background = element_rect(fill = "transparent", linetype = 0),
+    strip.switch.pad.grid = unit(-1, "pt"),
+    strip.switch.pad.wrap = unit(-1, "pt"),
+    strip.placement = "outside",
+    legend.title = element_text(size = 12 * text_size_scale, family = font_family, colour = "black", hjust = 0),
+    legend.text = element_text(size = 11 * text_size_scale, family = font_family, colour = "black"),
+    legend.key = element_rect(fill = "transparent", color = "transparent"),
+    legend.key.size = unit(10, "pt"),
+    legend.background = element_blank(),
+    panel.background = element_rect(fill = "white", color = "white"),
+    panel.border = element_rect(fill = "transparent", colour = "black", linewidth = 1)
+  )
+  args2 <- as.list(match.call())[-1]
+  call.envir <- parent.frame(1)
+  args2 <- lapply(args2, function(arg) {
+    if (is.symbol(arg)) {
+      eval(arg, envir = call.envir)
+    } else if (is.call(arg)) {
+      eval(arg, envir = call.envir)
+    } else {
+      arg
+    }
+  })
+  for (n in names(args2)) {
+    args1[[n]] <- args2[[n]]
+  }
+  args <- args1[names(args1) %in% formalArgs(theme)]
+  do.call(what = theme, args = args)
+}
+
 # Check if nessecary columns are present in SAB results
 .checkSAB <- function(file) {
   if(!all(c("BeadID", "SpecAbbr", "Specificity", "NormalValue") %in% colnames(file))) {

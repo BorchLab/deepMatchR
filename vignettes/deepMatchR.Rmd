@@ -158,7 +158,7 @@ In the treemap visualization, the area of each rectangle represents the product 
 
 ```{r}
 plotEplets(result_file = deepMatchR_example[[1]],
-           plot.type = "treemap",
+           plot_type = "treemap",
            cutoff = 2000,
            evidence_level = c("A1", "A2", "B"),
            percPos_filter = 0.4,
@@ -171,11 +171,12 @@ The bar plot ranks eplets by the proportion of positive beads defined by the cut
 
 ```{r}
 plotEplets(result_file = deepMatchR_example[[1]],
-           plot.type = "bar",
+           plot_type = "bar",
+           group_by = "loci",
            cutoff = 2000,
            evidence_level = c("A1", "A2", "B"),
            percPos_filter = 0.4,
-           top.eplets = 20,
+           top_eplets = 20,
            palette = "spectral")
 ```
 
@@ -185,13 +186,14 @@ The AUC plot visualizes the normalized area under the curve for eplets across a 
 
 ```{r}
 plotEplets(result_file = deepMatchR_example[[1]],
-           plot.type = "AUC",
+           plot_type = "AUC",
            percPos_filter = 0.4,
+           group_by = "evidence_level",
            cut_min = 250,
            cut_max = 10000,
            cut_step = 250,
-           top.eplets = 20,
-           palette = "inferno")
+           top_eplets = 20,
+           palette = "spectral")
 ```
 
 

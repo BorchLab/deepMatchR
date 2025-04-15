@@ -167,7 +167,7 @@ epletAUC <- function(result_file,
       geom_line(aes(color = .data[[group_by]], group = eplet)) +
       xlim(0, ifelse(label, cut_max + 1500, cut_max)) +
       ylim(0, 1) +
-      theme_minimal() +
+      .dmrTheme() + 
       labs(
         x = "Cutoff (MFI)",
         y = "Proportion Positive"

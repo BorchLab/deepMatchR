@@ -83,7 +83,7 @@ plotPRA <- function(result_file,
     dplyr::mutate(category = categories[findInterval(NormalValue, vec = c(-Inf, sort(bead_cutoffs), Inf), rightmost.closed = TRUE)])
   
   # Generate the color palette using an internal helper function
-  color.palette <- .colorizer(palette = palette, n = length(bead_cutoffs))
+  color.palette <- .colorizer(palette = palette, n = length(bead_cutoffs) + 1)
   
   # Prepare data for the main bar plot
   bead.result <- unique(result[, c("BeadID", "NormalValue", "category")])
@@ -93,7 +93,7 @@ plotPRA <- function(result_file,
                       lwd = 0.2, 
                       width = 0.7) + 
     ggplot2::scale_fill_manual(values = rev(color.palette)) + 
-    theme_clean() + 
+    .dmrTheme() + 
     ggplot2::ylab("MFI Values") + 
     ggplot2::guides(fill = "none") + 
     ggplot2::theme(plot.background = ggplot2::element_blank(),
@@ -143,7 +143,7 @@ plotPRA <- function(result_file,
       ggplot2::geom_text(ggplot2::aes(label = antigen, color = highlight, size = sizing), 
                          angle = 90) + 
       ggplot2::scale_y_discrete(labels = axis_labels) +
-      theme_clean() + 
+      .dmrTheme() + 
       ggplot2::theme(plot.background = ggplot2::element_blank(),
                      axis.title.x = ggplot2::element_blank(),
                      axis.title.y = ggplot2::element_blank(),

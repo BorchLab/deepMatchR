@@ -95,7 +95,7 @@ plotSAB <- function(result_file,
                       lwd = 0.2, 
                       width = 0.7) + 
     ggplot2::scale_fill_manual(values = rev(color.palette)) + 
-    theme_clean() + 
+    .dmrTheme() + 
     ggplot2::ylab("MFI Values") + 
     ggplot2::guides(fill = "none") + 
     ggplot2::theme(plot.background = ggplot2::element_blank(),
@@ -128,7 +128,7 @@ plotSAB <- function(result_file,
                          angle = 90, 
                          size = 1.5) + 
       ggplot2::scale_y_discrete(limits = rev) + 
-      theme_clean() + 
+      .dmrTheme() +  
       ggplot2::theme(plot.background = ggplot2::element_blank(),
                      axis.title.x = ggplot2::element_blank(),
                      axis.title.y = ggplot2::element_blank(),

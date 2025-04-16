@@ -84,6 +84,7 @@ plotPRA <- function(result_file,
   
   # Generate the color palette using an internal helper function
   color.palette <- .colorizer(palette = palette, n = length(bead_cutoffs) + 1)
+  color.palette <- color.palette[seq_len(length(unique(result[["category"]])))]
   
   # Prepare data for the main bar plot
   bead.result <- unique(result[, c("BeadID", "NormalValue", "category")])

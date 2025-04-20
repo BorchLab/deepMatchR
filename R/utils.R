@@ -9,7 +9,7 @@
     plot.title = element_text(size = 14 * text_size_scale, family = font_family, colour = "black", vjust = 1),
     plot.subtitle = element_text(size = 13 * text_size_scale, family = font_family, hjust = 0, margin = margin(b = 3)),
     plot.background = element_rect(fill = "white", color = "white"),
-    plot.margin = margin(10, 10, 10, 10),
+    plot.margin = margin(5, 5, 5, 5),
     axis.line = element_blank(),
     axis.title = element_text(size = 13 * text_size_scale, family = font_family, colour = "black"),
     axis.text = element_text(size = 12 * text_size_scale, family = font_family, colour = "black"),

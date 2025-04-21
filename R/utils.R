@@ -24,7 +24,7 @@
     legend.key.size = unit(10, "pt"),
     legend.background = element_blank(),
     panel.background = element_rect(fill = "white", color = "white"),
-    panel.border = element_rect(fill = "transparent", colour = "black", linewidth = 1)
+    panel.border = element_rect(fill = "transparent", colour = "black", linewidth = 0.5)
   )
   args2 <- as.list(match.call())[-1]
   call.envir <- parent.frame(1)

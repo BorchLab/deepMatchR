@@ -135,7 +135,7 @@ plotPRA <- function(result_file,
     }
     # Set order of axis labels
     result$group <- factor(result$group, levels = rev(custom_order))
-    result$sizing <- 1/ifelse(grepl(":", result$antigen), nchar(result$antigen), 1)
+    result$sizing <- 2/ifelse(grepl(":", result$antigen), nchar(result$antigen), 1)
     # Strip out the numeric portion of labels
     axis_labels <- gsub("\\..*", "", levels(result$group))
     

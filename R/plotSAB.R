@@ -127,7 +127,7 @@ plotSAB <- function(result_file,
       ggplot2::geom_tile(fill = "white") + 
       ggplot2::geom_text(ggplot2::aes(label = antigen, color = highlight), 
                          angle = 90, 
-                         size = 1.5) + 
+                         size = 2) + 
       ggplot2::scale_y_discrete(limits = rev) + 
       .dmrTheme() +  
       ggplot2::theme(plot.background = ggplot2::element_blank(),

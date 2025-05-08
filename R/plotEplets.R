@@ -172,6 +172,7 @@ plotEplets <- function(result_file,
     # Prepare data for AUC plot: show top eplets ranked by normalized AUC
     y.label <- "Normalized AUC"
     y <- "norm_AUC"
+    label.max <- round(max(ranked_data$norm_AUC),2) - 0.05
     ranked_data <- summary_df %>%
       arrange(desc(norm_AUC)) %>%
       mutate(rank = row_number()) %>%
@@ -181,7 +182,7 @@ plotEplets <- function(result_file,
                                     fill = .data[[group_by]])) +
       geom_bar(stat = "identity", color = "black", size = 0.25) +
       coord_flip(clip = "off") +
-      geom_text(aes(label = loci), size = 2, hjust = -0.05) +
+      geom_text(aes(label = loci, hjust = ifelse(.data[[y]] > label.max, 1.1, -0.1)), size = 2) + 
       labs(fill = group_by, y = y.label) +
       .dmrTheme() + 
       theme(axis.title.y = element_blank()) + 

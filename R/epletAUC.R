@@ -103,7 +103,9 @@ epletAUC <- function(result_file,
   # 4. Create all combinations of alleles and user-specified MFI cutoffs
   cutoffs <- seq(cut_min, cut_max, cut_step)
   class_alleles <- result %>%
-    dplyr::select(allele, mfi_min)
+    dplyr::group_by(allele) %>%
+    summarise(mfi_min = median(mfi_min))
+  #TODO Future think about allow for other ways to summarise alleles
   
   # Generate a grid of each allele x cutoff
   summary_df <- expand.grid(allele = class_alleles$allele, cut = cutoffs) %>%

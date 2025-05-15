@@ -172,11 +172,12 @@ plotEplets <- function(result_file,
     # Prepare data for AUC plot: show top eplets ranked by normalized AUC
     y.label <- "Normalized AUC"
     y <- "norm_AUC"
-    label.max <- round(max(ranked_data$norm_AUC),2) - 0.05
     ranked_data <- summary_df %>%
       arrange(desc(norm_AUC)) %>%
       mutate(rank = row_number()) %>%
       filter(rank <= top_eplets)
+    
+    label.max <- round(max(ranked_data$norm_AUC),2) - 0.05
     
     plot <- ggplot(ranked_data, aes(x = reorder(eplet, dplyr::desc(rank)), y = .data[[y]], 
                                     fill = .data[[group_by]])) +
@@ -184,7 +185,7 @@ plotEplets <- function(result_file,
       coord_flip(clip = "off") +
       geom_text(aes(label = loci, hjust = ifelse(.data[[y]] > label.max, 1.1, -0.1)), size = 2) + 
       labs(fill = group_by, y = y.label) +
-      .dmrTheme() + 
+      .dmrTheme(base_size = 10) + 
       theme(axis.title.y = element_blank()) + 
       scale_fill_manual(values = color.palette)
   }

@@ -12,6 +12,8 @@
 #' values. Defaults to \code{c(1500, 1000, 500, 250)}.
 #' @param add_table Logical. Whether to add the antigen-level information as a 
 #' table to the bottom of the plot. Defaults to \code{TRUE}.
+#' @param x_text_angle Numeric. Angle to plot the antigen/allele information
+#' in the accompanying table. 
 #' @param palette Character. A color palette name (from \link[grDevices]{hcl.pals}) 
 #' or a custom palette function to use for the plot. Defaults to \code{"spectral"}.
 #' @param highlight_antigen Character vector. Optional antigen(s) to highlight 
@@ -33,6 +35,7 @@ plotPRA <- function(result_file,
                     bead_cutoffs = c(1500, 1000, 500, 250), 
                     class = "I",
                     add_table = TRUE,
+                    x_text_angle = 90,
                     palette = "spectral",
                     highlight_antigen = NULL) {
   
@@ -142,7 +145,7 @@ plotPRA <- function(result_file,
     table_plot <- ggplot2::ggplot(result, ggplot2::aes(x = reorder(BeadID, -NormalValue), y = group)) + 
       ggplot2::geom_tile(fill = "white") + 
       ggplot2::geom_text(ggplot2::aes(label = antigen, color = highlight, size = sizing), 
-                         angle = 90) + 
+                         angle = x_text_angle) + 
       ggplot2::scale_y_discrete(labels = axis_labels) +
       .dmrTheme() + 
       ggplot2::theme(plot.background = ggplot2::element_blank(),

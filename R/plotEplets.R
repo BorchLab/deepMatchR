@@ -32,7 +32,7 @@
 #' @param cut_step Integer. (Only used when \code{plot_type = "AUC"}) The increment step between
 #'   the minimum and maximum MFI cutoff values. Defaults to 250.
 #' @param top_eplets Integer. The maximum number of top eplets to display in the bar or AUC plot.
-#'   Defaults to 20.
+#'   Defaults to 10.
 #' @param palette Character. A color palette name (from \link[grDevices]{hcl.pals}) or a custom
 #'   palette function to use for the plot. Defaults to \code{"spectral"}.
 #'
@@ -57,7 +57,7 @@ plotEplets <- function(result_file,
                        cut_min = 250,
                        cut_max = 10000,
                        cut_step = 250,
-                       top_eplets = 20,
+                       top_eplets = 10,
                        palette = "spectral") {
   
   # Standardize plot type argument early
@@ -158,6 +158,8 @@ plotEplets <- function(result_file,
       mutate(rank = row_number()) %>%
       filter(rank <= top_eplets)
     
+    color.palette <- .colorizer(palette, length(unique(ranked_data[[group_by]])))
+    
     plot <- ggplot(ranked_data, aes(x = reorder(eplet, desc(rank)), y = .data[[y]], 
                                     fill = .data[[group_by]])) +
       geom_bar(stat = "identity", color = "black", size = 0.25) +
@@ -176,6 +178,8 @@ plotEplets <- function(result_file,
       arrange(desc(norm_AUC)) %>%
       mutate(rank = row_number()) %>%
       filter(rank <= top_eplets)
+    
+    color.palette <- .colorizer(palette, length(unique(ranked_data[[group_by]])))
     
     label.max <- round(max(ranked_data$norm_AUC),2) - 0.05
     

@@ -35,6 +35,8 @@
 #'   \code{ggplot} object illustrating the proportion of positive eplets at 
 #'   each cutoff. If `FALSE`, the function returns a summarized tibble.
 #'   Defaults to `TRUE`.
+#' @param top_eplets Integer. The maximum number of top eplets to display in AUC plot.
+#'   Defaults to 10.
 #' @param palette palette Character. A color palette name (from \link[grDevices]{hcl.pals}) or a custom
 #'   palette function to use for the plot. Defaults to \code{"spectral"}.
 #'
@@ -81,6 +83,7 @@ epletAUC <- function(result_file,
                      cut_max = 10000,
                      cut_step = 250,
                      plot_results = TRUE,
+                     top_eplets = 10,
                      palette = "spectral") {
   
   # Load required eplet database 
@@ -162,10 +165,28 @@ epletAUC <- function(result_file,
       group_by(eplet) %>%
       mutate(loci = str_c(unique(loci), collapse = "; "))
   
-  # 8. If the user wants to plot results, generate a ggplot
-  if (plot_results) {
+  # 8 compute area under the curve (AUC) and return a tibble
+  ep_auc <- ep_analysis %>%
+    group_by(eplet) %>%
+    summarize(
+      AUC      = trapz(x = cut, y = percent_positive),
+      norm_AUC = AUC/cut_max,
+      total_count = unique(subtotal)[1],
+      evidence_level = unique(evidence_level), 
+      loci = str_c(unique(loci), collapse = "; ")
+    ) %>%
+    ungroup()
+  
+  #9. If the user wants to plot results, generate a ggplot
+  if (plot_results) {  
     
-    plot <- ggplot(ep_analysis, aes(x = cut, y = percent_positive)) +
+    top_eplet_vec <- ep_auc %>%
+      slice_max(order_by = norm_AUC, n = top_eplets) %>%
+      pull(eplet)
+    
+    plot <- ep_analysis %>%
+      subset(eplet %in% top_eplet_vec) %>%
+    ggplot(aes(x = cut, y = percent_positive)) +
       geom_line(aes(color = .data[[group_by]], group = eplet)) +
       xlim(0, ifelse(label, cut_max + 1500, cut_max)) +
       ylim(0, 1) +
@@ -178,21 +199,9 @@ epletAUC <- function(result_file,
         values = .colorizer(palette, length(unique(ep_analysis[[group_by]])))) + 
       if (label) list(geom_dl(aes(label = eplet), method = list("last.points", cex = 0.8))) else list()
     
-    
     return(plot)
     
-  } else {
-    # 9. Otherwise, compute area under the curve (AUC) and return a tibble
-    ep_auc <- ep_analysis %>%
-      group_by(eplet) %>%
-      summarize(
-        AUC      = trapz(x = cut, y = percent_positive),
-        norm_AUC = AUC/cut_max,
-        total_count = unique(subtotal)[1],
-        evidence_level = unique(evidence_level), 
-        loci = str_c(unique(loci), collapse = "; ")
-      ) %>%
-      ungroup()
+  } else { # 10. Otherwise, return AUC
     
     return(ep_auc)
   }

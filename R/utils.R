@@ -237,3 +237,12 @@
   
   return(sorted_levels)
 }
+
+#' @importFrom keras3 load_model
+.loadModel <- function(chain, class) {
+  select  <- system.file("extdata", paste0(class, "_encoder.keras"), 
+                         package = "deepMatchR")
+  model <- load_model(select, compile = FALSE))
+  return(model)
+}
+

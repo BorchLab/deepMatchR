@@ -69,7 +69,6 @@
 #' @importFrom ggplot2 ggplot aes geom_line scale_colour_discrete xlim ylim theme 
 #'   labs theme_minimal guides scale_color_manual
 #' @importFrom directlabels geom_dl dl.combine last.points
-#' @importFrom janitor clean_names
 #' @importFrom pracma trapz
 #'
 #' @export

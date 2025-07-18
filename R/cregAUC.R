@@ -39,7 +39,6 @@
 #' @importFrom stringr str_extract str_c
 #' @importFrom ggplot2 ggplot aes geom_line xlim ylim labs scale_color_manual
 #' @importFrom directlabels geom_dl last.points
-#' @importFrom janitor clean_names
 #' @importFrom pracma trapz
 #' @export
 cregAUC <- function(result_file,

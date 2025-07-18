@@ -65,7 +65,6 @@
 #' @importFrom dplyr filter mutate select distinct arrange group_by ungroup 
 #'   summarise relocate left_join n
 #' @importFrom tidyr unnest_longer separate_longer_delim
-#' @importFrom stringr str_detect str_extract str_replace_all
 #' @importFrom ggplot2 ggplot aes geom_line scale_colour_discrete xlim ylim theme 
 #'   labs theme_minimal guides scale_color_manual
 #' @importFrom directlabels geom_dl dl.combine last.points
@@ -136,7 +135,7 @@ epletAUC <- function(result_file,
   # 6. Join the sab data with eplet dictionary to analyze eplet reactivity
   ep_analysis <- summary_df %>%
     left_join(assay_alleles, by = "allele", relationship = "many-to-many") %>%
-    mutate(loci = str_extract(allele, "^[^*]+")) %>% 
+    mutate(loci = sub("\\*.*", "", allele)) %>% 
     dplyr::filter(!is.na(cut)) %>%
     group_by(eplet, cut) %>%
     mutate(
@@ -162,7 +161,7 @@ epletAUC <- function(result_file,
   # Relevel Eplet Loci after all filter and calculations
   ep_analysis <- ep_analysis %>%
       group_by(eplet) %>%
-      mutate(loci = str_c(unique(loci), collapse = "; "))
+      mutate(loci = paste(unique(loci), collapse = "; "))
   
   # 8 compute area under the curve (AUC) and return a tibble
   ep_auc <- ep_analysis %>%
@@ -172,7 +171,7 @@ epletAUC <- function(result_file,
       norm_AUC = AUC/cut_max,
       total_count = unique(subtotal)[1],
       evidence_level = unique(evidence_level), 
-      loci = str_c(unique(loci), collapse = "; ")
+      loci = paste(unique(loci), collapse = "; ")
     ) %>%
     ungroup()
   

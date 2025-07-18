@@ -55,24 +55,25 @@ plotPRA <- function(result_file,
   # Process loci and antigen information based on SAB type
   if (class == "I") {
     result$loci[grep("Bw", result$antigen)] <- "Bw"
-    result$antigen <- str_remove(result$antigen, "Bw")
+    result$antigen <- sub("Bw", "", result$antigen) 
     result$group <- interaction(result$loci, result$pairs)
     custom_order <- c("A.1", "A.2", "B.1", "B.2", "Bw.1", "Bw.2", "C.1", "C.2")
   } else {
     result <- result %>%
-      dplyr::mutate(loci = stringr::str_extract(antigen, "^[^0-9]+"))
+      dplyr::mutate(loci = sub("[0-9].*", "", antigen))
     
     result$loci[grep("DR51|DR52|DR53", result$antigen)] <- "DR5"
     
     DQ.subset <- result %>%
       dplyr::filter(grepl("DQA1", allele)) %>%
       dplyr::mutate(loci = "DQA1",
-                    antigen = stringr::str_extract(allele, "(?<=\\*)[0-9]{2}:[0-9]{2}"))
+                    antigen = sub(".*\\*([0-9]{2}:[0-9]{2}).*", "\\1", allele))
     
     DP.subset <- result %>%
       dplyr::filter(grepl("DPA1", allele)) %>%
       dplyr::mutate(loci = "DPA1",
-                    antigen = stringr::str_extract(allele, "(?<=\\*)[0-9]{2}:[0-9]{2}"))         
+                    antigen = sub(".*\\*([0-9]{2}:[0-9]{2}).*", "\\1", allele))
+    
     
     result <- rbind.data.frame(result, DQ.subset)
     result <- rbind.data.frame(result, DP.subset)

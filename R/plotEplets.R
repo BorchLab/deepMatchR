@@ -46,7 +46,6 @@
 #'            evidence_level = c("A1", "A2", "B"),
 #'            percPos_filter = 0.4, 
 #'            plot_type = "treemap")
-#' @importFrom stringr str_sort
 #' @export
 plotEplets <- function(result_file,
                        cutoff = 2000,
@@ -104,7 +103,7 @@ plotEplets <- function(result_file,
       left_join(deepMatchR_eplets, 
                 by = "allele", 
                 relationship = "many-to-many") %>%
-      mutate(loci = str_extract(allele, "^[^*]+"))
+      mutate(loci = sub("\\*.*", "", allele))
     
     # Filter by evidence level if specified
     if (!is.null(evidence_level)) {
@@ -115,7 +114,7 @@ plotEplets <- function(result_file,
     summary_df <- ep_analysis %>%
       mutate(positive.bead = ifelse(NormalValue >= cutoff, 1, 0)) %>%
       group_by(eplet) %>%
-      summarise(loci = str_c(unique(loci), collapse = "; "), 
+      summarise(loci = paste0(unique(loci), collapse = "; "), 
                 count_above = sum(positive.bead),
                 count_total = n(), 
                 pp_max = round(count_above / count_total, 2), 
@@ -130,7 +129,7 @@ plotEplets <- function(result_file,
   }
   
   summary_df[[group_by]] <- factor(summary_df[[group_by]], 
-                                   levels = str_sort(unique(summary_df[[group_by]]), numeric = TRUE))
+                                   levels = .alphanumericalSort(unique(summary_df[[group_by]])))
   # Generate the color palette using internal helper function
   color.palette <- .colorizer(palette, length(unique(summary_df[[group_by]])))
   

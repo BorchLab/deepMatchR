@@ -54,7 +54,7 @@ plotSAB <- function(result_file,
   # Process loci and antigen information based on SAB type
   if (all(result$loci %in% c("A", "B", "C"))) {
     result <- result %>%
-      mutate(loci = stringr::str_extract(allele, "^[^*]+"))
+      mutate(loci = sub("\\*.*", "", allele))
     
     bw.subset <- result %>%
       dplyr::filter(!is.na(bw46)) %>%
@@ -65,17 +65,18 @@ plotSAB <- function(result_file,
     result$loci <- factor(result$loci, levels = c("A", "B", "Bw", "C"))
   } else {
     result <- result %>%
-      dplyr::mutate(loci = stringr::str_extract(antigen, "^[^0-9]+"))
+      mutate(loci = sub("\\*.*", "", allele))
     
     DQ.subset <- result %>%
       dplyr::filter(grepl("DQA1", allele)) %>%
       dplyr::mutate(loci = "DQA1",
-                    antigen = stringr::str_extract(allele, "(?<=\\*)[0-9]{2}:[0-9]{2}"))
+                    antigen = sub(".*\\*([0-9]{2}:[0-9]{2}).*", "\\1", allele))
     
     DP.subset <- result %>%
       dplyr::filter(grepl("DPA1", allele)) %>%
       dplyr::mutate(loci = "DPA1",
-                    antigen = stringr::str_extract(allele, "(?<=\\*)[0-9]{2}:[0-9]{2}"))         
+                    antigen = sub(".*\\*([0-9]{2}:[0-9]{2}).*", "\\1", allele))
+    
     
     result <- rbind.data.frame(result, DQ.subset)
     result <- rbind.data.frame(result, DP.subset)
@@ -134,7 +135,7 @@ plotSAB <- function(result_file,
                          angle = x_text_angle, 
                          size = 1.5) + 
       ggplot2::scale_y_discrete(limits = rev) + 
-      .dmrTheme() +  
+      .themeMatchR(...) +  
       ggplot2::theme(plot.background = ggplot2::element_blank(),
                      axis.title.x = ggplot2::element_blank(),
                      axis.title.y = ggplot2::element_blank(),

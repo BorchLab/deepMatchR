@@ -1,5 +1,6 @@
 "%!in%" <- Negate("%in%")
 
+# Basic theme for all plots
 .themeMatchR <- function(base_size = 12,
                          base_family = "sans",
                          grid_lines = "Y",
@@ -97,6 +98,12 @@
   }
 }
 
+.strExtract <- function(string, pattern) {
+  match_pos <- regexpr(pattern, string)
+  # Where there is no match (match_pos == -1), return NA, otherwise extract the match
+  ifelse(match_pos > -1, regmatches(string, match_pos), NA_character_)
+}
+
 #Pulling a color palette for visualizations
 #' @importFrom grDevices hcl.colors
 #' @keywords internal
@@ -108,40 +115,44 @@
 
 #' @importFrom dplyr filter mutate select distinct arrange group_by ungroup 
 #'   summarise relocate left_join n
-#' @importFrom stringr str_extrext function str_replace_all
 #' @importFrom tidyr separate_longer_delim
 .processSAB <- function(result0) {
   result <- result0 %>%
     dplyr::select(BeadID, SpecAbbr, Specificity, NormalValue) %>%
     dplyr::distinct(Specificity, .keep_all = TRUE) %>%
     mutate(
-      antigen               = str_extract(SpecAbbr, '[ABCDRQP][:alnum:]+'),
-      bw46                  = str_extract(SpecAbbr, 'Bw[46]'),
-      Specificity_truncated = str_extract(Specificity, '[ABCD].*[0-9]')
+      antigen = .strExtract(SpecAbbr, '[ABCDRQP][:alnum:]+'),
+      bw46 = .strExtract(SpecAbbr, 'Bw[46]'),
+      Specificity_truncated = .strExtract(Specificity, '[ABCD].*[0-9]')
     ) %>%
     mutate(
-      allele = str_replace_all(Specificity_truncated, ",-,", "_"),
-      loci = str_extract(allele, "^[^*]+")
+      allele = gsub(",-,", "_", Specificity_truncated, fixed = TRUE), # Using fixed = TRUE for literal matching
+      loci = sub("\\*.*", "", allele)
     ) %>%
     dplyr::select(-SpecAbbr, -Specificity, -Specificity_truncated) %>%
     relocate(BeadID, antigen, bw46, allele, NormalValue) %>%
     separate_longer_delim(allele, "_") %>%
     mutate(mfi_min = min(NormalValue), .by = allele) %>%
     arrange(allele, desc(NormalValue)) %>%
-    filter(!is.na(allele)) 
+    filter(!is.na(allele))
   return(result)
 }
 
+# Helper function to replicate stringr::str_pad(side = "right")
+.padRightBase <- function(vec, len, pad = "-") {
+  pad_lengths <- pmax(0, len - nchar(vec))
+  padding <- sapply(pad_lengths, function(n) paste(rep(pad, n), collapse = ""))
+  paste0(vec, padding)
+}
 
 .processPRA <- function(result0, class = "I") {
-  # Step 0: Determine class-specific rows
-  Spec.pattern <- str_split(result0$SpecAbbr, ",", simplify = TRUE)
-  classI.pos <- grep("A", Spec.pattern[,1])
+  Spec.pattern <- do.call(rbind, strsplit(result0$SpecAbbr, ",", fixed = TRUE))
+  classI.pos <- grep("A", Spec.pattern[, 1])
   
   if (class == "I") {
-    result <- result0[classI.pos,]
+    result <- result0[classI.pos, ]
   } else {
-    result <- result0[-classI.pos,]
+    result <- result0[-classI.pos, ]
   }
   
   # Step 1: Split and pad antigen & allele vectors
@@ -149,11 +160,11 @@
     dplyr::select(BeadID, SpecAbbr, Specificity, NormalValue) %>%
     rowwise() %>%
     mutate(
-      antigen_vec = str_split(SpecAbbr, ","),
-      allele_vec  = str_split(Specificity, ","),
+      antigen_vec = strsplit(SpecAbbr, ",", fixed = TRUE),
+      allele_vec  = strsplit(Specificity, ",", fixed = TRUE),
       max_len     = max(length(antigen_vec), length(allele_vec)),
-      antigen_vec = list(str_pad(antigen_vec, max_len, side = "right", pad = "-")),
-      allele_vec  = list(str_pad(allele_vec,  max_len, side = "right", pad = "-"))
+      antigen_vec = list(.padRightBase(antigen_vec, max_len, pad = "-")),
+      allele_vec  = list(.padRightBase(allele_vec, max_len, pad = "-"))
     ) %>%
     ungroup() %>%
     dplyr::select(BeadID, NormalValue, antigen_vec, allele_vec) %>%
@@ -161,7 +172,6 @@
   
   # Step 2: Adjust position and duplicate if needed (Class II logic)
   if (class != "I") {
-    # Duplicate rows for positions >=5 with adjusted positions
     result_expanded2 <- result_expanded %>% filter(position >= 5)
     result_expanded  <- result_expanded %>%
       mutate(position = ifelse(position %in% c(7, 8), position + 4, position))
@@ -170,7 +180,6 @@
     result_expanded <- bind_rows(result_expanded, result_expanded2)
     string.pattern <- "------------"
   } else {
-    # For Class I, normalize position for downstream indexing
     result_expanded <- result_expanded %>%
       group_by(BeadID) %>%
       mutate(position = ifelse(position > 4, position - 2, position)) %>%
@@ -180,9 +189,7 @@
   
   # Imputing antigen level info for lazy load
   result_expanded <- result_expanded %>%
-    mutate(
-      prev_antigen = lag(antigen)
-    ) %>%
+    mutate(prev_antigen = lag(antigen)) %>%
     rowwise() %>%
     mutate(
       antigen = if (antigen == string.pattern && allele_vec[[position]] != string.pattern) {
@@ -199,14 +206,15 @@
     rowwise() %>%
     mutate(allele = allele_vec[position]) %>%
     ungroup() %>%
-    mutate(pairs   = rep(c(1,2), length.out = n())) %>%
+    mutate(pairs = rep(c(1, 2), length.out = n())) %>%
     filter(antigen != "-", allele != "-") %>%
     mutate(
-      antigen = str_remove_all(antigen, "-"),
-      allele  = str_remove_all(allele, "-"),
-      bw46    = ifelse(str_detect(antigen, "Bw[46]"), antigen, NA_character_),
-      loci    = str_extract(allele, "^[^*]+"),
-      mfi_min = min(NormalValue, na.rm = TRUE), .by = allele) %>%
+      antigen = gsub("-", "", antigen),
+      allele  = gsub("-", "", allele),
+      bw46    = ifelse(grepl("Bw[46]", antigen), antigen, NA_character_),
+      loci    = sub("\\*.*", "", allele),
+      mfi_min = min(NormalValue, na.rm = TRUE), .by = allele
+    ) %>%
     filter(antigen != string.pattern, allele != "", antigen != "") %>%
     distinct(BeadID, antigen, allele, .keep_all = TRUE) %>%
     dplyr::select(BeadID, antigen, bw46, allele, loci, NormalValue, pairs)

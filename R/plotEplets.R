@@ -35,6 +35,7 @@
 #'   Defaults to 10.
 #' @param palette Character. A color palette name (from \link[grDevices]{hcl.pals}) or a custom
 #'   palette function to use for the plot. Defaults to \code{"spectral"}.
+#' @param ... Additional arguments passed to the ggplot theme
 #'
 #' @return A \code{ggplot} object visualizing eplet counts (or AUC values) according to the
 #'   specified parameters.
@@ -58,7 +59,8 @@ plotEplets <- function(result_file,
                        cut_max = 10000,
                        cut_step = 250,
                        top_eplets = 10,
-                       palette = "spectral") {
+                       palette = "spectral",
+                       ...) {
   
   # Standardize plot type argument early
   plot_type <- match.arg(plot_type)
@@ -145,7 +147,7 @@ plotEplets <- function(result_file,
       geom_treemap_subgroup_border(color = "black", size = 2) +
       geom_treemap_subgroup_text(place = "centre", grow = TRUE, alpha = 0.3, colour = "black") +
       scale_fill_manual(values = color.palette) +
-      .dmrTheme() + 
+      .themeMatchR(...) + 
       labs(fill = group_by) +
       theme(plot.background = element_blank())
     
@@ -166,7 +168,7 @@ plotEplets <- function(result_file,
       coord_flip(clip = "off") +
       geom_text(aes(label = loci), size = 2, hjust = -0.05) +
       labs(fill = group_by, y = y.label) +
-      .dmrTheme() + 
+      .themeMatchR(...) +  
       theme(axis.title.y = element_blank()) + 
       scale_fill_manual(values = color.palette)
     
@@ -189,7 +191,7 @@ plotEplets <- function(result_file,
       coord_flip(clip = "off") +
       geom_text(aes(label = loci, hjust = ifelse(.data[[y]] > label.max, 1.1, -0.1)), size = 2) + 
       labs(fill = group_by, y = y.label) +
-      .dmrTheme(base_size = 10) + 
+      .themeMatchR(...) + 
       theme(axis.title.y = element_blank()) + 
       scale_fill_manual(values = color.palette)
   }

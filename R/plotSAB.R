@@ -19,6 +19,7 @@
 #' @param highlight_antigen Character vector. Optional antigen(s) to highlight 
 #' in the table. If provided, matching antigens will be highlighted in red. 
 #' Defaults to \code{NULL}.
+#' @param ... Additional arguments passed to the ggplot theme
 #'
 #' @return A \code{ggplot} object representing the SAB plot (and table, 
 #' if \code{add_table} is \code{TRUE}).
@@ -36,7 +37,8 @@ plotSAB <- function(result_file,
                     add_table = TRUE,
                     x_text_angle = 90,
                     palette = "spectral",
-                    highlight_antigen = NULL) {
+                    highlight_antigen = NULL, 
+                    ...) {
   
   # 1. Read in data (data frame or file path)
   if (inherits(result_file, "character")) {
@@ -99,7 +101,7 @@ plotSAB <- function(result_file,
                       lwd = 0.2, 
                       width = 0.7) + 
     ggplot2::scale_fill_manual(values = rev(color.palette)) + 
-    .dmrTheme() + 
+    .themeMatchR(...) + 
     ggplot2::ylab("MFI Values") + 
     ggplot2::guides(fill = "none") + 
     ggplot2::theme(plot.background = ggplot2::element_blank(),

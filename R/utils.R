@@ -1,47 +1,72 @@
 "%!in%" <- Negate("%in%")
 
-# Basic theme for ggplot modified from plotthis R package
-.dmrTheme <- function(aspect.ratio = NULL, base_size = 12, font_family = NULL, ...) {
-  text_size_scale <- base_size / 12
-  args1 <- list(
-    aspect.ratio = aspect.ratio,
-    text = element_text(size = 12 * text_size_scale, family = font_family, color = "black"),
-    plot.title = element_text(size = 14 * text_size_scale, family = font_family, colour = "black", vjust = 1),
-    plot.subtitle = element_text(size = 13 * text_size_scale, family = font_family, hjust = 0, margin = margin(b = 3)),
-    plot.background = element_rect(fill = "white", color = "white"),
-    plot.margin = margin(5, 5, 5, 5),
-    axis.line = element_blank(),
-    axis.title = element_text(size = 13 * text_size_scale, family = font_family, colour = "black"),
-    axis.text = element_text(size = 12 * text_size_scale, family = font_family, colour = "black"),
-    strip.text = element_text(size = 12.5 * text_size_scale, family = font_family, colour = "black", hjust = 0.5, margin = margin(3, 3, 3, 3)),
-    strip.background = element_rect(fill = "transparent", linetype = 0),
-    strip.switch.pad.grid = unit(-1, "pt"),
-    strip.switch.pad.wrap = unit(-1, "pt"),
-    strip.placement = "outside",
-    legend.title = element_text(size = 12 * text_size_scale, family = font_family, colour = "black", hjust = 0),
-    legend.text = element_text(size = 11 * text_size_scale, family = font_family, colour = "black"),
-    legend.key = element_rect(fill = "transparent", color = "transparent"),
-    legend.key.size = unit(10, "pt"),
-    legend.background = element_blank(),
-    panel.background = element_rect(fill = "white", color = "white"),
-    panel.border = element_rect(fill = "transparent", colour = "black", linewidth = 0.5)
-  )
-  args2 <- as.list(match.call())[-1]
-  call.envir <- parent.frame(1)
-  args2 <- lapply(args2, function(arg) {
-    if (is.symbol(arg)) {
-      eval(arg, envir = call.envir)
-    } else if (is.call(arg)) {
-      eval(arg, envir = call.envir)
-    } else {
-      arg
-    }
-  })
-  for (n in names(args2)) {
-    args1[[n]] <- args2[[n]]
+.themeMatchR <- function(base_size = 12,
+                         base_family = "sans",
+                         grid_lines = "Y",
+                         axis_lines = FALSE,
+                         legend_position = "right") {
+  
+  t <- ggplot2::theme_bw(base_size = base_size, base_family = base_family)
+  t <- t %+replace%
+    ggplot2::theme(
+      # Plot titles and caption
+      plot.title = ggplot2::element_text(
+        size = rel(1.2), hjust = 0, face = "bold",
+        margin = ggplot2::margin(b = base_size / 2)
+      ),
+      plot.subtitle = ggplot2::element_text(
+        size = rel(1.0), hjust = 0,
+        margin = ggplot2::margin(b = base_size)
+      ),
+      plot.caption = ggplot2::element_text(
+        size = rel(0.8), hjust = 1, color = "grey50",
+        margin = ggplot2::margin(t = base_size / 2)
+      ),
+      
+      # Backgrounds and borders
+      plot.background = ggplot2::element_rect(fill = "white", color = NA),
+      panel.background = ggplot2::element_rect(fill = "white", color = NA),
+      panel.border = ggplot2::element_rect(fill = NA, color = "black", linewidth = 0.75),
+      
+      # Remove all grid lines by default; they will be added back conditionally
+      panel.grid.major = ggplot2::element_blank(),
+      panel.grid.minor = ggplot2::element_blank(),
+      
+      # Axis text, titles, and ticks
+      axis.title = ggplot2::element_text(size = rel(1.0)),
+      axis.text = ggplot2::element_text(size = rel(0.9), color = "black"),
+      axis.ticks = ggplot2::element_line(color = "black", linewidth = 0.5),
+      
+      # Legend customization
+      legend.background = ggplot2::element_blank(),
+      legend.key = ggplot2::element_blank(),
+      legend.title = ggplot2::element_text(size = rel(0.9), face = "bold"),
+      legend.text = ggplot2::element_text(size = rel(0.85)),
+      legend.position = legend_position,
+      
+      # Facet (strip) customization
+      strip.background = ggplot2::element_rect(fill = "grey90", color = "black", linewidth = 0.75),
+      strip.text = ggplot2::element_text(
+        size = rel(1.0), face = "bold", color = "black",
+        margin = ggplot2::margin(t = base_size / 4, b = base_size / 4)
+      )
+    )
+  
+  # Conditionally add major grid lines based on the 'grid_lines' parameter
+  grid_lines <- toupper(grid_lines)
+  if (grid_lines %in% c("Y", "XY")) {
+    t <- t + ggplot2::theme(panel.grid.major.y = ggplot2::element_line(color = "grey85", linewidth = 0.5))
   }
-  args <- args1[names(args1) %in% formalArgs(theme)]
-  do.call(what = theme, args = args)
+  if (grid_lines %in% c("X", "XY")) {
+    t <- t + ggplot2::theme(panel.grid.major.x = ggplot2::element_line(color = "grey85", linewidth = 0.5))
+  }
+  
+  # Conditionally add axis lines
+  if (axis_lines) {
+    t <- t + ggplot2::theme(axis.line = ggplot2::element_line(color = "black", linewidth = 0.5))
+  }
+  
+  return(t)
 }
 
 # Check if nessecary columns are present in SAB results

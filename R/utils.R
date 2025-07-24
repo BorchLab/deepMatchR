@@ -119,7 +119,7 @@
     dplyr::select(BeadID, SpecAbbr, Specificity, NormalValue) %>%
     dplyr::distinct(Specificity, .keep_all = TRUE) %>%
     mutate(
-      antigen = .strExtract(SpecAbbr, '[ABCDRQP][:alnum:]+'),
+      antigen = .strExtract(SpecAbbr, '[ABCDRQP][[:alnum:]]+'),
       bw46 = .strExtract(SpecAbbr, 'Bw[46]'),
       Specificity_truncated = .strExtract(Specificity, '[ABCD].*[0-9]')
     ) %>%

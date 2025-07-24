@@ -150,7 +150,7 @@ plotPRA <- function(result_file,
       ggplot2::geom_text(ggplot2::aes(label = antigen, color = highlight, size = sizing), 
                          angle = x_text_angle) + 
       ggplot2::scale_y_discrete(labels = axis_labels) +
-      .dmrTheme() + 
+      .themeMatchR() + 
       ggplot2::theme(plot.background = ggplot2::element_blank(),
                      axis.title.x = ggplot2::element_blank(),
                      axis.title.y = ggplot2::element_blank(),

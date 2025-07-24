@@ -54,7 +54,7 @@ plotSAB <- function(result_file,
   # Process loci and antigen information based on SAB type
   if (all(result$loci %in% c("A", "B", "C"))) {
     result <- result %>%
-      mutate(loci = sub("\\*.*", "", allele))
+      mutate(loci = regmatches(antigen, regexpr("^[^0-9]+", antigen)))
     
     bw.subset <- result %>%
       dplyr::filter(!is.na(bw46)) %>%
@@ -65,7 +65,7 @@ plotSAB <- function(result_file,
     result$loci <- factor(result$loci, levels = c("A", "B", "Bw", "C"))
   } else {
     result <- result %>%
-      mutate(loci = sub("\\*.*", "", allele))
+      mutate(loci = regmatches(antigen, regexpr("^[^0-9]+", antigen)))
     
     DQ.subset <- result %>%
       dplyr::filter(grepl("DQA1", allele)) %>%

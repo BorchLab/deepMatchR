@@ -58,37 +58,55 @@ head(deepMatchR_example[[2]])
 head(deepMatchR_example[[3]])
 ```
 
-## plotSAB 
+## plotAntibodies
 
-The ```plotSAB()``` function is designed to simplify the visualization of SAB data. It accepts either a data frame of SAB results or a file path, processes the data by cleaning, categorizing MFI values based on provided bead cutoff values, and applies a customizable color palette. Optionally, you can append an antigen-level table to the plot for further detail, with the ability to highlight specific antigens.
+The `plotAntibodies()` function is designed to simplify the visualization of antibody data from SAB and PRA assays. It can generate bar plots with MFI values and optional antigen tables, as well as time-series plots to track antibody trends.
 
-Below is an example of how to use plotSAB with the deepMatchR_example[[1]] object. In this example, we set custom bead cutoffs and highlight antigens "A1" and "B8".
+### Bar Plot for SAB data
+
+Here is an example of how to use `plotAntibodies` for SAB data. We set `type = "SAB"` and highlight the "Bw4" antigen.
 
 ```{r}
-plotSAB(result_file = deepMatchR_example[[1]],
-             bead_cutoffs = c(2000, 1000, 500, 250),
-             add_table = TRUE,
-             palette = "spectral",
-             highlight_antigen = c("Bw4"))
+plotAntibodies(result_file = deepMatchR_example[[1]],
+               type = "SAB",
+               bead_cutoffs = c(2000, 1000, 500, 250),
+               add_table = TRUE,
+               palette = "spectral",
+               highlight_antigen = c("Bw4"))
 ```
 
-### Interpretation
+### Bar Plot for PRA data
 
-* **Bar Plot**: The main plot displays the MFI values of each bead, categorized into various levels. The color of each bar corresponds to its MFI category, helping you quickly identify beads that are above or below defined thresholds.
-
-* **Antigen-Level Table**: When `add_table` is set to TRUE, a table is added below the main plot. This table lists the loci and antigen information for each bead. Antigens specified in the `highlight_antigen` parameter (here, "Bw4") are highlighted in red, making it easier to identify them within the dataset.
-
-## plotPRA
-
-The ```plotPRA()``` has similar functionality to ```plotSAB()``` with the exception that `class` needs to be specifically called as either `class = "I"` for HLA Class I and `class = "II"` for HLA Class II results. 
-
-Below is an example of how to use plotSAB with the deepMatchR_example[[4]] object. 
+For PRA data, we set `type = "PRA"` and specify the `class` ("I" or "II").
 
 ```{r}
-plotPRA(result_file = deepMatchR_example[[3]],
-        class = "I",
-        add_table = TRUE,
-        palette = "spectral")
+plotAntibodies(result_file = deepMatchR_example[[3]],
+               type = "PRA",
+               class = "I",
+               add_table = TRUE,
+               palette = "spectral")
+```
+
+### Time-Series Trend Plot
+
+The function can also plot MFI values over time. For this, `plot_trend` must be set to `TRUE`, and `result_file` should be a named list of data frames, where the names are the dates of the assays.
+
+Here is an example with simulated data:
+
+```{r}
+# Simulate a list of SAB results over time
+set.seed(123)
+sab_data_list <- list(
+  "01/01/2023" = deepMatchR_example[[1]],
+  "02/01/2023" = deepMatchR_example[[1]] %>% mutate(NormalValue = NormalValue * runif(n(), 0.8, 1.2)),
+  "03/01/2023" = deepMatchR_example[[1]] %>% mutate(NormalValue = NormalValue * runif(n(), 0.8, 1.2))
+)
+
+plotAntibodies(result_file = sab_data_list,
+               type = "SAB",
+               plot_trend = TRUE,
+               highlight_threshold = 5000,
+               vline_dates = c("2023-02-15"))
 ```
 
 ## epletAUC

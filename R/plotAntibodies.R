@@ -261,3 +261,17 @@ plotAntibodies <- function(result_file,
 
   return(main_plot)
 }
+
+#' @rdname plotAntibodies
+#' @aliases plotSAB
+#' @export
+plotSAB <- function(..., type = "SAB") {
+  plotAntibodies(..., type = "SAB")
+}
+
+#' @rdname plotAntibodies
+#' @aliases plotPRA
+#' @export
+plotPRA <- function(..., type = "PRA") {
+  plotAntibodies(..., type = "PRA")
+}

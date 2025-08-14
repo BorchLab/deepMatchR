@@ -97,9 +97,19 @@
 }
 
 .strExtract <- function(string, pattern) {
-  match_pos <- regexpr(pattern, string)
-  # Where there is no match (match_pos == -1), return NA, otherwise extract the match
-  ifelse(match_pos > -1, regmatches(string, match_pos), NA_character_)
+  # regexpr finds the match position and length
+  match_info <- regexpr(pattern, string)
+  
+  # Extract the substring using the start position and length
+  # substr preserves vector length, returning "" for non-matches (where match_info is -1)
+  extracted <- substr(
+    string,
+    match_info,
+    match_info + attr(match_info, "match.length") - 1
+  )
+  
+  # Replace the empty strings from non-matches with NA
+  ifelse(extracted == "", NA_character_, extracted)
 }
 
 #Pulling a color palette for visualizations
@@ -121,7 +131,7 @@
     mutate(
       antigen = .strExtract(SpecAbbr, '[ABCDRQP][[:alnum:]]+'),
       bw46 = .strExtract(SpecAbbr, 'Bw[46]'),
-      Specificity_truncated = .strExtract(Specificity, '[ABCD].*[0-9]')
+      Specificity_truncated = .strExtract(Specificity, '[ABCD][^ ()]*[0-9]')
     ) %>%
     mutate(
       allele = strsplit(gsub(",-,", "_", Specificity_truncated, fixed = TRUE), "_"),

@@ -134,12 +134,12 @@
       Specificity_truncated = .strExtract(Specificity, '[ABCD][^ ()]*[0-9]')
     ) %>%
     mutate(
-      allele = strsplit(gsub(",-,", "_", Specificity_truncated, fixed = TRUE), "_"),
-      loci = sub("\\*.*", "", allele)
+      allele = strsplit(gsub(",-,", "_", Specificity_truncated, fixed = TRUE), "_")
     ) %>%
     dplyr::select(-SpecAbbr, -Specificity, -Specificity_truncated) %>%
     relocate(BeadID, antigen, bw46, allele, NormalValue) %>%
     tidyr::unnest(allele) %>%
+    mutate(loci = sub("\\*.*", "", allele)) %>%
     mutate(mfi_min = min(NormalValue), .by = allele) %>%
     arrange(allele, desc(NormalValue)) %>%
     filter(!is.na(allele))
@@ -155,47 +155,72 @@
 
 #' @importFrom data.table as.data.table `:=`
 .processPRA <- function(result0, class = "I") {
-    Spec.pattern <- do.call(rbind, strsplit(result0$SpecAbbr, ",", fixed = TRUE))
-    classI.pos <- grep("A", Spec.pattern[, 1])
-
-    if (class == "I") {
-        result <- result0[classI.pos, ]
-    } else {
-        result <- result0[-classI.pos, ]
-    }
-
-    # Using data.table for faster processing
-    dt <- data.table::as.data.table(result)
-    dt <- dt[, .(BeadID, SpecAbbr, Specificity, NormalValue)]
-
-    # Split the strings into lists of strings
-    dt[, antigen_vec := strsplit(SpecAbbr, ",", fixed = TRUE)]
-    dt[, allele_vec := strsplit(Specificity, ",", fixed = TRUE)]
-
-    # Unnest the lists to long format
-    dt_long <- dt[, .(antigen = unlist(antigen_vec), allele = unlist(allele_vec)), by = .(BeadID, NormalValue)]
-
-    # Clean up and add additional columns
-    dt_long <- dt_long[antigen != "-" & allele != "-"]
-    dt_long[, antigen := gsub("-", "", antigen)]
-    dt_long[, allele := gsub("-", "", allele)]
-    dt_long[, bw46 := ifelse(grepl("Bw[46]", antigen), antigen, NA_character_)]
-    dt_long[, loci := sub("\\*.*", "", allele)]
-    dt_long[, mfi_min := min(NormalValue, na.rm = TRUE), by = allele]
-
-    # Add pairs column
-    dt_long[, pairs := rep(c(1, 2), length.out = .N), by = BeadID]
-
-    # Filter out empty antigen/allele rows
-    dt_long <- dt_long[antigen != "" & allele != ""]
-
-    # Distinct rows
-    dt_long <- unique(dt_long, by = c("BeadID", "antigen", "allele"))
-
-    # Select final columns
-    dt_long <- dt_long[, .(BeadID, antigen, bw46, allele, loci, NormalValue, pairs)]
-
-    return(as.data.frame(dt_long))
+  # Identify class I vs II using first token of SpecAbbr
+  Spec.pattern <- do.call(rbind, strsplit(result0$SpecAbbr, ",", fixed = TRUE))
+  classI.pos <- grep("A", Spec.pattern[, 1])
+  
+  if (class == "I") {
+    result <- result0[classI.pos, ]
+  } else {
+    result <- result0[-classI.pos, ]
+  }
+  
+  dt <- as.data.table(result)[, .(BeadID, SpecAbbr, Specificity, NormalValue)]
+  dt[, antigen_vec := strsplit(SpecAbbr, ",", fixed = TRUE)]
+  dt[, allele_vec  := strsplit(Specificity, ",", fixed = TRUE)]
+  dt[, rid := .I]  # stable row id per bead row
+  
+  # Expand one row at a time, padding shorter side with "-"
+  expanded <- dt[, {
+    ant <- antigen_vec[[1]]
+    all <- allele_vec[[1]]
+    max_len <- max(length(ant), length(all))
+    if (length(ant) < max_len) ant <- c(ant, rep("-", max_len - length(ant)))
+    if (length(all) < max_len) all <- c(all, rep("-", max_len - length(all)))
+    data.table(position = seq_len(max_len), antigen = ant, allele = all)
+  }, by = .(BeadID, NormalValue, rid)]
+  
+  # Class-specific position logic (mirrors your dplyr version)
+  if (class != "I") {
+    # Duplicate rows with position >= 5, shifting by +2
+    dup <- expanded[position >= 5][, position := position + 2]
+    # Shift positions 7 and 8 by +4 in the original set
+    expanded[position %in% c(7, 8), position := position + 4]
+    expanded <- rbindlist(list(expanded, dup), use.names = TRUE)
+    string.pattern <- "-"   # placeholders are "-" in this representation
+  } else {
+    # For Class I, positions > 4 are shifted down by 2
+    expanded[position > 4, position := position - 2]
+    string.pattern <- "-"
+  }
+  
+  # Impute antigen when placeholder but allele is not, using previous antigen within bead row
+  setorder(expanded, BeadID, rid, position)
+  expanded[, prev_antigen := shift(antigen), by = .(BeadID, rid)]
+  expanded[antigen == string.pattern & allele != string.pattern,
+           antigen := prev_antigen]
+  expanded[, prev_antigen := NULL]
+  
+  # Clean and annotate
+  out <- expanded[
+    antigen != string.pattern & allele != string.pattern & antigen != "" & allele != "",
+    .(BeadID, antigen, allele, NormalValue)
+  ]
+  
+  out[, antigen := gsub("-", "", antigen)]
+  out[, allele  := gsub("-", "", allele)]
+  out[, bw46    := ifelse(grepl("Bw[46]", antigen), antigen, NA_character_)]
+  out[, loci    := sub("\\*.*", "", allele)]
+  out[, mfi_min := min(NormalValue, na.rm = TRUE), by = allele]
+  
+  # Pair flag and de-dup
+  setorder(out, BeadID, loci)
+  out[, pairs := rep(c(1, 2), length.out = .N), by = BeadID]
+  out <- unique(out, by = c("BeadID", "antigen", "allele"))
+  
+  # Final column order
+  setcolorder(out, c("BeadID", "antigen", "bw46", "allele", "loci", "NormalValue", "pairs"))
+  return(as.data.frame(out))
 }
 
 

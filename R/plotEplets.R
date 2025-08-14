@@ -146,7 +146,7 @@ plotEplets <- function(result_file,
       geom_treemap_subgroup_border(color = "black", size = 2) +
       geom_treemap_subgroup_text(place = "centre", grow = TRUE, alpha = 0.3, colour = "black") +
       scale_fill_manual(values = color.palette) +
-      .themeMatchR(...) + 
+      .themeMatchR(...,grid_lines = "No") + 
       labs(fill = group_by) +
       theme(plot.background = element_blank())
     
@@ -190,7 +190,7 @@ plotEplets <- function(result_file,
       coord_flip(clip = "off") +
       geom_text(aes(label = loci, hjust = ifelse(.data[[y]] > label.max, 1.1, -0.1)), size = 2) + 
       labs(fill = group_by, y = y.label) +
-      .themeMatchR(..., grid_lines = "No") + 
+      .themeMatchR(...) + 
       theme(axis.title.y = element_blank()) + 
       scale_fill_manual(values = color.palette)
   }

@@ -113,7 +113,7 @@ plotAntibodies <- function(result_file,
                         antigen = as.numeric(sub("[A-Za-z]+", "", bw46)))
 
         result <- rbind.data.frame(result, bw.subset)
-        result$loci <- factor(result$loci, levels = c("A", "B", "Bw", "C"))
+        result$loci <- factor(result$loci, levels = c("A", "B", "Bw", "Cw"))
       } else {
         result <- result %>%
           mutate(loci = regmatches(antigen, regexpr("^[^0-9]+", antigen)))
@@ -216,7 +216,7 @@ plotAntibodies <- function(result_file,
             geom_tile(fill = "white") +
             geom_text(aes(label = antigen, color = highlight), angle = x_text_angle, size = 1.5) +
             scale_y_discrete(limits = rev) +
-            .themeMatchR(...) +
+            .themeMatchR(..., grid_lines = "No") +
             theme(plot.background = element_blank(),
                   axis.title.x = element_blank(),
                   axis.title.y = element_blank(),

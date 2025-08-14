@@ -95,7 +95,6 @@ plotAntibodies <- function(result_file,
   }
 
   # 2. Check and clean results
-  .checkSAB(result0)
   if (type == "SAB") {
     result <- .processSAB(result0)
   } else {
@@ -138,6 +137,7 @@ plotAntibodies <- function(result_file,
     if (class == "I") {
         result$loci[grep("Bw", result$antigen)] <- "Bw"
         result$antigen <- sub("Bw", "", result$antigen)
+        result <- result[order(result$BeadID, result$loci), ]
         result$group <- interaction(result$loci, result$pairs)
         custom_order <- c("A.1", "A.2", "B.1", "B.2", "Bw.1", "Bw.2", "C.1", "C.2")
     } else {
@@ -240,7 +240,7 @@ plotAntibodies <- function(result_file,
             geom_tile(fill = "white") +
             geom_text(aes(label = antigen, color = highlight, size = sizing), angle = x_text_angle) +
             scale_y_discrete(labels = axis_labels) +
-            .themeMatchR() +
+            .themeMatchR(..., grid_lines = "No") +
             theme(plot.background = element_blank(),
                   axis.title.x = element_blank(),
                   axis.title.y = element_blank(),

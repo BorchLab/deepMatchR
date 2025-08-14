@@ -190,7 +190,7 @@ plotEplets <- function(result_file,
       coord_flip(clip = "off") +
       geom_text(aes(label = loci, hjust = ifelse(.data[[y]] > label.max, 1.1, -0.1)), size = 2) + 
       labs(fill = group_by, y = y.label) +
-      .themeMatchR(...) + 
+      .themeMatchR(..., grid_lines = "No") + 
       theme(axis.title.y = element_blank()) + 
       scale_fill_manual(values = color.palette)
   }

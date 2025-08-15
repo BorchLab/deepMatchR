@@ -134,9 +134,9 @@ plotAntibodies <- function(result_file,
         result$loci <- factor(result$loci, levels = c("DR", "DQA1", "DQ", "DPA1", "DP"))
       }
   } else { # PRA
-    result$loci[grep("Bw", result$antigen)] <- "Bw"
+    
     if (class == "I") {
-        
+        result$loci[grep("Bw", result$antigen)] <- "Bw"
         result$antigen <- sub("Bw", "", result$antigen)
         result <- result[order(result$BeadID, result$loci), ]
         result$group <- interaction(result$loci, result$pairs)

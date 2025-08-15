@@ -153,76 +153,168 @@
   paste0(vec, padding)
 }
 
+#TODO fix DPA reporting
 #' @importFrom data.table as.data.table `:=`
 .processPRA <- function(result0, class = "I") {
+  
   #Remove Empty Cells
   result0 <- result0[!result0$SpecAbbr == "",]
   
-  # Identify class I vs II using first token of SpecAbbr
+  # --- Split incoming table into Class I vs II based on first SpecAbbr token ---
   Spec.pattern <- do.call(rbind, strsplit(result0$SpecAbbr, ",", fixed = TRUE))
-  classI.pos <- grep("A", Spec.pattern[, 1])
+  classI.pos   <- grep("A", Spec.pattern[, 1])  # "A" for HLA-A at first slot
   
   if (class == "I") {
     result <- result0[classI.pos, ]
+    string.pattern <- "--------"    # original placeholder for Class I
   } else {
     result <- result0[-classI.pos, ]
+    string.pattern <- "------------" # original placeholder for Class II
   }
   
+  # --- Expand rows into positions, padding with class-specific placeholder ---
   dt <- as.data.table(result)[, .(BeadID, SpecAbbr, Specificity, NormalValue)]
   dt[, antigen_vec := strsplit(SpecAbbr, ",", fixed = TRUE)]
   dt[, allele_vec  := strsplit(Specificity, ",", fixed = TRUE)]
-  dt[, rid := .I]  # stable row id per bead row
+  dt[, rid := .I]  # stable row id per bead
   
-  # Expand one row at a time, padding shorter side with "-"
   expanded <- dt[, {
-    ant <- antigen_vec[[1]]
-    all <- allele_vec[[1]]
+    ant <- trimws(antigen_vec[[1]])
+    all <- trimws(allele_vec[[1]])
     max_len <- max(length(ant), length(all))
-    if (length(ant) < max_len) ant <- c(ant, rep("-", max_len - length(ant)))
-    if (length(all) < max_len) all <- c(all, rep("-", max_len - length(all)))
-    data.table(position = seq_len(max_len), antigen = ant, allele = all)
+    if (length(ant) < max_len) ant <- c(ant, rep(string.pattern, max_len - length(ant)))
+    if (length(all) < max_len) all <- c(all, rep(string.pattern, max_len - length(all)))
+    
+    # If antigen is a literal "-", mark BOTH sides as placeholder so the row drops later
+    idx_dash <- ant == "-"
+    if (any(idx_dash)) {
+      ant[idx_dash] <- string.pattern
+      all[idx_dash] <- string.pattern
+    }
+    
+    data.table(position = seq_len(max_len),
+               antigen  = ant,
+               allele   = all)
   }, by = .(BeadID, NormalValue, rid)]
   
-  # Class-specific position logic (mirrors your dplyr version)
+  # --- Class-specific position rules (mirror original dplyr logic) ---
   if (class != "I") {
-    # Duplicate rows with position >= 5, shifting by +2
     dup <- expanded[position >= 5][, position := position + 2]
-    # Shift positions 7 and 8 by +4 in the original set
     expanded[position %in% c(7, 8), position := position + 4]
     expanded <- rbindlist(list(expanded, dup), use.names = TRUE)
-    string.pattern <- "-"   # placeholders are "-" in this representation
   } else {
-    # For Class I, positions > 4 are shifted down by 2
     expanded[position > 4, position := position - 2]
-    string.pattern <- "-"
   }
   
-  # Impute antigen when placeholder but allele is not, using previous antigen within bead row
+  # --- Class I only: move C* alleles from Bw rows onto C antigen rows (by order), then clear Bw alleles
+  if (class == "I") {
+    expanded[, is_bw := grepl("^Bw[46]$", antigen)]
+    expanded[, is_cant := grepl("^(Cw|C)", antigen)]
+    
+    expanded[, {
+      # indexes local to this group
+      rows <- .I
+      bw_idx <- which(is_bw & grepl("^C\\*", allele))
+      c_idx  <- which(is_cant & allele == string.pattern)
+      if (length(bw_idx) && length(c_idx)) {
+        bw_idx <- bw_idx[order(position[bw_idx])]
+        c_idx  <- c_idx[order(position[c_idx])]
+        k <- min(length(bw_idx), length(c_idx))
+        # move alleles from Bw -> C; clear Bw alleles
+        set(expanded, i = rows[c_idx[seq_len(k)]], j = "allele", value = expanded$allele[rows[bw_idx[seq_len(k)]]])
+        set(expanded, i = rows[bw_idx[seq_len(k)]], j = "allele", value = string.pattern)
+      }
+      NULL
+    }, by = .(BeadID, rid)]
+  }
+  
+  # --- Impute antigen ONLY when placeholder is present (not "-") ---
   setorder(expanded, BeadID, rid, position)
   expanded[, prev_antigen := shift(antigen), by = .(BeadID, rid)]
-  expanded[antigen == string.pattern & allele != string.pattern,
-           antigen := prev_antigen]
+  expanded[antigen == string.pattern & allele != string.pattern, antigen := prev_antigen]
   expanded[, prev_antigen := NULL]
   
-  # Clean and annotate
+  # --- Keep valid rows; strip hyphens and trim; keep rid to help synthesize BW later ---
   out <- expanded[
-    antigen != string.pattern & allele != string.pattern & antigen != "" & allele != "",
-    .(BeadID, antigen, allele, NormalValue)
+    antigen != string.pattern & allele != string.pattern &
+      antigen != "-" & allele != "-" &
+      antigen != ""  & allele != "",
+    .(BeadID,
+      rid,
+      antigen = trimws(gsub("-", "", antigen)),
+      allele  = trimws(gsub("-", "", allele)),
+      NormalValue)
   ]
   
-  out[, antigen := gsub("-", "", antigen)]
-  out[, allele  := gsub("-", "", allele)]
-  out[, bw46    := ifelse(grepl("Bw[46]", antigen), antigen, NA_character_)]
-  out[, loci    := sub("\\*.*", "", allele)]
+  # --- Locus annotations ---
+  out[, allele_locus := sub("\\*.*", "", allele)]                # e.g., DRB1, DQA1, B, C, etc.
+  out[, loci_family0 := toupper(sub("[0-9].*", "", antigen))]    # e.g., DR, DQ, DP, A, B, Cw, Bw...
+  # normalize "CW" -> "C", keep "BW" as "BW"
+  out[, loci_family := fifelse(loci_family0 == "CW", "C", loci_family0)]
+  out[, loci_family0 := NULL]
+  
+  # --- Class II guard-rails + DR5 mapping ---
+  if (class != "I") {
+    # Map DR52/DR53 (DRB3/4/5) into DR5 family
+    is_dr5_antigen <- grepl("^DR(51|52|53)$", toupper(out[,antigen])) | grepl("^DR5(1|2|3)$", toupper(out[,antigen]))
+    is_dr5_allele  <- grepl("^DRB[345]$", out[,allele_locus])
+    out[is_dr5_antigen | is_dr5_allele, loci_family := "DR5"]
+    
+    # Guard-rails
+    out[loci_family == "DQ"  & !grepl("^(DQA1|DQB1)$", allele_locus),
+        c("allele","allele_locus") := .(NA_character_, NA_character_)]
+    out[loci_family == "DP"  & !grepl("^(DPA1|DPB1)$", allele_locus),
+        c("allele","allele_locus") := .(NA_character_, NA_character_)]
+    out[loci_family %in% c("DR","DR5") & !grepl("^DRB", allele_locus),
+        c("allele","allele_locus") := .(NA_character_, NA_character_)]
+    out <- out[!is.na(allele) & allele != ""]
+  }
+  
+  # --- BW synthesis for Class I ---
+  if (class == "I") {
+    # Collect Bw labels present per bead from expanded (post-shift)
+    bw_map <- unique(expanded[grepl("^Bw[46]$", antigen), .(BeadID, rid, bw_label = antigen)])
+    # Remove vendor Bw rows (they had their C* alleles already moved off)
+    out <- out[!grepl("^Bw[46]$", antigen)]
+    # For each bead/rid with a Bw label, add a clean BW row (do not touch A/B/C)
+    if (nrow(bw_map)) {
+      # Build one BW row per label using the bead's NormalValue (take max per bead/rid for safety)
+      nv_map <- out[, .(NormalValue = max(NormalValue, na.rm = TRUE)), by = .(BeadID, rid)]
+      bw_synth <- merge(bw_map, nv_map, by = c("BeadID","rid"), all.x = TRUE)
+      bw_synth[, `:=`(
+        antigen      = bw_label,       # "Bw4" / "Bw6"
+        allele       = bw_label,       # simple label for plotting
+        allele_locus = "BW",
+        loci_family  = "BW",
+        bw46         = bw_label
+      )]
+      bw_synth <- bw_synth[, .(BeadID, rid, antigen, allele, NormalValue, allele_locus, loci_family, bw46)]
+      # rbind to out (align columns)
+      missing_cols <- setdiff(names(out), names(bw_synth))
+      if (length(missing_cols)) bw_synth[, (missing_cols) := NA]
+      out <- rbindlist(list(out, bw_synth), use.names = TRUE, fill = TRUE)
+    }
+  }
+  
+  # --- Metrics ---
+  out[, bw46 := fifelse(grepl("^Bw[46]$", antigen), antigen, NA_character_)]
   out[, mfi_min := min(NormalValue, na.rm = TRUE), by = allele]
   
-  # Pair flag and de-dup
-  setorder(out, BeadID, loci)
-  out[, pairs := rep(c(1, 2), length.out = .N), by = BeadID]
+  # --- Pairs assignment ---
+  if (class == "I") {
+    setorder(out, BeadID, loci_family, antigen, allele)
+    out[, pairs := rep(c(1, 2), length.out = .N), by = .(BeadID, loci_family)]
+  } else {
+    setorder(out, BeadID, loci_family, antigen, allele_locus)
+    out[, pairs := as.integer(factor(antigen, levels = unique(antigen))), by = .(BeadID, loci_family)]
+  }
+  
+  # De-dup like dplyr::distinct(BeadID, antigen, allele, .keep_all = TRUE)
   out <- unique(out, by = c("BeadID", "antigen", "allele"))
   
-  # Final column order
-  setcolorder(out, c("BeadID", "antigen", "bw46", "allele", "loci", "NormalValue", "pairs"))
+  # Final column order; drop helper 'rid'
+  setcolorder(out, c("BeadID","antigen","bw46","allele","allele_locus","loci_family","NormalValue","mfi_min","pairs","rid"))
+  out[, rid := NULL]
   return(as.data.frame(out))
 }
 

@@ -140,10 +140,8 @@ plotAntibodies <- function(result_file,
         result$antigen <- sub("Bw", "", result$antigen)
         result <- result[order(result$BeadID, result$loci), ]
         result$group <- interaction(result$loci, result$pairs)
-        result <- result[result$loci %in% c("A", "B", "C", "Bw"),]
         custom_order <- c("A.1", "A.2", "B.1", "B.2", "Bw.1", "Bw.2", "C.1", "C.2")
     } else {
-        result <- result[!result$loci %in% c("A", "B", "C", "Bw"),]
         result <- result %>%
           dplyr::mutate(loci = sub("[0-9].*", "", antigen))
 

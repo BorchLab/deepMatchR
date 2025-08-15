@@ -155,6 +155,9 @@
 
 #' @importFrom data.table as.data.table `:=`
 .processPRA <- function(result0, class = "I") {
+  #Remove Empty Cells
+  result0 <- result0[!result0$SpecAbbr == "",]
+  
   # Identify class I vs II using first token of SpecAbbr
   Spec.pattern <- do.call(rbind, strsplit(result0$SpecAbbr, ",", fixed = TRUE))
   classI.pos <- grep("A", Spec.pattern[, 1])

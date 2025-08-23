@@ -1,5 +1,11 @@
 # deepMatchR
-Deep learning-based approaches to HLA matching
+
+Tools for HLA Testing and Matching
+
+<!-- badges: start -->
+[![R-CMD-check](https://github.com/BorchLab/deepMatchR/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/BorchLab/deepMatchR/actions/workflows/R-CMD-check.yaml)
+[![Codecov test coverage](https://codecov.io/gh/BorchLab/deepMatchR/graph/badge.svg)](https://app.codecov.io/gh/BorchLab/deepMatchR)
+<!-- badges: end -->
 
 ## Introduction
 
@@ -10,22 +16,6 @@ There are currently several computational approaches to quantifying the risk of 
 ## System requirements 
 
 deepMatchR has been tested on R versions >= 4.0. Please consult the DESCRIPTION file for more details on required R packages. deepMatchR has been tested on OS X and Windows platforms.
-
-**keras** is necessary to use the autoencoder function (this includes the set up of the tensorflow environment in R):
-
-```r
-##Install keras
-install.packages("keras")
-
-##Setting up Tensor Flow
-library(reticulate)
-conda_create("r-reticulate") ##If first time using reticulate
-use_condaenv(condaenv = "r-reticulate", required = TRUE)
-library(tensorflow)
-install_tensorflow()
-```
-
-An alternative to this approach above (especially if you want to avoid conda) is to use reticulate to generate a virtualenv, using ```virtualenv_create()``` and subsequently installing the above python packages using ```virtualenv_install()```.
 
 ## Installation
 

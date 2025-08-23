@@ -1,47 +1,4 @@
-#' Calculate CREG AUC Based on MFI
-#'
-#' @description
-#' Computes the proportion of **cross-reactive groups (CREGs)** that are
-#' positive above a sequence of MFI cut-offs and integrates that curve
-#' (trapezoidal rule) to obtain an area-under-the-curve (AUC) for each CREG.
-#' Like `epletAUC()`, the function can either draw a plot or return a
-#' summarised tibble.
-#'
-#' @param result_file Either a data frame of SAB results or a path to a CSV /
-#' XLS / XLSX file.
-#' @param group_by Aesthetic used to colour curves in the plot. One of
-#' `"creg"` (default), `"loci"`, or `"count"` (total beads per CREG).
-#' @param creg_filter  Minimum number of beads/alleles that must carry the CREG
-#' before it is kept.  Default `3`.
-#' @param percPos_filter  Proportion (0-1) of beads that must be positive for
-#' at least one cut-off to keep the CREG.  Default `0.8`.
-#' @param cut_min, cut_max, cut_step  Range and step for MFI cut-offs.
-#' @param plot_results Logical. If `TRUE`, the function returns and prints a 
-#'   \code{ggplot} object illustrating the proportion of positive eplets at 
-#'   each cutoff. If `FALSE`, the function returns a summarized tibble.
-#'   Defaults to `TRUE`.
-#' @param palette palette Character. A color palette name (from \link[grDevices]{hcl.pals}) or a custom
-#'   palette function to use for the plot. Defaults to \code{"spectral"}.
-#'
-#' @return Either a `ggplot` object or a tibble with columns
-#'   *creg*, *AUC*, *norm_AUC*, *total_count*, *loci*.
-#'
-#' @examples
-#' cregAUC(
-#'   result_file = deepMatchR_example[[1]],
-#'   plot_results = TRUE,
-#'   percPos_filter = 0.9
-#' )
-#'
-#' @importFrom dplyr filter mutate select arrange group_by ungroup summarise
-#'   relocate left_join n
-#' @importFrom tidyr unnest_longer separate_longer_delim
-#' @importFrom stringr str_extract str_c
-#' @importFrom ggplot2 ggplot aes geom_line xlim ylim labs scale_color_manual
-#' @importFrom directlabels geom_dl last.points
-#' @importFrom pracma trapz
-#' @export
-cregAUC <- function(result_file,
+cregAuc <- function(result_file,
                     group_by       = "creg",
                     label          = TRUE,
                     creg_filter    = 3,
@@ -120,7 +77,7 @@ cregAUC <- function(result_file,
       geom_line() +
       xlim(0, ifelse(label, cut_max + 1500, cut_max)) +
       ylim(0, 1) +
-      .dmrTheme() +
+      .themeMatchR() +
       labs(x = "Cut-off (MFI)",
            y = "Proportion Positive") +
       scale_color_manual(

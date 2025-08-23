@@ -4,10 +4,10 @@
 \name{deepMatchR_example}
 \alias{deepMatchR_example}
 \title{Simulated single antigen bead (SAB) assay
-for class I and class II analysis with 
-set formatting.}
+for class I and class II and PRA assay
+with fixed formatting.}
 \description{
 Simulated single antigen bead (SAB) assay
-for class I and class II analysis with 
-set formatting.
+for class I and class II and PRA assay
+with fixed formatting.
 }

@@ -1,0 +1,77 @@
+# test script for epletAuc.R - testcases are NOT comprehensive!
+
+sab_data_example <- deepMatchR_example[[1]]
+
+test_that("epletAuc() works with data frame input directly", {
+
+  result_plot <- epletAuc(
+    result_file = sab_data_example,
+    plot_results = TRUE
+  )
+
+  expect_s3_class(result_plot, "ggplot")
+})
+
+
+test_that("epletAuc() returns tibble with correct columns when plot_results=FALSE", {
+  # Return a tibble summarizing AUC
+  result_df <- epletAuc(
+    result_file = sab_data_example,
+    plot_results = FALSE
+  )
+
+  expect_s3_class(result_df, "tbl_df")
+  expect_true(all(c("eplet", "AUC", "total_count") %in% colnames(result_df)))
+})
+
+
+test_that("epletAuc() throws error if missing SAB columns", {
+  # Create a data frame missing a required column
+  sab_data_incomplete <- sab_data_example %>%
+    select(-BeadID)  # remove BeadID
+
+  expect_error(
+    epletAuc(
+      result_file = sab_data_incomplete,
+      plot_results = FALSE
+    ),
+    "Please ensure the SAB file includes the 'BeadID', 'SpecAbbr', 'Specificity', 'NormalValue'"
+  )
+})
+
+
+test_that("epletAuc() processes numeric cut_min, cut_max, cut_step properly", {
+  result_df <- epletAuc(
+    result_file = sab_data_example,
+    plot_results = FALSE,
+    cut_min = 100,
+    cut_max = 2000,
+    cut_step = 500
+  )
+
+  expect_s3_class(result_df, "tbl_df")
+  # Must contain the usual columns
+  expect_true(all(c("eplet", "AUC", "total_count") %in% names(result_df)))
+})
+
+test_that("epletAuc() can handle different evidence_level inputs", {
+  result_df <- epletAuc(
+    result_file     = sab_data_example,
+    plot_results    = FALSE,
+    evidence_level  = "Nonexistent_Level"
+  )
+
+  # Because none of the eplets have "Nonexistent_Level",
+  expect_equal(nrow(result_df), 0)
+})
+
+
+test_that("epletAuc() final tibble has expected numeric values for AUC", {
+  result_df <- epletAuc(
+    result_file  = sab_data_example,
+    plot_results = FALSE
+  )
+
+  expect_type(result_df$AUC, "double")
+  expect_type(result_df$total_count, "integer")
+})

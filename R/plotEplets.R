@@ -146,7 +146,7 @@ plotEplets <- function(result_file,
       geom_treemap_subgroup_border(color = "black", size = 2) +
       geom_treemap_subgroup_text(place = "centre", grow = TRUE, alpha = 0.3, colour = "black") +
       scale_fill_manual(values = color.palette) +
-      .themeMatchR(...) + 
+      .themeMatchR(...,grid_lines = "No") + 
       labs(fill = group_by) +
       theme(plot.background = element_blank())
     

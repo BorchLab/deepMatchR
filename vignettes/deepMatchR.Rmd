@@ -109,6 +109,53 @@ plotAntibodies(result_file = sab_data_list,
                vline_dates = c("2023-02-15"))
 ```
 
+## spiDeconvolute
+
+The `spiDeconvolute()` function is a powerful tool for reconciling Single Antigen Bead (SAB) and Panel Reactive Antibody (PRA) data. It helps to identify which antibody reactivities are genuinely supported by panel data, and which might be artifacts. The function partitions results into three categories:
+
+*   **Concordant**: Antigens that are reactive in the SAB assay and are supported by positive beads in the PRA panel.
+*   **SAB-only**: Antigens that are reactive in the SAB assay but lack support from the PRA panel.
+*   **PRA-only**: Antigens that are not reactive in the SAB assay but are found on positive beads in the PRA panel.
+
+Here is an example of how to use `spiDeconvolute()` with sample data:
+
+```{r}
+# 1. Create sample data
+sab_data <- data.table::data.table(
+  antigen = c("A1", "A2", "B7", "B8", "DR1"),
+  NormalValue = c(2000, 500, 3000, 400, 4000),
+  class = c("I", "I", "I", "I", "II")
+)
+pra_data <- data.table::data.table(
+  BeadID = c(1, 2, 3, 4),
+  NormalValue = c(1500, 400, 2000, 3000)
+)
+panel_data <- data.table::data.table(
+  BeadID = c(1, 1, 2, 3, 3, 4),
+  antigen = c("A1", "B8", "A2", "B7", "B8", "DR1")
+)
+
+# 2. Run the deconvolution
+decon_results <- spiDeconvolute(
+  SAB = sab_data,
+  PRA = pra_data,
+  panelLong = panel_data
+)
+
+# 3. View the results
+# Concordant antigens
+print(decon_results$concordant)
+
+# SAB-only antigens
+print(decon_results$sabOnly)
+
+# PRA-only antigens
+print(decon_results$praOnly)
+
+# Summary of the run
+print(decon_results$summary)
+```
+
 ## epletAUC
 
 The `epletAUC()` function provides a flexible way to assess eplet-level reactivity across a range of MFI cutoffs in SAB assays. 

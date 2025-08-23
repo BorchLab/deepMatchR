@@ -5,7 +5,7 @@ Deep learning-based approaches to HLA matching
 
 <img align="right" src="https://github.com/BorchLab/deepMatchR/blob/main/www/deepMatchR_hex.png" width="305" height="352">
 
-There are currently several computational approaches to quantifying the risk of the development of donor-specific antibodies during organ transplantation. These include [HLAmatchmaker](http://www.epitopes.net/) for eplet quantification and [PIRCH-II](https://www.pirche.com/) for CD4+ T cell epitope prediction, which have demonstrated predictive ability across the literature. Newer deep learning methods for structure predictions, eplet/epitope immunogenicity estimates, and classification can be leveraged to produce a clinical tool for patients. deepMatchR aims to be a centralized repository for tools and models to help in assisting HLA matching. 
+There are currently several computational approaches to quantifying the risk of the development of donor-specific antibodies during organ transplantation. These include [HLAmatchmaker](http.www.epitopes.net/) for eplet quantification and [PIRCH-II](https://www.pirche.com/) for CD4+ T cell epitope prediction, which have demonstrated predictive ability across the literature. Newer deep learning methods for structure predictions, eplet/epitope immunogenicity estimates, and classification can be leveraged to produce a clinical tool for patients. deepMatchR aims to be a centralized repository for tools and models to help in assisting HLA matching. It now includes the `spiDeconvolute` function for reconciling single antigen bead (SAB) and panel reactive antibody (PRA) results.
 
 ## System requirements 
 

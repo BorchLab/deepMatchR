@@ -14,15 +14,15 @@ biocViews: Software, Classification, Annotation, Sequencing
 Depends: 
 	R (>= 4.0)
 Imports: 
-	directlabels, 
 	dplyr,
 	ggplot2,
 	grDevices,
 	janitor,
-	pracma,
 	readxl,
 	stringr,
-	tidyr
+	tidyr,
+	data.table,
+	patchwork
 Suggests: 
 	spelling,
         testthat

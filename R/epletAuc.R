@@ -1,4 +1,4 @@
-epletAuc <- function(result_file,
+epletAUC <- function(result_file,
                      evidence_level = c("A1", "A2"),
                      group_by = "eplet",
                      label = TRUE,
@@ -91,7 +91,7 @@ epletAuc <- function(result_file,
       mutate(loci = paste(unique(loci), collapse = "; "))
   
   # 8 compute area under the curve (AUC) and return a tibble
-  ep_auc <- ep_analysis %>%
+  ep_AUC <- ep_analysis %>%
     group_by(eplet) %>%
     summarize(
       AUC      = trapz(x = cut, y = percent_positive),
@@ -105,7 +105,7 @@ epletAuc <- function(result_file,
   #9. If the user wants to plot results, generate a ggplot
   if (plot_results) {  
     
-    top_eplet_vec <- ep_auc %>%
+    top_eplet_vec <- ep_AUC %>%
       slice_max(order_by = norm_AUC, n = top_eplets) %>%
       pull(eplet)
     
@@ -128,6 +128,6 @@ epletAuc <- function(result_file,
     
   } else { # 10. Otherwise, return AUC
     
-    return(ep_auc)
+    return(ep_AUC)
   }
 }

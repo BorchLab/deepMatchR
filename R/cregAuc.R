@@ -1,4 +1,4 @@
-cregAuc <- function(result_file,
+cregAUC <- function(result_file,
                     group_by       = "creg",
                     label          = TRUE,
                     creg_filter    = 3,
@@ -92,7 +92,7 @@ cregAuc <- function(result_file,
   }
   
   # Otherwise, compute area under the curve (AUC) and return a tibble
-  cr_auc <- cr_analysis |>
+  cr_AUC <- cr_analysis |>
     group_by(creg) |>
     summarise(
       AUC         = trapz(cut, percent_positive),
@@ -102,5 +102,5 @@ cregAuc <- function(result_file,
     ) |>
     ungroup()
   
-  cr_auc
+  cr_AUC
 }

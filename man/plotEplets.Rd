@@ -31,17 +31,17 @@ Default is 2000.}
 Defaults to \code{c("A1", "A2")}, which represent antibody-confirmed eplets.
 Other acceptable levels include \code{"B"}, \code{"D"}, or \code{NULL} to apply no filter.}
 
-\item{group_by}{A character string or indicating the coloring grouping for
-the plot, default is `eplet`. Other options include `loci` or
+\item{group_by}{A character string or indicating the coloring grouping for 
+the plot, default is `eplet`. Other options include `loci` or 
 `evidence_level`.}
 
-\item{eplet_filter}{Integer. (Only used when \code{plot_type = "AUC"})
-Specifying the minimum number of times an eplet must appear in the assay
+\item{eplet_filter}{Integer. (Only used when \code{plot_type = "AUC"}) 
+Specifying the minimum number of times an eplet must appear in the assay 
 before calculating the AUC. Defaults to `3`.}
 
-\item{percPos_filter}{Numeric value. (Only used when \code{plot_type = "AUC"})
-Value between 0 and 1 specifying the minimum relative proportion of
-positive beads (per eplet) to include in the final summary. Eplets with a
+\item{percPos_filter}{Numeric value. (Only used when \code{plot_type = "AUC"}) 
+Value between 0 and 1 specifying the minimum relative proportion of 
+positive beads (per eplet) to include in the final summary. Eplets with a 
 proportion below this threshold are excluded. Defaults to 0.4.}
 
 \item{plot_type}{Character. Type of plot to generate. Must be one of \code{"treemap"},
@@ -77,9 +77,9 @@ database, and the resulting plot is colored by evidence level.
 }
 \examples{
 # Using a data frame:
-plotEplets(deepMatchR_example[[1]],
-           cutoff = 2000,
+plotEplets(deepMatchR_example[[1]], 
+           cutoff = 2000, 
            evidence_level = c("A1", "A2", "B"),
-           percPos_filter = 0.4,
+           percPos_filter = 0.4, 
            plot_type = "treemap")
 }

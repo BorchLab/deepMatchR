@@ -43,7 +43,7 @@
 #' @importFrom directlabels geom_dl last.points
 #' @importFrom pracma trapz
 #' @export
-calculateAuc <- function(result_file,
+calculateAUC <- function(result_file,
                          analysis_type,
                          feature_filter = 3,
                          percPos_filter = 0.8,
@@ -152,7 +152,7 @@ calculateAuc <- function(result_file,
     ungroup()
   
   # --- 7. Calculate AUC ---
-  feature_auc <- analysis_df |>
+  feature_AUC <- analysis_df |>
     group_by(!!sym(config$feature_col)) |>
     summarise(
       AUC         = trapz(cut, percent_positive),
@@ -168,7 +168,7 @@ calculateAuc <- function(result_file,
     
     # Handle eplet-specific `top_eplets` filter for plotting
     if (analysis_type == "eplet" && !is.null(config$top_eplets)) {
-      top_features_vec <- feature_auc |>
+      top_features_vec <- feature_AUC |>
         slice_max(order_by = norm_AUC, n = config$top_eplets) |>
         pull(!!sym(config$feature_col))
       plot_data <- plot_data |>
@@ -193,21 +193,21 @@ calculateAuc <- function(result_file,
     return(p)
     
   } else {
-    return(feature_auc)
+    return(feature_AUC)
   }
 }
 
 
 # --- ALIAS WRAPPER FUNCTIONS ---
 
-#' @rdname calculateAuc
+#' @rdname calculateAUC
 #' @export
-epletAuc <- function(result_file,
+epletAUC <- function(result_file,
                      evidence_level = c("A1", "A2"),
                      eplet_filter = 3,
                      top_eplets = 10,
                      ...) {
-  calculateAuc(
+  calculateAUC(
     result_file = result_file,
     analysis_type = "eplet",
     feature_filter = eplet_filter,
@@ -217,12 +217,12 @@ epletAuc <- function(result_file,
   )
 }
 
-#' @rdname calculateAuc
+#' @rdname calculateAUC
 #' @export
-cregAuc <- function(result_file,
+cregAUC <- function(result_file,
                     creg_filter = 3,
                     ...) {
-  calculateAuc(
+  calculateAUC(
     result_file = result_file,
     analysis_type = "creg",
     feature_filter = creg_filter,
@@ -230,12 +230,12 @@ cregAuc <- function(result_file,
   )
 }
 
-#' @rdname calculateAuc
+#' @rdname calculateAUC
 #' @export
-serologyAuc <- function(result_file,
+serologyAUC <- function(result_file,
                         serology_filter = 3,
                          ...) {
-  calculateAuc(
+  calculateAUC(
     result_file = result_file,
     analysis_type = "serology",
     feature_filter = serology_filter,

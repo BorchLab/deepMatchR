@@ -1,0 +1,25 @@
+Package: deepMatchR
+Title: Deep Learning Models for HLA Matching
+Version: 0.99.0
+Date: 2024-07-24
+Authors@R: c(
+    person(given = "Nick", family = "Borcherding", role = c("aut", "cre"), email = "ncborch@gmail.com"))
+Author: Nick Borcherding [aut, cre]
+Maintainer: Nick Borcherding <ncborcherding@gmail.com>
+Description: A set of tools and models for analyzing HLA matching. This includes the identification and quantification of immunogenicity mismatches, the generation of in silico patients based on frequency table, and interaction with common tools in HLA.
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+LazyDataCompression: xz
+RoxygenNote: 7.3.2
+biocViews: Software, Classification, Annotation, Sequencing
+Depends: R (>= 4.0)
+Imports: dplyr, ggplot2, grDevices, readxl, stringr, tidyr, data.table,
+        patchwork, directlabels, keras3, pracma, purrr, magrittr,
+        tibble, treemapify, immReferent
+Suggests: spelling, testthat
+Remotes: BorchLab/immReferent
+Language: en-US
+URL: https://github.com/ncborcherding/deepMatchR/
+BugReports: https://github.com/ncborcherding/deepMatchR/issues
+Built: R 4.3.3; ; 2025-08-23 20:32:37 UTC; unix

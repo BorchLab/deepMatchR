@@ -43,7 +43,7 @@ test_that("plotEplets errors with an invalid plot type", {
 test_that("plotEplets handles file path input", {
   tmp <- tempfile(fileext = ".csv")
   write.csv(deepMatchR_example[[1]], tmp, row.names = FALSE)
-  
+
   p <- plotEplets(result_file = tmp,
                   plot_type = "bar",
                   cutoff = 2000,
@@ -73,7 +73,7 @@ test_that("plotEplets errors if required SAB columns are missing", {
   # Create a copy of the example data with a required column removed.
   bad_data <- deepMatchR_example[[1]]
   bad_data$NormalValue <- NULL
-  
+
   expect_error(
     plotEplets(result_file = bad_data,
                plot_type = "treemap",

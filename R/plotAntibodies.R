@@ -42,7 +42,7 @@ plotAntibodies <- function(result_file,
                            ...) {
 
   if (plot_trend) {
-    if (!is.list(result_file) || is.null(names(result_file))) {
+    if (is.data.frame(result_file) || !is.list(result_file) || is.null(names(result_file))) {
       stop("For trend plots, 'result_file' must be a named list of data frames.")
     }
 

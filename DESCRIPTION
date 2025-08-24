@@ -17,16 +17,24 @@ Imports:
 	dplyr,
 	ggplot2,
 	grDevices,
-	janitor,
 	readxl,
 	stringr,
 	tidyr,
 	data.table,
-	patchwork
+	patchwork,
+	directlabels,
+	keras3,
+	pracma,
+	purrr,
+	magrittr,
+	tibble,
+	treemapify,
+	immReferent
 Suggests: 
 	spelling,
-        testthat
-VignetteBuilder: knitr
+	testthat
+Remotes:
+    BorchLab/immReferent
 Language: en-US
 URL: https://github.com/ncborcherding/deepMatchR/
 BugReports: https://github.com/ncborcherding/deepMatchR/issues

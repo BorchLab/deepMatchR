@@ -19,9 +19,9 @@
 #' @examples
 #' seq1 <- "YFAMYGEKVAHTHVDTLYVRYHY"
 #' seq2 <- "YFDMYGEKVAHTHVDTLYVRYHY"
-#' compare_hla_sequences(seq1, seq2)
+#' compareHlaSequences(seq1, seq2)
 #' @export
-compare_hla_sequences <- function(seq1, seq2) {
+compareHlaSequences <- function(seq1, seq2) {
   # Ensure sequences are character strings
   if (!is.character(seq1) || !is.character(seq2)) {
     stop("Input sequences must be character strings.")

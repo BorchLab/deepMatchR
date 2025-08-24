@@ -24,8 +24,12 @@
 #'   If `FALSE`, returns a summarized tibble with AUC results.
 #' @param palette Character. A color palette name (see `grDevices::hcl.pals`)
 #'   or a custom palette function. Defaults to `"spectral"`.
-#' @param ... Additional arguments passed to specific analysis types or pass 
-#' to plot theme. For `analysis_type = "eplet"`: `evidence_level`, `top_eplets`.
+#' @param evidence_level For eplet analysis, a character vector of evidence levels to keep.
+#' @param eplet_filter For eplet analysis, the minimum number of times an eplet must appear.
+#' @param top_eplets For eplet analysis, the maximum number of top eplets to display.
+#' @param creg_filter For CREG analysis, the minimum number of times a CREG must appear.
+#' @param serology_filter For serology analysis, a filter to be applied.
+#' @param ... Additional arguments passed to the plot theme.
 #'
 #' @return Either a `ggplot` object or a tibble with AUC results. The tibble
 #'   will contain columns for the feature (`eplet`, `creg`, `serology`), `AUC`,
@@ -34,6 +38,7 @@
 #' @importFrom dplyr filter mutate select arrange group_by ungroup summarise rename all_of
 #'   relocate left_join n pull slice_max
 #' @importFrom tidyr unnest_longer separate_longer_delim
+#' @importFrom stringr str_extract str_c
 #' @importFrom ggplot2 ggplot aes geom_line xlim ylim labs scale_color_manual
 #' @importFrom directlabels geom_dl last.points
 #' @importFrom pracma trapz
@@ -49,17 +54,20 @@ calculateAUC <- function(result_file,
                          cut_step = 250,
                          plot_results = TRUE,
                          palette = "spectral",
+                         evidence_level = c("A1", "A2"),
+                         eplet_filter = 3,
+                         top_eplets = 10,
+                         creg_filter = 3,
+                         serology_filter = NULL,
                          ...) {
   
   # --- 1. Configure analysis based on type ---
-  extra_args <- list(...)
-  
   if (tolower(analysis_type) == "eplet") {
     config <- list(
       feature_col = "eplet",
       data = deepMatchR::deepMatchR_eplets,
-      evidence_level = extra_args$evidence_level %||% c("A1", "A2"),
-      top_eplets = extra_args$top_eplets %||% 10,
+      evidence_level = evidence_level,
+      top_eplets = top_eplets,
       default_group_by = "eplet"
     )
   } else if (tolower(analysis_type) == "creg") {
@@ -68,7 +76,7 @@ calculateAUC <- function(result_file,
       data = deepMatchR::deepMatchR_cregs,
       default_group_by = "creg"
     )
-  } } else if (tolower(analysis_type) == "serology") {
+  } else if (tolower(analysis_type) == "serology") {
     config <- list(
       feature_col = "serology",
       data = deepMatchR::deepMatchR_cregs,
@@ -144,7 +152,7 @@ calculateAUC <- function(result_file,
     ungroup()
   
   # --- 7. Calculate AUC ---
-  feature_auc <- analysis_df |>
+  feature_AUC <- analysis_df |>
     group_by(!!sym(config$feature_col)) |>
     summarise(
       AUC         = trapz(cut, percent_positive),
@@ -160,7 +168,7 @@ calculateAUC <- function(result_file,
     
     # Handle eplet-specific `top_eplets` filter for plotting
     if (analysis_type == "eplet" && !is.null(config$top_eplets)) {
-      top_features_vec <- feature_auc |>
+      top_features_vec <- feature_AUC |>
         slice_max(order_by = norm_AUC, n = config$top_eplets) |>
         pull(!!sym(config$feature_col))
       plot_data <- plot_data |>
@@ -185,14 +193,14 @@ calculateAUC <- function(result_file,
     return(p)
     
   } else {
-    return(feature_auc)
+    return(feature_AUC)
   }
 }
 
 
 # --- ALIAS WRAPPER FUNCTIONS ---
 
-#' @rdname calculate_antigen_auc
+#' @rdname calculateAUC
 #' @export
 epletAUC <- function(result_file,
                      evidence_level = c("A1", "A2"),
@@ -203,13 +211,13 @@ epletAUC <- function(result_file,
     result_file = result_file,
     analysis_type = "eplet",
     feature_filter = eplet_filter,
-    evidence_level = evidence_level, # passed via ...
-    top_eplets = top_eplets,         # passed via ...
+    evidence_level = evidence_level,
+    top_eplets = top_eplets,
     ...
   )
 }
 
-#' @rdname calculate_antigen_auc
+#' @rdname calculateAUC
 #' @export
 cregAUC <- function(result_file,
                     creg_filter = 3,
@@ -222,7 +230,7 @@ cregAUC <- function(result_file,
   )
 }
 
-#' @rdname calculate_antigen_auc
+#' @rdname calculateAUC
 #' @export
 serologyAUC <- function(result_file,
                         serology_filter = 3,
@@ -234,6 +242,3 @@ serologyAUC <- function(result_file,
     ...
   )
 }
-
-# Helper for handling NULL defaults for ... arguments
-`%||%` <- function(a, b) if (is.null(a)) b else a

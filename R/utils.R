@@ -1,3 +1,28 @@
+#' @importFrom magrittr %>%
+#' @importFrom tibble as_tibble
+#' @importFrom dplyr summarize row_number
+#' @importFrom ggplot2 %+replace% rel coord_flip
+#' @importFrom data.table data.table set setorder fifelse rbindlist setcolorder
+#' @importFrom treemapify geom_treemap geom_treemap_text geom_treemap_subgroup_border geom_treemap_subgroup_text
+#' @importFrom utils head read.csv globalVariables
+NULL
+
+# Quiet R CMD check notes about non-standard evaluation
+if(getRversion() >= "2.15.1") {
+  utils::globalVariables(
+    c(".", "BeadID", "SpecAbbr", "Specificity", "NormalValue", "antigen_vec",
+      "allele_vec", "rid", ".I", "position", "is_bw", "antigen", "is_cant",
+      "allele", "prev_antigen", "shift", "allele_locus", "loci_family0",
+      "loci_family", "bw_label", "bw46", "mfi_min", "pairs", ".N",
+      "Specificity_truncated", "desc", "count", "positive_count", "subtotal",
+      "percent_positive", "pp_max", "loci", "AUC", "norm_AUC", ".data",
+      "deepMatchR_cregs", "creg", "deepMatchR_eplets", "eplet", "median",
+      "max_val", "sample_date", "highlight", "setNames", "reorder", "category",
+      "group", "sizing", "positive.bead", "count_above", "count_total",
+      "row_number", "sym")
+  )
+}
+
 # Basic theme for all plots
 .themeMatchR <- function(base_size = 12,
                          base_family = "sans",

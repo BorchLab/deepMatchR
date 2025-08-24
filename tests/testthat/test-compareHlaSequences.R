@@ -1,23 +1,23 @@
-context("Testing compare_hla_sequences function")
+context("Testing compareHlaSequences function")
 
-test_that("compare_hla_sequences handles identical sequences", {
+test_that("compareHlaSequences handles identical sequences", {
   seq1 <- "YFAMYGEKVAHTHVDTLYVRYHY"
   seq2 <- "YFAMYGEKVAHTHVDTLYVRYHY"
-  result <- compare_hla_sequences(seq1, seq2)
+  result <- compareHlaSequences(seq1, seq2)
   expect_true(is.data.frame(result))
   expect_equal(nrow(result), 0)
 })
 
-test_that("compare_hla_sequences stops with unequal length sequences", {
+test_that("compareHlaSequences stops with unequal length sequences", {
   seq1 <- "YFAMYGEKVAHTHVDTLYVRYHY"
   seq2 <- "YFAMYGEKVAHTHVDTLYVRYH"
-  expect_error(compare_hla_sequences(seq1, seq2), "Input sequences must be of the same length.")
+  expect_error(compareHlaSequences(seq1, seq2), "Input sequences must be of the same length.")
 })
 
-test_that("compare_hla_sequences identifies polymorphisms correctly", {
+test_that("compareHlaSequences identifies polymorphisms correctly", {
   seq1 <- "YFAMYGEKVAHTHVDTLYVRYHY"
   seq2 <- "YFDMYGEKVAHTHVDTLYVRFHY"
-  result <- compare_hla_sequences(seq1, seq2)
+  result <- compareHlaSequences(seq1, seq2)
 
   expect_equal(nrow(result), 2)
 
@@ -36,11 +36,11 @@ test_that("compare_hla_sequences identifies polymorphisms correctly", {
   expect_equal(result$Charge_Change[2], "No change")
 })
 
-test_that("compare_hla_sequences handles unknown amino acids", {
+test_that("compareHlaSequences handles unknown amino acids", {
   seq1 <- "XFAMYGEKVAHTHVDTLYVRYHY"
   seq2 <- "YFAMYGEKVAHTHVDTLYVRYHY"
   expect_warning(
-    result <- compare_hla_sequences(seq1, seq2),
+    result <- compareHlaSequences(seq1, seq2),
     "Unknown amino acid at position 1. Skipping property analysis for this position."
   )
   expect_equal(nrow(result), 1)
@@ -53,7 +53,7 @@ test_that("compare_hla_sequences handles unknown amino acids", {
   seq1_2 <- "YFAMYGEKVAHTHVDTLYVRYHY"
   seq2_2 <- "YFAMYGEKVZHTHVDTLYVRYHY"
     expect_warning(
-    result2 <- compare_hla_sequences(seq1_2, seq2_2),
+    result2 <- compareHlaSequences(seq1_2, seq2_2),
     "Unknown amino acid at position 10. Skipping property analysis for this position."
   )
   expect_equal(nrow(result2), 1)
@@ -64,8 +64,8 @@ test_that("compare_hla_sequences handles unknown amino acids", {
   expect_equal(result2$Charge_Change[1], "Unknown")
 })
 
-test_that("compare_hla_sequences handles non-character inputs", {
-    expect_error(compare_hla_sequences(123, "abc"), "Input sequences must be character strings.")
-    expect_error(compare_hla_sequences("abc", 123), "Input sequences must be character strings.")
-    expect_error(compare_hla_sequences(NULL, "abc"), "Input sequences must be character strings.")
+test_that("compareHlaSequences handles non-character inputs", {
+    expect_error(compareHlaSequences(123, "abc"), "Input sequences must be character strings.")
+    expect_error(compareHlaSequences("abc", 123), "Input sequences must be character strings.")
+    expect_error(compareHlaSequences(NULL, "abc"), "Input sequences must be character strings.")
 })

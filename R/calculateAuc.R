@@ -72,9 +72,9 @@ calculateAUC <- function(result_file,
     )
   } else if (tolower(analysis_type) == "creg") {
     config <- list(
-      feature_col = "creg",
+      feature_col = "CREG",
       data = deepMatchR::deepMatchR_cregs,
-      default_group_by = "creg"
+      default_group_by = "CREG"
     )
   } else if (tolower(analysis_type) == "serology") {
     config <- list(

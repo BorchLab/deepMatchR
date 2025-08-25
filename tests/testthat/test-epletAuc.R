@@ -55,14 +55,11 @@ test_that("epletAUC() processes numeric cut_min, cut_max, cut_step properly", {
 })
 
 test_that("epletAUC() can handle different evidence_level inputs", {
-  result_df <- epletAUC(
+  expect_error(epletAUC(
     result_file     = sab_data_example,
     plot_results    = FALSE,
     evidence_level  = "Nonexistent_Level"
-  )
-
-  # Because none of the eplets have "Nonexistent_Level",
-  expect_equal(nrow(result_df), 0)
+  ))
 })
 
 

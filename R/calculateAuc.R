@@ -116,6 +116,9 @@ calculateAUC <- function(result_file,
   # Handle eplet-specific evidence level filter
   if (analysis_type == "eplet" && !is.null(config$evidence_level)) {
     feature_data <- feature_data[feature_data[["evidence"]] %in% config$evidence_level, ]
+    if(nrow(feature_data) == 0) {
+      stop("`evidence_level` filtering criteria did not produce any results.")
+    }
   }
   
   # Per-feature bookkeeping (count occurrences)

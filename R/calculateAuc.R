@@ -35,10 +35,6 @@
 #'   will contain columns for the feature (`eplet`, `creg`, `serology`), `AUC`,
 #'   `norm_AUC`, `total_count`, and `loci`.
 #'
-#' @importFrom dplyr filter mutate select arrange group_by ungroup summarise rename all_of
-#'   relocate left_join n pull slice_max
-#' @importFrom tidyr unnest_longer separate_longer_delim
-#' @importFrom stringr str_extract str_c
 #' @importFrom ggplot2 ggplot aes geom_line xlim ylim labs scale_color_manual
 #' @importFrom directlabels geom_dl last.points
 #' @importFrom pracma trapz
@@ -65,7 +61,7 @@ calculateAUC <- function(result_file,
   if (tolower(analysis_type) == "eplet") {
     config <- list(
       feature_col = "eplet",
-      data = deepMatchR::deepMatchR_eplets,
+      data = data.table::as.data.table(deepMatchR::deepMatchR_eplets),
       evidence_level = evidence_level,
       top_eplets = top_eplets,
       default_group_by = "eplet"
@@ -73,20 +69,19 @@ calculateAUC <- function(result_file,
   } else if (tolower(analysis_type) == "creg") {
     config <- list(
       feature_col = "CREG",
-      data = deepMatchR::deepMatchR_cregs,
+      data = data.table::as.data.table(deepMatchR::deepMatchR_cregs),
       default_group_by = "CREG"
     )
   } else if (tolower(analysis_type) == "serology") {
     config <- list(
       feature_col = "serology",
-      data = deepMatchR::deepMatchR_cregs,
+      data = data.table::as.data.table(deepMatchR::deepMatchR_cregs),
       default_group_by = "serology"
     )
   } else {
     stop("`analysis_type` must be one of 'eplet', 'creg' or 'serology'.")
   }
   
-  # Set default for group_by if not provided
   if (is.null(group_by)) {
     group_by <- config$default_group_by
   }
@@ -98,84 +93,63 @@ calculateAUC <- function(result_file,
     result0 <- result_file
   }
   .checkSAB(result0)
-  result <- .processSAB(result0)
+  result <- data.table::as.data.table(.processSAB(result0))
   
   # --- 3. Create combinations of alleles and MFI cutoffs ---
   cutoffs <- seq(cut_min, cut_max, cut_step)
-  class_alleles <- result %>% dplyr::select(allele, mfi_min)
+  class_alleles <- result[, .(allele, mfi_min)]
   
-  summary_df <- expand.grid(allele = class_alleles$allele, cut = cutoffs) |>
-    as_tibble() |>
-    left_join(class_alleles, by = "allele") |>
-    dplyr::filter(mfi_min > cut) |>
-    dplyr::select(allele, cut)
+  summary_dt <- data.table::CJ(allele = unique(class_alleles$allele), cut = cutoffs)
+  summary_dt <- merge(summary_dt, class_alleles, by = "allele", all.x = TRUE)
+  summary_dt <- summary_dt[mfi_min > cut, .(allele, cut)]
   
   # --- 4. Prepare feature dictionary (Eplet or CREG) ---
-  feature_data <- config$data[config$data$allele %in% class_alleles$allele, ]
+  feature_data <- config$data[allele %in% class_alleles$allele]
   
-  # Handle eplet-specific evidence level filter
   if (analysis_type == "eplet" && !is.null(config$evidence_level)) {
-    feature_data <- feature_data[feature_data[["evidence"]] %in% config$evidence_level, ]
+    feature_data <- feature_data[evidence %in% config$evidence_level]
     if(nrow(feature_data) == 0) {
       stop("`evidence_level` filtering criteria did not produce any results.")
     }
   }
   
-  # Per-feature bookkeeping (count occurrences)
-  feature_data <- feature_data |>
-    group_by(!!sym(config$feature_col), allele) |> mutate(count = n())    |> ungroup() |>
-    group_by(!!sym(config$feature_col))         |> mutate(subtotal = n()) |> ungroup()
+  feature_data[, count := .N, by = c(config[["feature_col"]], "allele")]
+  feature_data[, subtotal := .N, by = c(config[["feature_col"]])]
   
   # --- 5. Calculate proportion positive for each feature × cut-off pair ---
-  analysis_df <- summary_df |>
-    left_join(feature_data, by = "allele", relationship = "many-to-many") |>
-    mutate(loci = sub("\\*.*", "", allele)) |>
-    dplyr::filter(!is.na(cut)) |>
-    group_by(!!sym(config$feature_col), cut) |>
-    mutate(
-      positive_count   = sum(count, na.rm = TRUE),
-      percent_positive = positive_count / subtotal
-    ) |>
-    group_by(!!sym(config$feature_col)) |>
-    mutate(pp_max = max(percent_positive, na.rm = TRUE)) |>
-    arrange(desc(subtotal), desc(percent_positive)) |>
-    ungroup()
+  analysis_dt <- merge(summary_dt, feature_data, by = "allele", allow.cartesian = TRUE)
+  analysis_dt[, loci := sub("\\*.*", "", allele)]
+  analysis_dt <- analysis_dt[!is.na(cut)]
+
+  analysis_dt[, positive_count := sum(count, na.rm = TRUE), by = c(config[["feature_col"]], "cut")]
+  analysis_dt[, percent_positive := positive_count / subtotal]
+  analysis_dt[, pp_max := max(percent_positive, na.rm = TRUE), by = c(config[["feature_col"]])]
+  data.table::setorder(analysis_dt, -subtotal, -percent_positive)
   
   # --- 6. Apply user filters ---
   if (!is.null(feature_filter))
-    analysis_df <- analysis_df |> dplyr::filter(subtotal >= feature_filter)
+    analysis_dt <- analysis_dt[subtotal >= feature_filter]
   
   if (!is.null(percPos_filter))
-    analysis_df <- analysis_df |> dplyr::filter(pp_max >= percPos_filter)
+    analysis_dt <- analysis_dt[pp_max >= percPos_filter]
   
-  # Collapse loci for labelling
-  analysis_df <- analysis_df |>
-    group_by(!!sym(config$feature_col)) |>
-    mutate(loci = paste0(unique(loci), collapse = "; ")) |>
-    ungroup()
+  analysis_dt[, loci := paste0(unique(loci), collapse = "; "), by = c(config[["feature_col"]])]
   
   # --- 7. Calculate AUC ---
-  feature_AUC <- analysis_df |>
-    group_by(!!sym(config$feature_col)) |>
-    summarise(
-      AUC         = trapz(cut, percent_positive),
-      norm_AUC    = AUC / cut_max,
-      total_count = unique(subtotal)[1],
-      loci        = paste0(unique(loci), collapse = "; ")
-    ) |>
-    ungroup()
+  feature_AUC <- analysis_dt[, .(
+    AUC = pracma::trapz(cut, percent_positive),
+    total_count = unique(subtotal)[1],
+    loci = paste0(unique(loci), collapse = "; ")
+  ), by = c(config[["feature_col"]])]
+  feature_AUC[, norm_AUC := AUC / cut_max]
   
-  # --- 8. Generate Plot or Return Tibble ---
+  # --- 8. Generate Plot or Return data.table ---
   if (plot_results) {
-    plot_data <- analysis_df
+    plot_data <- analysis_dt
     
-    # Handle eplet-specific `top_eplets` filter for plotting
     if (analysis_type == "eplet" && !is.null(config$top_eplets)) {
-      top_features_vec <- feature_AUC |>
-        slice_max(order_by = norm_AUC, n = config$top_eplets) |>
-        pull(!!sym(config$feature_col))
-      plot_data <- plot_data |>
-        dplyr::filter(!!sym(config$feature_col) %in% top_features_vec)
+      top_features_vec <- feature_AUC[order(-norm_AUC)][1:config$top_eplets, get(config$feature_col)]
+      plot_data <- plot_data[get(config$feature_col) %in% top_features_vec]
     }
     
     p <- ggplot(plot_data, aes(x = cut, y = percent_positive,

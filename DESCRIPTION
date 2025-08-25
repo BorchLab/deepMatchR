@@ -14,20 +14,14 @@ biocViews: Software, Classification, Annotation, Sequencing
 Depends: 
 	R (>= 4.0)
 Imports: 
-	dplyr,
 	ggplot2,
 	grDevices,
 	readxl,
-	stringr,
-	tidyr,
 	data.table,
 	patchwork,
 	directlabels,
 	keras3,
 	pracma,
-	purrr,
-	magrittr,
-	tibble,
 	treemapify,
 	immReferent
 Suggests: 

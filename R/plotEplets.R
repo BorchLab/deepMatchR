@@ -61,26 +61,13 @@ plotEplets <- function(result_file,
                        palette = "spectral",
                        ...) {
   
-  # Standardize plot type argument early
   plot_type <- match.arg(plot_type)
   
-  # Load required eplet database
-  data(deepMatchR_eplets)
-  
-  # 1. Read in data (data frame or file path)
-  if (inherits(result_file, "character")) {
-    result0 <- .loadData(result_file)
-  } else {
-    result0 <- result_file
-  }
-  
-  # 2. Check for required SAB columns
+  result0 <- if (inherits(result_file, "character")) .loadData(result_file) else result_file
   .checkSAB(result0)
   
-  # 3. Process data based on the plot type
   if (plot_type == "AUC") {
-    # For AUC plot, calculate AUC values using the internal function
-    summary_df <- epletAUC(result_file = result0,
+    summary_dt <- epletAUC(result_file = result0,
                            evidence_level = evidence_level,
                            plot_results = FALSE,
                            eplet_filter = eplet_filter,
@@ -88,54 +75,45 @@ plotEplets <- function(result_file,
                            cut_min = cut_min,
                            cut_max = cut_max,
                            cut_step = cut_step)
-    
   } else {
-    # Clean and process the SAB results
-    result <- .processSAB(result0)
+    result <- data.table::as.data.table(.processSAB(result0))
+    eplet_data <- data.table::as.data.table(deepMatchR::deepMatchR_eplets)
     
-    # 4. Combine eplet annotations with assay data
-    ep_analysis <- result %>%
-      left_join(deepMatchR_eplets, 
-                by = "allele", 
-                relationship = "many-to-many") %>%
-      mutate(loci = sub("\\*.*", "", allele))
+    ep_analysis <- merge(result, eplet_data, by = "allele", all.x = TRUE, allow.cartesian=TRUE)
+    ep_analysis[, loci := sub("\\*.*", "", allele)]
     
-    # Filter by evidence level if specified
     if (!is.null(evidence_level)) {
-      ep_analysis <- ep_analysis[which(ep_analysis[["evidence"]] %in% evidence_level),]
+      ep_analysis <- ep_analysis[evidence %in% evidence_level]
     }
     
-    # 5. Quantify positive beads for each eplet and summarize
-    summary_df <- ep_analysis %>%
-      mutate(positive.bead = ifelse(NormalValue >= cutoff, 1, 0)) %>%
-      group_by(eplet) %>%
-      summarise(loci = paste0(unique(loci), collapse = "; "), 
-                count_above = sum(positive.bead),
-                count_total = n(), 
-                pp_max = round(count_above / count_total, 2), 
-                evidence_level = unique(evidence),
-                .groups = "drop")
+    ep_analysis[, positive.bead := ifelse(NormalValue >= cutoff, 1, 0)]
+
+    summary_dt <- ep_analysis[, .(
+      loci = paste0(unique(loci), collapse = "; "),
+      count_above = sum(positive.bead),
+      count_total = .N,
+      evidence_level = unique(evidence)
+    ), by = eplet]
+
+    summary_dt[, pp_max := round(count_above / count_total, 2)]
     
-    # Filter summarized data based on percent positive
     if (!is.null(percPos_filter)) {
-      summary_df <- summary_df %>%
-        filter(pp_max >= percPos_filter)
+      summary_dt <- summary_dt[pp_max >= percPos_filter]
     }
   }
   
-  summary_df[[group_by]] <- factor(summary_df[[group_by]], 
-                                   levels = .alphanumericalSort(unique(summary_df[[group_by]])))
-  # Generate the color palette using internal helper function
-  color.palette <- .colorizer(palette, length(unique(summary_df[[group_by]])))
+  summary_dt[[group_by]] <- factor(summary_dt[[group_by]],
+                                   levels = .alphanumericalSort(unique(summary_dt[[group_by]])))
+
+  color.palette <- .colorizer(palette, length(unique(summary_dt[[group_by]])))
   
-  # 6. Create the requested plot type
   if (plot_type == "treemap") {
-    plot <- ggplot(summary_df, aes(area = abs(count_above) * pp_max, 
-                                   fill = .data[[group_by]], 
-                                   label = eplet, 
+    plot <- ggplot(summary_dt, aes(area = abs(count_above) * pp_max,
+                                   fill = .data[[group_by]],
+                                   label = eplet,
                                    subgroup = loci)) +
       geom_treemap() +
-      geom_treemap_text(aes(label = paste(eplet, "\n", pp_max * 100, "%\n", 
+      geom_treemap_text(aes(label = paste(eplet, "\n", pp_max * 100, "%\n",
                                           count_above, "of", count_total)),
                         place = "centre", grow = FALSE, min.size = 1, color = "black") +
       geom_treemap_subgroup_border(color = "black", size = 2) +
@@ -145,48 +123,38 @@ plotEplets <- function(result_file,
       labs(fill = group_by) +
       theme(plot.background = element_blank())
     
-  } else if (plot_type == "bar") {  
-    # Prepare data for bar plot: show top eplets ranked by proportion positive
+  } else if (plot_type == "bar") {
     y.label <- "Proportion of Positive Beads"
     y <- "pp_max"
-    ranked_data <- summary_df %>%
-      arrange(desc(pp_max)) %>%
-      mutate(rank = row_number()) %>%
-      filter(rank <= top_eplets)
+    data.table::setorder(summary_dt, -pp_max)
+    ranked_data <- summary_dt[1:min(top_eplets, .N)]
     
-    color.palette <- .colorizer(palette, length(unique(ranked_data[[group_by]])))
-    
-    plot <- ggplot(ranked_data, aes(x = reorder(eplet, desc(rank)), y = .data[[y]], 
+    plot <- ggplot(ranked_data, aes(x = reorder(eplet, pp_max), y = .data[[y]],
                                     fill = .data[[group_by]])) +
       geom_bar(stat = "identity", color = "black", size = 0.25) +
       coord_flip(clip = "off") +
       geom_text(aes(label = loci), size = 2, hjust = -0.05) +
       labs(fill = group_by, y = y.label) +
       .themeMatchR() +
-      theme(axis.title.y = element_blank()) + 
+      theme(axis.title.y = element_blank()) +
       scale_fill_manual(values = color.palette)
     
-  } else {  # plot_type == "AUC"
-    # Prepare data for AUC plot: show top eplets ranked by normalized AUC
+  } else { # plot_type == "AUC"
     y.label <- "Normalized AUC"
     y <- "norm_AUC"
-    ranked_data <- summary_df %>%
-      arrange(desc(norm_AUC)) %>%
-      mutate(rank = row_number()) %>%
-      filter(rank <= top_eplets)
+    data.table::setorder(summary_dt, -norm_AUC)
+    ranked_data <- summary_dt[1:min(top_eplets, .N)]
     
-    color.palette <- .colorizer(palette, length(unique(ranked_data[[group_by]])))
+    label.max <- round(max(ranked_data$norm_AUC), 2) - 0.05
     
-    label.max <- round(max(ranked_data$norm_AUC),2) - 0.05
-    
-    plot <- ggplot(ranked_data, aes(x = reorder(eplet, dplyr::desc(rank)), y = .data[[y]], 
+    plot <- ggplot(ranked_data, aes(x = reorder(eplet, norm_AUC), y = .data[[y]],
                                     fill = .data[[group_by]])) +
       geom_bar(stat = "identity", color = "black", size = 0.25) +
       coord_flip(clip = "off") +
-      geom_text(aes(label = loci, hjust = ifelse(.data[[y]] > label.max, 1.1, -0.1)), size = 2) + 
+      geom_text(aes(label = loci, hjust = ifelse(.data[[y]] > label.max, 1.1, -0.1)), size = 2) +
       labs(fill = group_by, y = y.label) +
       .themeMatchR() +
-      theme(axis.title.y = element_blank()) + 
+      theme(axis.title.y = element_blank()) +
       scale_fill_manual(values = color.palette)
   }
   

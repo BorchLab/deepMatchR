@@ -58,13 +58,86 @@ head(deepMatchR_example[[2]])
 head(deepMatchR_example[[3]])
 ```
 
+# Sequence-Level Analysis
+
+`deepMatchR` includes several functions for comparing and analyzing HLA sequences at the amino acid and eplet level. These are fundamental tools for quantifying the differences between alleles.
+
+## Comparing Sequences with `compareHlaSequences`
+
+The `compareHlaSequences` function allows you to see the specific amino acid differences between two protein sequences. It not only identifies the positions of mismatches but also characterizes them based on changes in physicochemical properties (polarity and charge), which can be important for predicting immunogenicity.
+
+**Arguments:**
+
+*   `seq1`, `seq2`: The two protein sequences to compare. They must be of the same length.
+
+**Example:**
+
+Here, we compare two sequences that differ at two positions. The output is a data frame detailing each mismatch.
+
+```{r}
+seq1 <- "YFAMYGEKVAHTHVDTLYVRYHY"
+seq2 <- "YFDMYGEKVAHTHVDTLYVRFHY"
+compareHlaSequences(seq1, seq2)
+```
+
+## Quantifying Mismatches with `quantifyMismatch`
+
+If you only need to know the total number of differences, `quantifyMismatch` provides a quick and simple way to get a single integer value representing the mismatch count.
+
+**Arguments:**
+
+*   `seq1`, `seq2`: The two protein sequences to compare.
+
+**Example:**
+
+```{r}
+quantifyMismatch(seq1, seq2)
+```
+
+## Retrieving Allele Sequences with `getAlleleSequence`
+
+To perform these comparisons, you first need the protein sequences for the HLA alleles of interest. The `getAlleleSequence` function retrieves these sequences from the IMGT/HLA database. Note that this function requires an internet connection.
+
+**Arguments:**
+
+*   `allele_name`: The name of the HLA allele (e.g., `"A*01:01"`).
+
+**Example:**
+
+```{r, results='hide'}
+# Requires internet connection
+a0101_seq <- getAlleleSequence("A*01:01")
+head(a0101_seq)
+```
+
+## Quantifying Eplet Mismatches with `quantifyEpletMismatch`
+
+Eplets are key components of HLA immunogenicity. The `quantifyEpletMismatch` function calculates the number of eplets that are not shared between two HLA alleles, giving a measure of the potential for an antibody response. It uses an internal database of known eplets.
+
+**Arguments:**
+
+*   `allele1`, `allele2`: The names of the two HLA alleles to compare.
+
+**Example:**
+
+```{r}
+quantifyEpletMismatch("A*01:01", "A*02:01")
+```
+
 ## plotAntibodies
 
-The `plotAntibodies()` function is designed to simplify the visualization of antibody data from SAB and PRA assays. It can generate bar plots with MFI values and optional antigen tables, as well as time-series plots to track antibody trends.
+The `plotAntibodies()` function is a versatile tool for visualizing antibody data from both Single Antigen Bead (SAB) and Panel Reactive Antibody (PRA) assays. Its primary goal is to create clear, publication-quality bar plots of Mean Fluorescence Intensity (MFI) values. For added detail, it can append a table of antigen specificities directly below the plot, which is useful for interpreting complex results. The function is flexible, accepting data as either a data frame or directly from a file.
+
+**Key Arguments:**
+
+*   `result_file`: The input data, which can be a data frame or a path to a CSV/XLS file.
+*   `type`: Must be either `"SAB"` or `"PRA"` to specify the assay type.
+*   `add_table`: A logical value (`TRUE`/`FALSE`) to control whether the antigen table is displayed.
+*   `highlight_antigen`: Allows you to specify one or more antigens to highlight in red for emphasis.
 
 ### Bar Plot for SAB data
 
-Here is an example of how to use `plotAntibodies` for SAB data. We set `type = "SAB"` and highlight the "Bw4" antigen.
+Here is an example of how to use `plotAntibodies` for SAB data. We set `type = "SAB"` and highlight the `"Bw4"` antigen.
 
 ```{r}
 plotAntibodies(result_file = deepMatchR_example[[1]],
@@ -111,11 +184,15 @@ plotAntibodies(result_file = sab_data_list,
 
 ## spiDeconvolute
 
-The `spiDeconvolute()` function is a powerful tool for reconciling Single Antigen Bead (SAB) and Panel Reactive Antibody (PRA) data. It helps to identify which antibody reactivities are genuinely supported by panel data, and which might be artifacts. The function partitions results into three categories:
+The `spiDeconvolute()` function addresses a common challenge in HLA labs: reconciling results from Single Antigen Bead (SAB) and Panel Reactive Antibody (PRA) assays. It systematically compares the two, identifying which antibody reactivities are supported by both assays (concordant) and which are found in only one (discordant). This is crucial for distinguishing true reactivities from potential artifacts.
 
-*   **Concordant**: Antigens that are reactive in the SAB assay and are supported by positive beads in the PRA panel.
-*   **SAB-only**: Antigens that are reactive in the SAB assay but lack support from the PRA panel.
-*   **PRA-only**: Antigens that are not reactive in the SAB assay but are found on positive beads in the PRA panel.
+The function returns a list containing four data frames: `concordant`, `sabOnly`, `praOnly`, and a `summary` of the deconvolution process.
+
+**Key Arguments:**
+
+*   `SAB`: A data frame of your SAB results, expected to have `antigen` and `NormalValue` columns.
+*   `PRA`: A data frame of your PRA results, with `BeadID` and `NormalValue`.
+*   `panelLong`: A data frame mapping the antigens on each bead of the PRA panel, with `BeadID` and `antigen` columns.
 
 Here is an example of how to use `spiDeconvolute()` with sample data:
 
@@ -158,17 +235,17 @@ print(decon_results$summary)
 
 ## epletAUC
 
-The `epletAUC()` function provides a flexible way to assess eplet-level reactivity across a range of MFI cutoffs in SAB assays. 
+The `epletAUC()` function (and its parent, `calculateAUC`) is designed to assess feature reactivity in a dynamic way. Instead of relying on a single MFI cutoff, it calculates the proportion of positive beads for each feature (like an eplet or CREG) across a whole range of cutoffs. By integrating this curve, it produces an Area Under the Curve (AUC) value, which serves as a robust summary of reactivity that is less sensitive to any single arbitrary cutoff.
 
-Basic Workflow:
+This function can return either a plot of the positivity curves or a data frame of the calculated AUC values.
 
-* Takes SAB data (either from a data frame or file path)
-* Identifies eplets present on the tested alleles
-* Assesses positivity over a range of MFI cutoff values
-* Optionally filters out low-frequency or lower-confidence eplets
-* Calculates the area under the curve (AUC) for each eplet’s positivity profile
+**Key Arguments:**
 
-You can either plot these positivity curves or return a summarized table of AUC values, depending on your analysis needs.
+*   `result_file`: Your SAB data, as a data frame or file path.
+*   `analysis_type`: The feature you want to analyze, e.g., `"eplet"`, `"creg"`, or `"serology"`.
+*   `plot_results`: Set to `TRUE` to get a `ggplot` object, or `FALSE` to get a data frame of AUC values.
+*   `feature_filter`: A threshold to remove features that appear on too few beads to be reliable.
+*   `percPos_filter`: A threshold to filter out features that never reach a certain level of positivity across all cutoffs.
 
 ```{r}
 plot_result <- epletAUC(
@@ -211,11 +288,17 @@ epletAUC(
 
 ## plotEplets
 
-The ```plotEplets()``` function is designed to facilitate the visualization of eplet-specific assay results from single antigen bead (SAB) experiments. It streamlines the process of reading SAB data, merging it with an internal eplet annotation database, and then generating one of three different plot types: a treemap, a bar plot, or an AUC plot. Each plot type highlights different aspects of the data:
+The `plotEplets()` function offers several ways to visualize eplet-level reactivity from SAB data, allowing you to choose the representation that best suits your question. It simplifies the workflow by handling data loading, merging with eplet definitions, and generating one of three distinct plot types.
 
-* **Treemap**: Displays eplet counts with areas proportional to the product of the positive bead count and the positive bead percentage.
-* **Bar Plot**: Ranks eplets based on the proportion of positive beads, providing a clear ranking of top eplets.
-* **AUC** Plot: Ranks eplets by their normalized AUC across a range of MFI cutoffs, offering a dynamic view of eplet performance over the full assay range.
+**Key Arguments:**
+
+*   `result_file`: Your SAB data, as a data frame or file path.
+*   `plot_type`: The visualization to create. Can be `"treemap"`, `"bar"`, or `"AUC"`.
+    *   **`"treemap"`**: Good for an overview of the most prominent eplets. The area of each tile is proportional to the eplet's importance.
+    *   **`"bar"`**: Best for clearly ranking the top eplets based on the proportion of positive beads at a single MFI `cutoff`.
+    *   **`"AUC"`**: Ranks eplets by their reactivity across a *range* of cutoffs, providing a more robust performance metric.
+*   `cutoff`: The MFI threshold for defining a positive bead (used for `"treemap"` and `"bar"` plots).
+*   `evidence_level`: Filters eplets based on their level of experimental evidence (e.g., `"A1"`, `"A2"`, `"B"`).
 
 ### Generating a Treemap
 

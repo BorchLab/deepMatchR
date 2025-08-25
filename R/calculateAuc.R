@@ -31,7 +31,7 @@
 #' @param serology_filter For serology analysis, a filter to be applied.
 #' @param ... Additional arguments passed to the plot theme.
 #'
-#' @return Either a `ggplot` object or a tibble with AUC results. The tibble
+#' @return Either a `ggplot` object or a data.frame with AUC results. The data.frame
 #'   will contain columns for the feature (`eplet`, `creg`, `serology`), `AUC`,
 #'   `norm_AUC`, `total_count`, and `loci`.
 #'

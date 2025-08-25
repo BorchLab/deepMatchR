@@ -39,6 +39,7 @@
 #'
 #' @return A \code{ggplot} object visualizing eplet counts (or AUC values) according to the
 #'   specified parameters.
+#' @importFrom data.table setkey 
 #' @examples
 #' # Using a data frame:
 #' plotEplets(deepMatchR_example[[1]], 

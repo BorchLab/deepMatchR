@@ -77,6 +77,7 @@ getAlleleSequence <- function(allele_name) {
 #' @return An integer representing the number of mismatched eplets.
 #'
 #' @importFrom utils data
+#' @importFrom data.table as.data.table setkey
 #' @export
 quantifyEpletMismatch <- function(allele1,
                                   allele2,

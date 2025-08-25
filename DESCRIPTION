@@ -20,12 +20,12 @@ Imports:
 	data.table,
 	patchwork,
 	directlabels,
-	keras3,
 	pracma,
 	treemapify,
 	immReferent
 Suggests: 
 	BiocStyle,
+	dplyr,
 	knitr,
 	rmarkdown,
 	spelling,

@@ -3,21 +3,47 @@
 \docType{data}
 \name{deepMatchR_cregs}
 \alias{deepMatchR_cregs}
-\title{CREG-Allele Mapping Data (Dummy)}
+\title{CREG–Allele Mapping Data}
 \format{
-A data frame with 6 rows and 2 variables:
+A data frame with the following variables:
 \describe{
-  \item{allele}{An HLA allele string.}
-  \item{creg}{The CREG group corresponding to the allele.}
+  \item{allele}{`character`. IMGT/HLA allele (e.g., `"B*07:02"`).}
+  \item{serology}{`character`. Serologic antigen assignment (e.g., `"B7"`).}
+  \item{creg}{`character`. Cross-Reactive Group label (e.g., `"CREG07"`).}
 }
 }
 \usage{
-deepMatchR_cregs
+data(deepMatchR_cregs)
 }
 \description{
-A dummy dataset containing a mapping of HLA alleles to their
-Cross-Reactive Groups (CREGs). This is a placeholder file to allow the
-package to build and run correctly. The data is not comprehensive or
-scientifically validated.
+A curated mapping of IMGT/HLA allele strings to their corresponding
+serologic antigen assignments and Cross-Reactive Groups (CREGs). This table
+is intended for convenience functions that summarize antibody specificity,
+collapse alleles to serology, or group responses by CREG for reporting.
 }
+\details{
+- **Allele strings** follow IMGT/HLA nomenclature (e.g., `"A*02:01"`).
+- **Serology** uses conventional two-digit antigen labels (e.g., `"A2"`,
+  `"B8"`). Depending on your workflow, you may want to harmonize with
+  vendor-specific naming.
+- **CREG** indicates the cross-reactive group label used in many transplant
+  workflows to approximate serologic cross-reactivity.
+}
+\note{
+Source is an internal curation aligned to common CREG practice; see the
+  package vignette for curation notes and limitations. Always verify against
+  your lab’s approved references.
+}
+\section{Typical use}{
+
+- Collapsing allele-level reactivity to serology/CREG.
+- Building summary tables/plots by serology or CREG.
+}
+
+\seealso{
+\code{\link{deepMatchR_eplets}}, \code{\link{deepMatchR_example}}
+}
+\keyword{CREG}
+\keyword{HLA}
 \keyword{datasets}
+\keyword{serology}

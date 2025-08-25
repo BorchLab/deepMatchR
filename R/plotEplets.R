@@ -89,11 +89,6 @@ plotEplets <- function(result_file,
                            cut_max = cut_max,
                            cut_step = cut_step)
     
-    # Filter by evidence level if specified
-    if (!is.null(evidence_level)) {
-      summary_df <- summary_df[which(summary_df[["evidence_level"]] %in% evidence_level),]
-    }
-    
   } else {
     # Clean and process the SAB results
     result <- .processSAB(result0)
@@ -118,7 +113,7 @@ plotEplets <- function(result_file,
                 count_above = sum(positive.bead),
                 count_total = n(), 
                 pp_max = round(count_above / count_total, 2), 
-                evidence_level = unique(evidence_level),
+                evidence_level = unique(evidence),
                 .groups = "drop")
     
     # Filter summarized data based on percent positive

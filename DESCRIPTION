@@ -25,7 +25,9 @@ Imports:
 	treemapify,
 	immReferent
 Suggests: 
+	BiocStyle,
 	knitr,
+	rmarkdown,
 	spelling,
 	testthat
 Remotes:

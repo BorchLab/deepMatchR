@@ -107,7 +107,7 @@ plotEplets <- function(result_file,
     
     # Filter by evidence level if specified
     if (!is.null(evidence_level)) {
-      ep_analysis <- ep_analysis[which(ep_analysis[["evidence_level"]] %in% evidence_level),]
+      ep_analysis <- ep_analysis[which(ep_analysis[["evidence"]] %in% evidence_level),]
     }
     
     # 5. Quantify positive beads for each eplet and summarize

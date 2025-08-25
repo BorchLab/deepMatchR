@@ -31,7 +31,8 @@ More information is available at the [deepMatchR GitHub Repo](https://github.com
 ## Loading Libraries
 
 ```{r}
-suppressMessages(library(deepMatchR))
+library(deepMatchR)
+library(dplyr)
 ```
 
 ## Loading Built-In Data
@@ -117,6 +118,7 @@ Eplets are key components of HLA immunogenicity. The `quantifyEpletMismatch` fun
 **Arguments:**
 
 *   `allele1`, `allele2`: The names of the two HLA alleles to compare.
+*   `evidence_level`: Filters eplets based on their level of experimental evidence (e.g., `"A1"`, `"A2"`, `"B"`).
 
 **Example:**
 
@@ -260,7 +262,7 @@ plot_result <- epletAUC(
 plot_result
 ```
 
-If you prefer a data table with the computed AUC values, simply set plot_results = FALSE. The function will then compute and return a tidy data frame (tibble):
+If you prefer a data table with the computed AUC values, simply set `plot_results = FALSE`. The function will then compute and return a data frame:
 
 ```{r}
 auc_result <- epletAUC(
@@ -343,7 +345,6 @@ plotEplets(result_file = deepMatchR_example[[1]],
            top_eplets = 20,
            palette = "spectral")
 ```
-
 
 ***
 

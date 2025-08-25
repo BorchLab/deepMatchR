@@ -4,12 +4,16 @@
 \alias{quantifyEpletMismatch}
 \title{Quantify Eplet Mismatches Between Two Alleles}
 \usage{
-quantifyEpletMismatch(allele1, allele2)
+quantifyEpletMismatch(allele1, allele2, evidence_level = c("A1", "A2"))
 }
 \arguments{
 \item{allele1}{A character string for the first HLA allele (e.g., "A*01:01").}
 
 \item{allele2}{A character string for the second HLA allele (e.g., "A*02:01").}
+
+\item{evidence_level}{Character vector indicating the antibody reactivity levels to keep.
+Defaults to \code{c("A1", "A2")}, which represent antibody-confirmed eplets.
+Other acceptable levels include \code{"B"}, \code{"D"}, or \code{NULL} to apply no filter.}
 }
 \value{
 An integer representing the number of mismatched eplets.

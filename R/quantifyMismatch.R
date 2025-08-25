@@ -70,12 +70,17 @@ getAlleleSequence <- function(allele_name) {
 #'
 #' @param allele1 A character string for the first HLA allele (e.g., "A*01:01").
 #' @param allele2 A character string for the second HLA allele (e.g., "A*02:01").
+#' @param evidence_level Character vector indicating the antibody reactivity levels to keep.
+#'   Defaults to \code{c("A1", "A2")}, which represent antibody-confirmed eplets.
+#'   Other acceptable levels include \code{"B"}, \code{"D"}, or \code{NULL} to apply no filter.
 #'
 #' @return An integer representing the number of mismatched eplets.
 #'
 #' @importFrom utils data
 #' @export
-quantifyEpletMismatch <- function(allele1, allele2) {
+quantifyEpletMismatch <- function(allele1,
+                                  allele2,
+                                  evidence_level = c("A1", "A2")) {
   # Load the eplet data
   utils::data(deepMatchR_eplets, envir = environment())
 
@@ -83,9 +88,22 @@ quantifyEpletMismatch <- function(allele1, allele2) {
   eplet_dt <- data.table::as.data.table(deepMatchR_eplets)
   data.table::setkey(eplet_dt, allele)
 
-  # Get eplets for each allele using fast data.table subsetting
-  eplets1 <- eplet_dt[.(allele1), eplet, nomatch = 0]
-  eplets2 <- eplet_dt[.(allele2), eplet, nomatch = 0]
+
+  
+  if(!is.null(evidence_level)) {
+    eplets1 <- eplet_dt[
+           allele %in% allele1 & evidence %in% evidence_level,
+           eplet]
+    eplets2 <- eplet_dt[
+      allele %in% allele2 & evidence %in% evidence_level,
+      eplet]
+  } else {
+    # Get eplets for each allele using fast data.table subsetting
+    eplets1 <- eplet_dt[.(allele1), eplet, nomatch = 0]
+    eplets2 <- eplet_dt[.(allele2), eplet, nomatch = 0]
+  }
+  
+ 
 
   # Find the symmetric difference
   mismatched_eplets <- union(setdiff(eplets1, eplets2), setdiff(eplets2, eplets1))

@@ -60,7 +60,8 @@ plotEplets <- function(result_file,
                        top_eplets = 10,
                        palette = "spectral",
                        ...) {
-  
+  if(group_by == "evidence_level") group_by <- "evidence"
+  eplet_data <- data.table::as.data.table(deepMatchR::deepMatchR_eplets)
   plot_type <- match.arg(plot_type)
   
   result0 <- if (inherits(result_file, "character")) .loadData(result_file) else result_file
@@ -75,9 +76,11 @@ plotEplets <- function(result_file,
                            cut_min = cut_min,
                            cut_max = cut_max,
                            cut_step = cut_step)
+    
+    setkey(eplet_data, eplet)
+    summary_dt <- eplet_data[summary_dt, on = "eplet", mult = "first"]
   } else {
     result <- data.table::as.data.table(.processSAB(result0))
-    eplet_data <- data.table::as.data.table(deepMatchR::deepMatchR_eplets)
     
     ep_analysis <- merge(result, eplet_data, by = "allele", all.x = TRUE, allow.cartesian=TRUE)
     ep_analysis[, loci := sub("\\*.*", "", allele)]
@@ -131,7 +134,7 @@ plotEplets <- function(result_file,
     
     plot <- ggplot(ranked_data, aes(x = reorder(eplet, pp_max), y = .data[[y]],
                                     fill = .data[[group_by]])) +
-      geom_bar(stat = "identity", color = "black", size = 0.25) +
+      geom_bar(stat = "identity", color = "black", linewidth = 0.25) +
       coord_flip(clip = "off") +
       geom_text(aes(label = loci), size = 2, hjust = -0.05) +
       labs(fill = group_by, y = y.label) +
@@ -149,7 +152,7 @@ plotEplets <- function(result_file,
     
     plot <- ggplot(ranked_data, aes(x = reorder(eplet, norm_AUC), y = .data[[y]],
                                     fill = .data[[group_by]])) +
-      geom_bar(stat = "identity", color = "black", size = 0.25) +
+      geom_bar(stat = "identity", color = "black", linewidth = 0.25) +
       coord_flip(clip = "off") +
       geom_text(aes(label = loci, hjust = ifelse(.data[[y]] > label.max, 1.1, -0.1)), size = 2) +
       labs(fill = group_by, y = y.label) +

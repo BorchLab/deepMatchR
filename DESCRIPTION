@@ -25,10 +25,12 @@ Imports:
 	treemapify,
 	immReferent
 Suggests: 
+	knitr,
 	spelling,
 	testthat
 Remotes:
     BorchLab/immReferent
+VignetteBuilder: knitr
 Language: en-US
 URL: https://github.com/ncborcherding/deepMatchR/
 BugReports: https://github.com/ncborcherding/deepMatchR/issues

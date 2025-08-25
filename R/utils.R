@@ -1,10 +1,9 @@
-#' @importFrom magrittr %>%
-#' @importFrom tibble as_tibble
-#' @importFrom dplyr summarize row_number
 #' @importFrom ggplot2 %+replace% rel coord_flip
 #' @importFrom data.table data.table set setorder fifelse rbindlist setcolorder
 #' @importFrom treemapify geom_treemap geom_treemap_text geom_treemap_subgroup_border geom_treemap_subgroup_text
 #' @importFrom utils head read.csv globalVariables
+#' @importFrom data.table setnames
+#' @importFrom stats as.formula
 NULL
 
 # Quiet R CMD check notes about non-standard evaluation
@@ -19,7 +18,9 @@ if(getRversion() >= "2.15.1") {
       "deepMatchR_cregs", "creg", "deepMatchR_eplets", "eplet", "median",
       "max_val", "sample_date", "highlight", "setNames", "reorder", "category",
       "group", "sizing", "positive.bead", "count_above", "count_total",
-      "row_number", "sym")
+      "row_number", "sym", "concordant", "evidence", "positive", "positiveBeads",
+      "praOnly", "sabOnly", "sab_cutoff", "sab_mfi", "sab_reactive",
+      "supportFraction", "totalBeads", "evidence_level", "rank")
   )
 }
 
@@ -146,29 +147,46 @@ if(getRversion() >= "2.15.1") {
   return(colors)
 }
 
-#' @importFrom dplyr filter mutate select distinct arrange group_by ungroup 
-#'   summarise relocate left_join n
-#' @importFrom tidyr unnest
 .processSAB <- function(result0) {
-  result <- result0 %>%
-    dplyr::select(BeadID, SpecAbbr, Specificity, NormalValue) %>%
-    dplyr::distinct(Specificity, .keep_all = TRUE) %>%
-    mutate(
-      antigen = .strExtract(SpecAbbr, '[ABCDRQP][[:alnum:]]+'),
-      bw46 = .strExtract(SpecAbbr, 'Bw[46]'),
-      Specificity_truncated = .strExtract(Specificity, '[ABCD][^ ()]*[0-9]')
-    ) %>%
-    mutate(
-      allele = strsplit(gsub(",-,", "_", Specificity_truncated, fixed = TRUE), "_")
-    ) %>%
-    dplyr::select(-SpecAbbr, -Specificity, -Specificity_truncated) %>%
-    relocate(BeadID, antigen, bw46, allele, NormalValue) %>%
-    tidyr::unnest(allele) %>%
-    mutate(loci = sub("\\*.*", "", allele)) %>%
-    mutate(mfi_min = min(NormalValue), .by = allele) %>%
-    arrange(allele, desc(NormalValue)) %>%
-    filter(!is.na(allele))
-  return(result)
+  dt <- data.table::as.data.table(result0)
+
+  # Ensure we only have the columns we need
+  dt <- dt[, .(BeadID, SpecAbbr, Specificity, NormalValue)]
+
+  # Keep only the first occurrence of each Specificity
+  dt <- unique(dt, by = "Specificity")
+
+  # Extract information using string patterns
+  dt[, antigen := .strExtract(SpecAbbr, '[ABCDRQP][[:alnum:]]+')]
+  dt[, bw46 := .strExtract(SpecAbbr, 'Bw[46]')]
+  dt[, Specificity_truncated := .strExtract(Specificity, '[ABCD][^ ()]*[0-9]')]
+
+  # Split the allele strings
+  dt[, allele := strsplit(gsub(",-,", "_", Specificity_truncated, fixed = TRUE), "_")]
+
+  # Remove columns that are no longer needed
+  dt[, c("SpecAbbr", "Specificity", "Specificity_truncated") := NULL]
+
+  # Unnest the allele list column
+  dt <- dt[, .(allele = unlist(allele)), by = .(BeadID, antigen, bw46, NormalValue)]
+
+  # Extract locus from allele
+  dt[, loci := sub("\\*.*", "", allele)]
+
+  # Calculate the minimum MFI for each allele
+  dt[, mfi_min := min(NormalValue), by = allele]
+
+  # Order the results
+  data.table::setorder(dt, allele, -NormalValue)
+
+  # Remove rows with no allele
+  dt <- dt[!is.na(allele)]
+
+  # Set the final column order
+  data.table::setcolorder(dt, c("BeadID", "antigen", "bw46", "allele", "NormalValue", "loci", "mfi_min"))
+
+  # Return as a data.frame to maintain compatibility with other functions
+  return(as.data.frame(dt))
 }
 
 # Helper function to replicate stringr::str_pad(side = "right")

@@ -79,9 +79,13 @@ quantifyEpletMismatch <- function(allele1, allele2) {
   # Load the eplet data
   utils::data(deepMatchR_eplets, envir = environment())
 
-  # Get eplets for each allele
-  eplets1 <- deepMatchR_eplets$eplet[deepMatchR_eplets$allele == allele1]
-  eplets2 <- deepMatchR_eplets$eplet[deepMatchR_eplets$allele == allele2]
+  # Convert to data.table and set key for fast subsetting
+  eplet_dt <- data.table::as.data.table(deepMatchR_eplets)
+  data.table::setkey(eplet_dt, allele)
+
+  # Get eplets for each allele using fast data.table subsetting
+  eplets1 <- eplet_dt[.(allele1), eplet, nomatch = 0]
+  eplets2 <- eplet_dt[.(allele2), eplet, nomatch = 0]
 
   # Find the symmetric difference
   mismatched_eplets <- union(setdiff(eplets1, eplets2), setdiff(eplets2, eplets1))

@@ -54,7 +54,7 @@ calculateAUC <- function(result_file,
                          cut_step = 250,
                          plot_results = TRUE,
                          palette = "spectral",
-                         evidence_level = c("A1", "A2"),
+                         evidence_level = c("A1", "A2", "B", "D"),
                          eplet_filter = 3,
                          top_eplets = 10,
                          creg_filter = 3,
@@ -115,7 +115,7 @@ calculateAUC <- function(result_file,
   
   # Handle eplet-specific evidence level filter
   if (analysis_type == "eplet" && !is.null(config$evidence_level)) {
-    feature_data <- feature_data[feature_data[["evidence_level"]] %in% config$evidence_level, ]
+    feature_data <- feature_data[feature_data[["evidence"]] %in% config$evidence_level, ]
   }
   
   # Per-feature bookkeeping (count occurrences)

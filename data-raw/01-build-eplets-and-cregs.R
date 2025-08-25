@@ -61,8 +61,7 @@ to_long_eplet <- function(df) {
 
 Eplet_Dictionary <- bind_rows(to_long_eplet(ClassI), to_long_eplet(ClassII))
 
-deepMatchR_eplets <- Eplet_Dictionary %>%
-  semi_join(all_alleles, by = "allele")
+deepMatchR_eplets <- Eplet_Dictionary 
 
 # ---- CREG mapping ------------------------------------------------------------
 creg_tbl <- tibble::tribble(

@@ -100,10 +100,12 @@ plotAntibodies <- function(result_file,
     }
   } else { # PRA
     if (class == "I") {
-      result[grepl("Bw", antigen), loci := "Bw"]
+      result[, loci := loci_family]
+      result[grepl("bw", loci, ignore.case = TRUE), loci := "Bw"]
       result[, antigen := sub("Bw", "", antigen)]
       data.table::setorder(result, BeadID, loci)
       result[, group := interaction(loci, pairs)]
+      
       custom_order <- c("A.1", "A.2", "B.1", "B.2", "Bw.1", "Bw.2", "C.1", "C.2")
     } else {
       result[, loci := sub("[0-9].*", "", antigen)]

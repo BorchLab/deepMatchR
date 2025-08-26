@@ -17,7 +17,7 @@
 #' \describe{
 #'   \item{allele}{`character`. IMGT/HLA allele (e.g., `"B*07:02"`).}
 #'   \item{serology}{`character`. Serologic antigen assignment (e.g., `"B7"`).}
-#'   \item{creg}{`character`. Cross-Reactive Group label (e.g., `"CREG07"`).}
+#'   \item{CREG}{`character`. Cross-Reactive Group label (e.g., `"CREG07"`).}
 #' }
 #'
 #' @section Typical use:

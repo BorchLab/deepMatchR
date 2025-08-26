@@ -81,7 +81,7 @@ plotAntibodies <- function(result_file,
 
   if (type == "SAB") {
     result[, loci := regmatches(antigen, regexpr("^[^0-9]+", antigen))]
-    if (all(result$loci %in% c("A", "B", "C"))) {
+    if (all(result$loci %in% c("A", "B", "Cw"))) {
       bw.subset <- result[!is.na(bw46)]
       if (nrow(bw.subset) > 0) {
         bw.subset[, `:=`(loci = "Bw", antigen = as.numeric(sub("[A-Za-z]+", "", bw46)))]

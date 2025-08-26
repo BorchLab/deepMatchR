@@ -10,7 +10,7 @@
 #'
 #' @return An object of class `hla_genotype`.
 #'
-#' @keywords internal
+#' @export
 hlaGeno <- function(df) {
 
   # Get loci from column names (e.g., "A" from "A_1")

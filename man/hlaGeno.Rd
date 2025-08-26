@@ -18,4 +18,3 @@ Creates a new `hla_genotype` object from a data frame of HLA calls. The
 object is a list containing the genotype data and a record of the loci
 present.
 }
-\keyword{internal}

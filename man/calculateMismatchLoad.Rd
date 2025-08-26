@@ -4,12 +4,15 @@
 \alias{calculateMismatchLoad}
 \title{Calculate Mismatch Load Between Donor and Recipient Genotypes}
 \usage{
-calculateMismatchLoad(recipient_geno, donor_geno)
+calculateMismatchLoad(recipient_geno, donor_geno, loci = NULL)
 }
 \arguments{
 \item{recipient_geno}{An `hla_genotype` object for the recipient.}
 
 \item{donor_geno}{An `hla_genotype` object for the donor.}
+
+\item{loci}{Specific HLA loci to calculate the load across, NULL will calculate
+across all loci.}
 }
 \value{
 An integer representing the total mismatch load.

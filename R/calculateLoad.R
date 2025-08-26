@@ -7,6 +7,8 @@
 #'
 #' @param recipient_geno An `hla_genotype` object for the recipient.
 #' @param donor_geno An `hla_genotype` object for the donor.
+#' @param loci Specific HLA loci to calculate the load across, NULL will calculate
+#'   across all loci.
 #' @param evidence_level A character vector specifying the evidence levels for
 #'   eplets to be included in the analysis. Defaults to `c("A1", "A2")`.
 #'
@@ -31,7 +33,10 @@
 #' calculateEpletLoad(recipient_geno, donor_geno)
 #'
 #' @export
-calculateEpletLoad <- function(recipient_geno, donor_geno, evidence_level = c("A1", "A2")) {
+calculateEpletLoad <- function(recipient_geno, 
+                               donor_geno, 
+                               loci = NULL,
+                               evidence_level = c("A1", "A2")) {
   # Input validation
   validateHlaGeno(recipient_geno)
   validateHlaGeno(donor_geno)
@@ -41,10 +46,17 @@ calculateEpletLoad <- function(recipient_geno, donor_geno, evidence_level = c("A
   if (length(shared_loci) == 0) {
     stop("No shared loci between donor and recipient.")
   }
-
-  # Get all recipient and donor alleles
-  recipient_alleles <- unlist(recipient_geno$data[1, ])
-  donor_alleles <- unlist(donor_geno$data[1, ])
+  
+  # Get all or subset recipient and donor alleles
+  if(!is.null(loci)) {
+    recipient.idx <- grep(paste0(loci, collapse = "|"), colnames(recipient_geno$data))
+    donor.idx <- grep(paste0(loci, collapse = "|"), colnames(donor_geno$data))
+  } else {
+    recipient.idx <- seq_len(ncol(recipient_geno$data))
+    donor.idx <- seq_len(ncol(donor_geno$data))
+  }
+  recipient_alleles <- unlist(recipient_geno$data[1,recipient.idx])
+  donor_alleles <- unlist(donor_geno$data[1,donor.idx])
 
   # Remove NA or empty strings
   recipient_alleles <- recipient_alleles[!is.na(recipient_alleles) & recipient_alleles != ""]
@@ -78,6 +90,8 @@ calculateEpletLoad <- function(recipient_geno, donor_geno, evidence_level = c("A
 #'
 #' @param recipient_geno An `hla_genotype` object for the recipient.
 #' @param donor_geno An `hla_genotype` object for the donor.
+#' @param loci Specific HLA loci to calculate the load across, NULL will calculate
+#'   across all loci.
 #'
 #' @return An integer representing the total mismatch load.
 #'
@@ -100,7 +114,9 @@ calculateEpletLoad <- function(recipient_geno, donor_geno, evidence_level = c("A
 #' calculateMismatchLoad(recipient_geno, donor_geno)
 #'
 #' @export
-calculateMismatchLoad <- function(recipient_geno, donor_geno) {
+calculateMismatchLoad <- function(recipient_geno, 
+                                  donor_geno, 
+                                  loci = NULL) {
   # Input validation
   validateHlaGeno(recipient_geno)
   validateHlaGeno(donor_geno)
@@ -113,9 +129,16 @@ calculateMismatchLoad <- function(recipient_geno, donor_geno) {
 
   total_mismatches <- 0
 
-  # Get all recipient and donor alleles
-  recipient_alleles <- unlist(recipient_geno$data[1, ])
-  donor_alleles <- unlist(donor_geno$data[1, ])
+  # Get all or subset recipient and donor alleles
+  if(!is.null(loci)) {
+    recipient.idx <- grep(paste0(loci, collapse = "|"), colnames(recipient_geno$data))
+    donor.idx <- grep(paste0(loci, collapse = "|"), colnames(donor_geno$data))
+  } else {
+    recipient.idx <- seq_len(ncol(recipient_geno$data))
+    donor.idx <- seq_len(ncol(donor_geno$data))
+  }
+  recipient_alleles <- unlist(recipient_geno$data[1,recipient.idx])
+  donor_alleles <- unlist(donor_geno$data[1,donor.idx])
 
   # Remove NA or empty strings
   recipient_alleles <- recipient_alleles[!is.na(recipient_alleles) & recipient_alleles != ""]

@@ -4,12 +4,20 @@
 \alias{calculateEpletLoad}
 \title{Calculate Eplet Load Between Donor and Recipient Genotypes}
 \usage{
-calculateEpletLoad(recipient_geno, donor_geno, evidence_level = c("A1", "A2"))
+calculateEpletLoad(
+  recipient_geno,
+  donor_geno,
+  loci = NULL,
+  evidence_level = c("A1", "A2")
+)
 }
 \arguments{
 \item{recipient_geno}{An `hla_genotype` object for the recipient.}
 
 \item{donor_geno}{An `hla_genotype` object for the donor.}
+
+\item{loci}{Specific HLA loci to calculate the load across, NULL will calculate
+across all loci.}
 
 \item{evidence_level}{A character vector specifying the evidence levels for
 eplets to be included in the analysis. Defaults to `c("A1", "A2")`.}

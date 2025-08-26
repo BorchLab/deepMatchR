@@ -2,10 +2,13 @@
 
 S3method(print,hla_genotype)
 export(calculateAUC)
+export(calculateEpletLoad)
+export(calculateMismatchLoad)
 export(compareHlaSequences)
 export(cregAUC)
 export(epletAUC)
 export(getAlleleSequence)
+export(hlaGeno)
 export(plotAntibodies)
 export(plotEplets)
 export(plotPRA)

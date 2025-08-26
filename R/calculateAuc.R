@@ -8,7 +8,7 @@
 #' obtain an area-under-the-curve (AUC).
 #'
 #' Depending on user arguments, it can either generate a ggplot or return
-#' the AUC results as a tibble.
+#' the AUC results as a data.frame.
 #'
 #' @param result_file A data frame of SAB results or a path to a CSV/XLS/XLSX file.
 #' @param analysis_type Character. The type of analysis to perform.

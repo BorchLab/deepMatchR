@@ -126,6 +126,48 @@ Eplets are key components of HLA immunogenicity. The `quantifyEpletMismatch` fun
 quantifyEpletMismatch("A*01:01", "A*02:01")
 ```
 
+### Calculating Eplet and Mismatch Load
+
+When working with donor and recipient HLA genotypes, it is often useful to calculate the total eplet or amino acid mismatch load. The `calculateEpletLoad` and `calculateMismatchLoad` functions provide a streamlined way to do this.
+
+**Arguments:**
+
+*   `recipient_geno`, `donor_geno`: `hla_genotype` objects for the recipient and donor.
+*   `evidence_level` (for `calculateEpletLoad`): Filters eplets based on their level of experimental evidence.
+
+**Example:**
+
+First, we create `hla_genotype` objects for a recipient and a donor.
+
+```{r}
+# Create dummy recipient and donor genotypes
+recipient <- data.frame(
+  A_1 = "A*01:01", A_2 = "A*02:01",
+  B_1 = "B*07:02", B_2 = "B*08:01"
+)
+donor <- data.frame(
+  A_1 = "A*03:01", A_2 = "A*24:02",
+  B_1 = "B*44:02", B_2 = "B*51:01"
+)
+# Convert to hla_genotype objects
+recipient_geno <- hlaGeno(recipient)
+donor_geno <- hlaGeno(donor)
+```
+
+Now we can use these objects to calculate the eplet and mismatch loads.
+
+```{r}
+# Calculate eplet load
+calculateEpletLoad(recipient_geno, donor_geno)
+
+# Calculate mismatch load
+donor_geno2 <- hlaGeno(data.frame(
+  A_1 = "A*01:01", A_2 = "A*03:01",
+  B_1 = "B*44:02", B_2 = "B*51:01"
+))
+calculateMismatchLoad(recipient_geno, donor_geno2)
+```
+
 ## plotAntibodies
 
 The `plotAntibodies()` function is a versatile tool for visualizing antibody data from both Single Antigen Bead (SAB) and Panel Reactive Antibody (PRA) assays. Its primary goal is to create clear, publication-quality bar plots of Mean Fluorescence Intensity (MFI) values. For added detail, it can append a table of antigen specificities directly below the plot, which is useful for interpreting complex results. The function is flexible, accepting data as either a data frame or directly from a file.

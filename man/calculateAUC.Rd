@@ -88,5 +88,5 @@ that are positive above a sequence of MFI cut-offs and integrates that to
 obtain an area-under-the-curve (AUC).
 
 Depending on user arguments, it can either generate a ggplot or return
-the AUC results as a tibble.
+the AUC results as a data.frame.
 }

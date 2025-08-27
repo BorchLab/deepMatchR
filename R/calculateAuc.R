@@ -56,6 +56,7 @@ calculateAUC <- function(result_file,
                          creg_filter = 3,
                          serology_filter = NULL,
                          ...) {
+
   
   # --- 1. Configure analysis based on type ---
   if (tolower(analysis_type) == "eplet") {
@@ -97,7 +98,7 @@ calculateAUC <- function(result_file,
   
   # --- 3. Create combinations of alleles and MFI cutoffs ---
   cutoffs <- seq(cut_min, cut_max, cut_step)
-  class_alleles <- result[, .(allele, mfi_min)]
+  class_alleles <- unique(result[, .(allele, mfi_min)])
   
   summary_dt <- data.table::CJ(allele = unique(class_alleles$allele), cut = cutoffs)
   summary_dt <- merge(summary_dt, class_alleles, by = "allele", all.x = TRUE)
@@ -145,6 +146,10 @@ calculateAUC <- function(result_file,
   
   # --- 8. Generate Plot or Return data.table ---
   if (plot_results) {
+    if(group_by == "evidence_level") {
+      group_by <- "evidence"
+    }
+    
     plot_data <- analysis_dt
     
     if (analysis_type == "eplet" && !is.null(config$top_eplets)) {
@@ -153,7 +158,8 @@ calculateAUC <- function(result_file,
     }
     
     p <- ggplot(plot_data, aes(x = cut, y = percent_positive,
-                               colour = .data[[group_by]], group = .data[[config$feature_col]])) +
+                               colour = .data[[group_by]], 
+                               group = .data[[config$feature_col]])) +
       geom_line() +
       xlim(0, ifelse(label, cut_max + 1500, cut_max)) +
       ylim(0, 1) +

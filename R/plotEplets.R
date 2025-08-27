@@ -61,7 +61,9 @@ plotEplets <- function(result_file,
                        top_eplets = 10,
                        palette = "spectral",
                        ...) {
-  if(group_by == "evidence_level") group_by <- "evidence"
+  if(group_by == "evidence_level") {
+    group_by <- "evidence"
+  }
   eplet_data <- data.table::as.data.table(deepMatchR::deepMatchR_eplets)
   plot_type <- match.arg(plot_type)
   
@@ -96,7 +98,7 @@ plotEplets <- function(result_file,
       loci = paste0(unique(loci), collapse = "; "),
       count_above = sum(positive.bead),
       count_total = .N,
-      evidence_level = unique(evidence)
+      evidence = unique(evidence)
     ), by = eplet]
 
     summary_dt[, pp_max := round(count_above / count_total, 2)]
@@ -133,7 +135,8 @@ plotEplets <- function(result_file,
     data.table::setorder(summary_dt, -pp_max)
     ranked_data <- summary_dt[1:min(top_eplets, .N)]
     
-    plot <- ggplot(ranked_data, aes(x = reorder(eplet, pp_max), y = .data[[y]],
+    plot <- ggplot(ranked_data, aes(x = reorder(eplet, pp_max), 
+                                    y = .data[[y]],
                                     fill = .data[[group_by]])) +
       geom_bar(stat = "identity", color = "black", linewidth = 0.25) +
       coord_flip(clip = "off") +
@@ -151,7 +154,8 @@ plotEplets <- function(result_file,
     
     label.max <- round(max(ranked_data$norm_AUC), 2) - 0.05
     
-    plot <- ggplot(ranked_data, aes(x = reorder(eplet, norm_AUC), y = .data[[y]],
+    plot <- ggplot(ranked_data, aes(x = reorder(eplet, norm_AUC), 
+                                    y = .data[[y]],
                                     fill = .data[[group_by]])) +
       geom_bar(stat = "identity", color = "black", linewidth = 0.25) +
       coord_flip(clip = "off") +

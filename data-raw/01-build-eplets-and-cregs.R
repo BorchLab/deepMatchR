@@ -31,25 +31,26 @@ SAB2 <- .processSAB(deepMatchR_example[[2]])
 PRA  <- .processPRA(deepMatchR_example[[3]])
 
 all_alleles <- bind_rows(
-  select(SAB1, allele, serology = antigen),
-  select(SAB2, allele, serology = antigen),
-  select(PRA,  allele, serology = antigen)
+  dplyr::select(SAB1, allele, serology = antigen),
+  dplyr::select(SAB2, allele, serology = antigen),
+  dplyr::select(PRA,  allele, serology = antigen)
 ) %>%
-  filter(!allele %in% c("Bw4", "Bw6")) %>%
-  distinct()
+  dplyr::filter(!allele %in% c("Bw4", "Bw6")) %>%
+  dplyr::distinct()
 
 # ---- Eplet dictionary --------------------------------------------------------
 read_eplet_csv <- function(path) read_csv(path, show_col_types = FALSE)
 
 ClassI <- read_eplet_csv(c1_file)[,-1]
 ClassII <- read_eplet_csv(c2_file)[,-1]
+ClassII$Alleles <- gsub("_", "*", ClassII$Alleles)
 
 to_long_eplet <- function(df) {
   df %>%
     separate_rows(Alleles, sep = ",\\s*") %>%
     mutate(Alleles = str_trim(Alleles)) %>%
-    select(-description) %>%
-    rename(
+    dplyr::select(-description) %>%
+    dplyr::rename(
       eplet      = `Epitope Name`,
       exposition = exposition,
       reactivity = `Antibody Reactivity`,
@@ -121,7 +122,7 @@ expand_serology <- function(s) {
 
 creg_map <- creg_tbl %>%
   mutate(serology_list = map(Serology, expand_serology)) %>%
-  select(CREG, serology_list) %>%
+  dplyr::select(CREG, serology_list) %>%
   unnest_longer(serology_list, values_to = "serology") %>%
   distinct(serology, CREG)
 

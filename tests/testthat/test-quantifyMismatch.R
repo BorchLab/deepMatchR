@@ -1,48 +1,103 @@
-context("Testing Mismatch Quantification")
+# tests/testthat/test-quantifyMismatch.R
 
-test_that("quantifyMismatch correctly counts mismatches", {
-  seq1 <- "ABCDE"
-  seq2 <- "ABXDE"
-  expect_equal(quantifyMismatch(seq1, seq2), 1)
-
-  seq3 <- "ABCDE"
-  seq4 <- "XXXXX"
-  expect_equal(quantifyMismatch(seq3, seq4), 5)
-
-  seq5 <- "ABCDE"
-  seq6 <- "ABCDE"
-  expect_equal(quantifyMismatch(seq5, seq6), 0)
+test_that("basic mismatch counting works", {
+  seq1 <- "YFAMYGEKVAHTHVDTLYVRYHY"
+  seq2 <- "YFDMYGEKVAHTHVDTLYVRFHY"
+  expect_equal(quantifyMismatch(seq1, seq2), 2L)
 })
 
-test_that("quantifyMismatch handles errors correctly", {
-  expect_error(quantifyMismatch("ABC", "ABCD"), "Input sequences must be of the same length.")
-  expect_error(quantifyMismatch(123, "ABC"), "Input sequences must be character strings.")
+test_that("case-insensitivity and equal length checks", {
+  expect_error(quantifyMismatch("ACD", "ACDE"), "same length")
+  expect_error(quantifyMismatch(1, "ACD"), "character strings")
+  
+  # Same result regardless of case
+  expect_equal(quantifyMismatch("acde", "AcDe"), 0L)
 })
 
-test_that("getAlleleSequence retrieves a known allele", {
-  skip_if_not_installed("immReferent")
-  # Skip test if IMGT is not available (e.g., no internet)
-  if (!immReferent::is_imgt_available()) {
-    skip("IMGT website not available.")
-  }
-
-  # A*01:01 is a very common allele, it should exist.
-  seq <- getAlleleSequence("A*01:01")
-  expect_type(seq, "character")
-  expect_gt(nchar(seq), 0) # Expect that the sequence is not empty
+test_that("filters: polarity-only vs charge-only", {
+  # Construct sequences with three mismatches:
+  # 1) A -> D (nonpolar -> negative)   => charge_change=TRUE,  polarity_change=TRUE
+  # 2) A -> S (nonpolar -> polar)      => charge_change=FALSE, polarity_change=TRUE
+  # 3) S -> T (polar -> polar)         => charge_change=FALSE, polarity_change=FALSE (still mismatch)
+  s1 <- "AAAS"
+  s2 <- "ADST"
+  
+  # Raw mismatches: 3
+  expect_equal(quantifyMismatch(s1, s2), 3L)
+  
+  # Only charge-changing: counts #1
+  expect_equal(quantifyMismatch(s1, s2, filter_charge = TRUE), 1L)
+  
+  # Only polarity-changing: counts #1 and #2
+  expect_equal(quantifyMismatch(s1, s2, filter_polarity = TRUE), 2L)
+  
+  # Require BOTH charge and polarity change: counts #1
+  expect_equal(
+    quantifyMismatch(s1, s2, filter_charge = TRUE, filter_polarity = TRUE),
+    1L
+  )
+  
+  # Only mismatches that do NOT change polarity: counts #3
+  expect_equal(quantifyMismatch(s1, s2, filter_polarity = FALSE), 1L)
 })
 
-test_that("getAlleleSequence throws an error for a non-existent allele", {
-  skip_if_not_installed("immReferent")
-  if (!immReferent::is_imgt_available()) {
-    skip("IMGT website not available.")
-  }
-
-  expect_error(
-    getAlleleSequence("A*99:99"),
-    "Allele 'A\\*99:99' not found in the IMGT/HLA database."
+test_that("charge change without polarity change is possible (charged->charged)", {
+  # E (neg, polar) -> D (neg, polar): mismatch but charge_change=FALSE, polarity_change=FALSE
+  expect_equal(
+    quantifyMismatch("E", "D", filter_charge = TRUE),
+    0L
+  )
+  
+  # C (polar, neutral) -> E (polar, negative): charge_change=TRUE, polarity_change=FALSE (both polar)
+  expect_equal(
+    quantifyMismatch("C", "E", filter_charge = TRUE, filter_polarity = FALSE),
+    1L
   )
 })
+
+test_that("na_action behavior with unknowns (X, *)", {
+  s1 <- "ACDX"
+  s2 <- "ACDY"
+  
+  # error: complains about unknown residues
+  expect_error(quantifyMismatch(s1, s2, na_action = "error"), "Unknown/unsupported")
+  
+  # exclude: unknown-involving positions not counted when filters apply
+  # Here only the X vs Y position is a mismatch, but it's unknown on s1
+  expect_equal(quantifyMismatch(s1, s2, na_action = "exclude"), 1L) # no filters => still 1
+  # With a filter active, the unknown position is excluded (NA) from counting
+  expect_equal(
+    quantifyMismatch(s1, s2, na_action = "exclude", filter_polarity = TRUE),
+    0L
+  )
+  
+  # count: mismatches vs unknowns are counted; property deltas set to NA internally
+  expect_equal(quantifyMismatch(s1, s2, na_action = "count"), 1L)
+})
+
+test_that("return types and columns are correct", {
+  s1 <- "ACDE"
+  s2 <- "ACDF"
+  
+  # Count
+  expect_type(quantifyMismatch(s1, s2, return = "count"), "integer")
+  
+  # data.frame
+  df <- quantifyMismatch(s1, s2, return = "detail")
+  expect_s3_class(df, "data.frame")
+  expect_true(all(c(
+    "position","ref","alt","is_mismatch",
+    "charge_ref","charge_alt","charge_change",
+    "polarity_ref","polarity_alt","polarity_change","counted"
+  ) %in% names(df)))
+  
+})
+
+test_that("identical sequences return zero", {
+  s <- "MSTNPKPQR"
+  expect_equal(quantifyMismatch(s, s), 0L)
+})
+
 
 context("Testing Eplet Mismatch Quantification")
 

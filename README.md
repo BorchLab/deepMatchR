@@ -19,14 +19,6 @@ There are currently several computational approaches to quantifying the risk of 
 
 ### Sequence & Eplet Analysis
 
-- **`compareHlaSequences(seq1, seq2)`**: Compares two protein sequences and reports the amino acid differences, including changes in polarity and charge.
-
-  ```r
-  seq1 <- "YFAMYGEKVAHTHVDTLYVRYHY"
-  seq2 <- "YFDMYGEKVAHTHVDTLYVRFHY"
-  compareHlaSequences(seq1, seq2)
-  ```
-
 - **`getAlleleSequence(allele_name)`**: Retrieves the full amino acid sequence for a given HLA allele from the IMGT/HLA database.
 
   ```r

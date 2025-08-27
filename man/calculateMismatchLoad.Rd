@@ -4,26 +4,50 @@
 \alias{calculateMismatchLoad}
 \title{Calculate Mismatch Load Between Donor and Recipient Genotypes}
 \usage{
-calculateMismatchLoad(recipient_geno, donor_geno, loci = NULL)
+calculateMismatchLoad(
+  recipient_geno,
+  donor_geno,
+  loci = NULL,
+  filter_charge = NULL,
+  filter_polarity = NULL,
+  na_action = c("exclude", "error", "count"),
+  return = c("total", "per_locus", "pairwise"),
+  pairwise_locus = NULL
+)
 }
 \arguments{
 \item{recipient_geno}{An `hla_genotype` object for the recipient.}
 
 \item{donor_geno}{An `hla_genotype` object for the donor.}
 
-\item{loci}{Specific HLA loci to calculate the load across, NULL will calculate
-across all loci.}
+\item{loci}{Character vector of loci to include (e.g., c("A","B","C")), or NULL
+to use all shared loci.}
+
+\item{filter_charge}{NULL/TRUE/FALSE. Passed to [quantifyMismatch()].}
+
+\item{filter_polarity}{NULL/TRUE/FALSE. Passed to [quantifyMismatch()].}
+
+\item{na_action}{One of "exclude" (default), "error", "count". Passed through.}
+
+\item{return}{What to return: "total" (default), "per_locus", or "pairwise".}
+
+\item{pairwise_locus}{When `return = "pairwise"`, the locus to visualize
+(e.g., "A", "B", "C"). Ignored otherwise.}
 }
 \value{
-An integer representing the total mismatch load.
+- If `return = "total"`: single integer total mismatch load.
+- If `return = "per_locus"`: data.frame with columns `locus`, `mismatch_load`.
+- If `return = "pairwise"`: numeric matrix of pairwise counts (rows = recipient alleles,
+  columns = donor alleles) for `pairwise_locus`.
 }
 \description{
-This function calculates the total amino acid mismatch load between a donor
-and a recipient. It iterates over all specified HLA loci, comparing each
-recipient allele to each donor allele in an exhaustive manner.
+Computes amino-acid mismatch burden between donor and recipient across HLA loci
+by calling `quantifyMismatch()` on each recipient–donor allele pair per locus.
+Can return (1) a single total, (2) a per-locus summary table, or
+(3) a pairwise recipient-vs-donor allele matrix for one locus.
 }
 \examples{
-# Create dummy recipient and donor genotypes
+# Toy genotypes
 recipient <- data.frame(
   A_1 = "A*01:01", A_2 = "A*02:01",
   B_1 = "B*07:02", B_2 = "B*08:01"
@@ -32,12 +56,22 @@ donor <- data.frame(
   A_1 = "A*01:01", A_2 = "A*03:01",
   B_1 = "B*44:02", B_2 = "B*51:01"
 )
+rgeno <- hlaGeno(recipient)
+dgeno <- hlaGeno(donor)
 
-# Convert to hla_genotype objects
-recipient_geno <- hlaGeno(recipient)
-donor_geno <- hlaGeno(donor)
+# 1) Total load (all loci, all mismatches)
+calculateMismatchLoad(rgeno, dgeno)
 
-# Calculate mismatch load
-calculateMismatchLoad(recipient_geno, donor_geno)
+# 2) Per-locus summary
+calculateMismatchLoad(rgeno, dgeno, return = "per_locus")
+
+# 3) Pairwise matrix for B locus
+mB <- calculateMismatchLoad(rgeno, dgeno, return = "pairwise", pairwise_locus = "B")
+mB
+
+# 4) Apply biophysical filters
+calculateMismatchLoad(rgeno, dgeno, filter_charge = TRUE)                # charge-changing only
+calculateMismatchLoad(rgeno, dgeno, filter_polarity = TRUE)              # polarity-changing only
+calculateMismatchLoad(rgeno, dgeno, filter_charge = TRUE, filter_polarity = TRUE)  # both
 
 }

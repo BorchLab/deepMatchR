@@ -63,38 +63,6 @@ head(deepMatchR_example[[3]])
 
 `deepMatchR` includes several functions for comparing and analyzing HLA sequences at the amino acid and eplet level. These are fundamental tools for quantifying the differences between alleles.
 
-## Comparing Sequences with `compareHlaSequences`
-
-The `compareHlaSequences` function allows you to see the specific amino acid differences between two protein sequences. It not only identifies the positions of mismatches but also characterizes them based on changes in physicochemical properties (polarity and charge), which can be important for predicting immunogenicity.
-
-**Arguments:**
-
-*   `seq1`, `seq2`: The two protein sequences to compare. They must be of the same length.
-
-**Example:**
-
-Here, we compare two sequences that differ at two positions. The output is a data frame detailing each mismatch.
-
-```{r}
-seq1 <- "YFAMYGEKVAHTHVDTLYVRYHY"
-seq2 <- "YFDMYGEKVAHTHVDTLYVRFHY"
-compareHlaSequences(seq1, seq2)
-```
-
-## Quantifying Mismatches with `quantifyMismatch`
-
-If you only need to know the total number of differences, `quantifyMismatch` provides a quick and simple way to get a single integer value representing the mismatch count.
-
-**Arguments:**
-
-*   `seq1`, `seq2`: The two protein sequences to compare.
-
-**Example:**
-
-```{r}
-quantifyMismatch(seq1, seq2)
-```
-
 ## Retrieving Allele Sequences with `getAlleleSequence`
 
 To perform these comparisons, you first need the protein sequences for the HLA alleles of interest. The `getAlleleSequence` function retrieves these sequences from the IMGT/HLA database. Note that this function requires an internet connection.
@@ -111,6 +79,71 @@ a0101_seq <- getAlleleSequence("A*01:01")
 head(a0101_seq)
 ```
 
+## Quantifying mismatches with `quantifyMismatch`
+
+`quantifyMismatch()` compares two equal-length amino-acid sequences and (optionally) filters mismatches by **charge** and/or **polarity** changes.
+
+### Arguments
+
+| Argument        | Type              | Default      | What it does                                                | Allowed values |
+|-----------------|------------------|--------------|-------------------------------------------------------------|----------------|
+| `sequence1`, `sequence2` | character (length-1) | —            | The two protein sequences to compare (same length).          | Strings of standard one-letter AAs (case-insensitive). |
+| `filter_charge` | logical / `NULL` | `NULL`       | Filter counted mismatches by charge change.                  | `NULL` (no filter), `TRUE` (only charge-changing), `FALSE` (only not charge-changing). |
+| `filter_polarity` | logical / `NULL` | `NULL`     | Filter counted mismatches by polarity change.                | `NULL`, `TRUE`, `FALSE`. |
+| `return`        | character        | `"count"`    | Controls the output.                                         | `"count"`, `detail` |
+| `na_action`     | character        | `"exclude"`  | How to handle unknown residues (e.g., `X`, `*`, `-`).        | `"exclude"`, `"error"`, `"count"` |
+
+
+**Charge model:** K/R/H = positive; D/E = negative; all others = neutral.  
+**Polarity model:** nonpolar {A,V,L,I,P,M,F,W,G}; polar {S,T,N,Q,Y,C,H,K,R,D,E}.
+
+### Returns
+
+- `return = "count"` (default): an integer (mismatch count after filters).  
+- `return = "detail"`: a table with columns  
+  `position, ref, alt, is_mismatch, charge_ref, charge_alt, charge_change, polarity_ref, polarity_alt, polarity_change, counted`.
+
+```{r}
+seq1 <- "YFAMYGEKVAHTHVDTLYVRYHY"
+seq2 <- "YFDMYGEKVAHTHVDTLYVRFHY"
+
+# Total mismatches (original behavior)
+quantifyMismatch(seq1, 
+                 seq2)
+
+# Only mismatches that change CHARGE
+quantifyMismatch(seq1, 
+                 seq2, 
+                 filter_charge = TRUE)
+
+# Only mismatches that change POLARITY
+quantifyMismatch(seq1, 
+                 seq2, 
+                 filter_polarity = TRUE)
+
+# Mismatches that change BOTH charge AND polarity
+quantifyMismatch(seq1, 
+                 seq2, 
+                 filter_charge = TRUE, 
+                 filter_polarity = TRUE)
+```
+
+### Inspect details per position
+
+```{r}
+df <- quantifyMismatch(seq1, 
+                       seq2, 
+                       return = "detail")
+head(df)
+```
+
+Common columns to look at:
+
+* `is_mismatch`: amino acids differ at this position
+* `charge_change`, `polarity_change`: whether that property changed
+* `counted`: whether this position is included in the final tally given your filters
+
+
 ## Quantifying Eplet Mismatches with `quantifyEpletMismatch`
 
 Eplets are key components of HLA immunogenicity. The `quantifyEpletMismatch` function calculates the number of eplets that are not shared between two HLA alleles, giving a measure of the potential for an antibody response. It uses an internal database of known eplets.
@@ -118,7 +151,7 @@ Eplets are key components of HLA immunogenicity. The `quantifyEpletMismatch` fun
 **Arguments:**
 
 *   `allele1`, `allele2`: The names of the two HLA alleles to compare.
-*   `evidence_level`: Filters eplets based on their level of experimental evidence (e.g., `"A1"`, `"A2"`, `"B"`).
+*   `evidence_level`: Filters eplets based on their level of experimental evidence (e.g., `"A1"`, `"A2"`, `"B"`, `"D`).
 
 **Example:**
 
@@ -126,7 +159,7 @@ Eplets are key components of HLA immunogenicity. The `quantifyEpletMismatch` fun
 quantifyEpletMismatch("A*01:01", "A*02:01")
 ```
 
-### Calculating Eplet and Mismatch Load
+## Calculating Eplet and Mismatch Load
 
 When working with donor and recipient HLA genotypes, it is often useful to calculate the total eplet or amino acid mismatch load. The `calculateEpletLoad` and `calculateMismatchLoad` functions provide a streamlined way to do this.
 
@@ -150,22 +183,81 @@ donor <- data.frame(
   B_1 = "B*44:02", B_2 = "B*51:01"
 )
 # Convert to hla_genotype objects
-recipient_geno <- hlaGeno(recipient)
-donor_geno <- hlaGeno(donor)
+rgeno <- hlaGeno(recipient)
+dgeno <- hlaGeno(donor)
+
+# Calculate eplet load
+calculateEpletLoad(rgeno, dgeno)
 ```
 
-Now we can use these objects to calculate the eplet and mismatch loads.
+### Calculating donor–recipient mismatch load with `calculateMismatchLoad`
+
+`calculateMismatchLoad()` aggregates amino-acid mismatches between recipient and donor across HLA loci, leveraging `quantifyMismatch()` for each recipient–donor allele pair.
+
+### Arguments (high level)
+
+| Argument | Default | What it does |
+|---|---:|---|
+| `recipient_geno`, `donor_geno` | — | HLA genotypes from `hlaGeno()`. |
+| `loci` | `NULL` | Restrict to a set of loci (e.g., `c("A","B","C")`); `NULL` = all shared. |
+| `filter_charge`, `filter_polarity` | `NULL` | Forwarded to `quantifyMismatch()` to count only charge- and/or polarity-changing mismatches. |
+| `na_action` | `"exclude"` | Handling of unknown residues in `quantifyMismatch()`. |
+| `return` | `"total"` | `"total"` (single integer), `"per_locus"` (summary table), or `"pairwise"` (matrix for one locus). |
+| `pairwise_locus` | `NULL` | When `return = "pairwise"`, which locus (e.g., `"B"`). |
 
 ```{r}
-# Calculate eplet load
-calculateEpletLoad(recipient_geno, donor_geno)
-
 # Calculate mismatch load
 donor_geno2 <- hlaGeno(data.frame(
   A_1 = "A*01:01", A_2 = "A*03:01",
   B_1 = "B*44:02", B_2 = "B*51:01"
 ))
-calculateMismatchLoad(recipient_geno, donor_geno2)
+calculateMismatchLoad(rgeno, 
+                      dgeno)
+```
+
+#### Per-locus contributions
+
+```{r}
+per_locus <- calculateMismatchLoad(rgeno, 
+                                   dgeno, 
+                                   return = "per_locus")
+per_locus
+```
+
+#### Pairwise allele matrix for a locus
+
+```{r}
+mB <- calculateMismatchLoad(rgeno, 
+                            dgeno, 
+                            return = "pairwise", 
+                            pairwise_locus = "B")
+mB
+```
+
+#### Apply biophysical filters* 
+
+Count only mismatches that change charge:
+
+```{r}
+calculateMismatchLoad(rgeno, 
+                      dgeno,
+                      filter_charge = TRUE)
+```
+
+Count only mismatches that change polarity:
+
+```{r}
+calculateMismatchLoad(rgeno, 
+                      dgeno,
+                      filter_polarity = TRUE)
+```
+
+#### Restrict by locus (e.g., A)
+
+```{r}
+calculateMismatchLoad(rgeno, 
+                      dgeno,
+                      loci = "A")
 ```
 
 ## plotAntibodies
@@ -294,6 +386,8 @@ This function can return either a plot of the positivity curves or a data frame 
 ```{r}
 plot_result <- epletAUC(
   result_file   = deepMatchR_example[[1]],
+  group_by = "evidence",        # Color by evidence
+  evidence_level = c("A1", "A2", "B", "D"),
   plot_results  = TRUE,         # Request a plot
   cut_min       = 250,          # Starting cutoff
   cut_max       = 10000,        # Ending cutoff

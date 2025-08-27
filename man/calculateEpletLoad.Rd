@@ -42,10 +42,10 @@ donor <- data.frame(
 )
 
 # Convert to hla_genotype objects
-recipient_geno <- hlaGeno(recipient)
-donor_geno <- hlaGeno(donor)
+rgeno <- hlaGeno(recipient)
+dgeno <- hlaGeno(donor)
 
 # Calculate eplet load
-calculateEpletLoad(recipient_geno, donor_geno)
+calculateEpletLoad(rgeno, dgeno)
 
 }

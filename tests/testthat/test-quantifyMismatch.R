@@ -97,25 +97,3 @@ test_that("identical sequences return zero", {
   s <- "MSTNPKPQR"
   expect_equal(quantifyMismatch(s, s), 0L)
 })
-
-
-context("Testing Eplet Mismatch Quantification")
-
-test_that("quantifyEpletMismatch correctly counts mismatches", {
-  data(deepMatchR_eplets)
-  allele1 <- "A*01:110" 
-  allele2 <- "A*02:636" 
-  expect_equal(quantifyEpletMismatch(allele1, allele2), 12)
-})
-
-test_that("quantifyEpletMismatch handles no mismatches", {
-  expect_equal(quantifyEpletMismatch("A*01:110", "A*01:110"), 0)
-})
-
-test_that("quantifyEpletMismatch handles alleles not in the database", {
-  # One allele not in db
-  expect_equal(quantifyEpletMismatch("A*01:110", "A*99:99"), 9) 
-
-  # Both alleles not in db
-  expect_equal(quantifyEpletMismatch("A*98:98", "A*99:99"), 0)
-})

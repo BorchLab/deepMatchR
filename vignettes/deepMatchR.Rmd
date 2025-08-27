@@ -143,54 +143,7 @@ Common columns to look at:
 * `charge_change`, `polarity_change`: whether that property changed
 * `counted`: whether this position is included in the final tally given your filters
 
-
-## Quantifying Eplet Mismatches with `quantifyEpletMismatch`
-
-Eplets are key components of HLA immunogenicity. The `quantifyEpletMismatch` function calculates the number of eplets that are not shared between two HLA alleles, giving a measure of the potential for an antibody response. It uses an internal database of known eplets.
-
-**Arguments:**
-
-*   `allele1`, `allele2`: The names of the two HLA alleles to compare.
-*   `evidence_level`: Filters eplets based on their level of experimental evidence (e.g., `"A1"`, `"A2"`, `"B"`, `"D`).
-
-**Example:**
-
-```{r}
-quantifyEpletMismatch("A*01:01", "A*02:01")
-```
-
-## Calculating Eplet and Mismatch Load
-
-When working with donor and recipient HLA genotypes, it is often useful to calculate the total eplet or amino acid mismatch load. The `calculateEpletLoad` and `calculateMismatchLoad` functions provide a streamlined way to do this.
-
-**Arguments:**
-
-*   `recipient_geno`, `donor_geno`: `hla_genotype` objects for the recipient and donor.
-*   `evidence_level` (for `calculateEpletLoad`): Filters eplets based on their level of experimental evidence.
-
-**Example:**
-
-First, we create `hla_genotype` objects for a recipient and a donor.
-
-```{r}
-# Create dummy recipient and donor genotypes
-recipient <- data.frame(
-  A_1 = "A*01:01", A_2 = "A*02:01",
-  B_1 = "B*07:02", B_2 = "B*08:01"
-)
-donor <- data.frame(
-  A_1 = "A*03:01", A_2 = "A*24:02",
-  B_1 = "B*44:02", B_2 = "B*51:01"
-)
-# Convert to hla_genotype objects
-rgeno <- hlaGeno(recipient)
-dgeno <- hlaGeno(donor)
-
-# Calculate eplet load
-calculateEpletLoad(rgeno, dgeno)
-```
-
-### Calculating donor–recipient mismatch load with `calculateMismatchLoad`
+## Calculating donor–recipient mismatch load with `calculateMismatchLoad`
 
 `calculateMismatchLoad()` aggregates amino-acid mismatches between recipient and donor across HLA loci, leveraging `quantifyMismatch()` for each recipient–donor allele pair.
 
@@ -206,16 +159,22 @@ calculateEpletLoad(rgeno, dgeno)
 | `pairwise_locus` | `NULL` | When `return = "pairwise"`, which locus (e.g., `"B"`). |
 
 ```{r}
-# Calculate mismatch load
-donor_geno2 <- hlaGeno(data.frame(
-  A_1 = "A*01:01", A_2 = "A*03:01",
+recipient <- data.frame(
+  A_1 = "A*01:01", A_2 = "A*02:01",
+  B_1 = "B*07:02", B_2 = "B*08:01"
+)
+donor <- data.frame(
+  A_1 = "A*03:01", A_2 = "A*24:02",
   B_1 = "B*44:02", B_2 = "B*51:01"
-))
+)
+rgeno <- hlaGeno(recipient)
+dgeno <- hlaGeno(donor)
+
 calculateMismatchLoad(rgeno, 
                       dgeno)
 ```
 
-#### Per-locus contributions
+### Per-locus contributions
 
 ```{r}
 per_locus <- calculateMismatchLoad(rgeno, 
@@ -224,7 +183,7 @@ per_locus <- calculateMismatchLoad(rgeno,
 per_locus
 ```
 
-#### Pairwise allele matrix for a locus
+### Pairwise allele matrix for a locus
 
 ```{r}
 mB <- calculateMismatchLoad(rgeno, 
@@ -234,7 +193,7 @@ mB <- calculateMismatchLoad(rgeno,
 mB
 ```
 
-#### Apply biophysical filters* 
+### Apply biophysical filters* 
 
 Count only mismatches that change charge:
 
@@ -252,12 +211,92 @@ calculateMismatchLoad(rgeno,
                       filter_polarity = TRUE)
 ```
 
-#### Restrict by locus (e.g., A)
+### Restrict by locus (e.g., A)
 
 ```{r}
 calculateMismatchLoad(rgeno, 
                       dgeno,
                       loci = "A")
+```
+
+## Quantifying Eplet Mismatches with `quantifyEpletMismatch`
+
+Eplets are key components of HLA immunogenicity. The `quantifyEpletMismatch` function calculates the number of eplets that are not shared between two HLA alleles, giving a measure of the potential for an antibody response. It uses an internal database of known eplets.
+
+**Arguments:**
+
+* `allele1`, `allele2`: The names of the two HLA alleles to compare.
+* `evidence_level`: Filters eplets based on their level of experimental evidence (e.g., `"A1"`, `"A2"`, `"B"`, `"D`).
+* `exposition_filter`: e.g., `"High"` or `c("High","Intermediate")`.
+* `reactivity_filter`: dataset-specific classes (e.g., `"Confirmed"`), if present.
+
+**Example:**
+
+```{r}
+# Symmetric eplet difference between two alleles, A1/A2 evidence only
+quantifyEpletMismatch("A*01:01", "A*02:01")
+
+# Restrict to High exposition only
+quantifyEpletMismatch("B*07:02", "B*44:02", 
+                      exposition_filter = "High")
+
+# No evidence filter, but require specific reactivity class
+quantifyEpletMismatch("C*07:01", "C*06:02", 
+                      evidence_level = NULL, 
+                      reactivity_filter = "Confirmed")
+
+```
+
+## Calculating EpletLoad
+
+When working with donor and recipient HLA genotypes, it is often useful to calculate the total eplet load. The arguments for `calculateEpletLoad()` mirrors `calculateMismatchLoad()`, with the added arguments from `quantifyEpletMismatch()`.
+
+```{r}
+calculateEpletLoad(rgeno, 
+                   dgeno)
+```
+
+### Per-locus summary
+
+```{r}
+per <- calculateEpletLoad(rgeno,
+                          dgeno,
+                          return = "per_locus")
+per
+```
+### Pairwise allele matrix for B locus
+
+```{r}
+mB <- calculateEpletLoad(rgeno, 
+                         dgeno, 
+                         return = "pairwise", 
+                         pairwise_locus = "B")
+mB
+```
+### Applying Filters
+
+High-exposition Only
+
+```{r}
+calculateEpletLoad(rgeno, 
+                   dgeno, 
+                   exposition_filter = "High")
+```
+
+Antibody-confirmed Eplets
+
+```{r}
+calculateEpletLoad(rgeno, 
+                   dgeno, 
+                   reactivity_filter = "Confirmed")
+```
+
+No Evidence Level Filter
+
+```{r}
+calculateEpletLoad(rgeno, 
+                   dgeno,  
+                   evidence_level = NULL)
 ```
 
 ## plotAntibodies

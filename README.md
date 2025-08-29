@@ -79,7 +79,7 @@ deepMatchR has been tested on R versions >= 4.0. Please consult the DESCRIPTION 
 To run deepMatchR, open R and install deepMatchR from github: 
 
 ```r
-devtools::install_github("ncborcherding/deepMatchR")
+devtools::install_github("BorchLab/deepMatchR")
 ```
 ***
 ## Bug Reports/New Features

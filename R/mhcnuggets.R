@@ -132,19 +132,41 @@ predictMHCnuggets <- function(peptides,
     
     # Patch Keras Adam lr->learning_rate to tolerate older mhcnuggets code
     reticulate::py_run_string("
+import sys
+# Be explicit about keras import—prefer TF's keras
 try:
-    import keras
+    from tensorflow import keras as tf_keras
+    keras = tf_keras
+except Exception:
+    try:
+        import keras
+    except Exception:
+        keras = None
+
+# Make the shim idempotent so we don't double-wrap and recurse.
+if keras is not None and not getattr(keras.optimizers.Adam, '_deepmatchr_shim', False):
     _old = keras.optimizers.Adam
     def _shim_Adam(*args, **kwargs):
         if 'lr' in kwargs and 'learning_rate' not in kwargs:
             kwargs['learning_rate'] = kwargs.pop('lr')
         return _old(*args, **kwargs)
+    _shim_Adam._deepmatchr_shim = True
     keras.optimizers.Adam = _shim_Adam
-    try:
-        import mhcnuggets.src.predict as _p
-        _p.Adam = keras.optimizers.Adam
-    except Exception:
-        pass
+
+# Try to update mhcnuggets' local Adam symbol if present
+try:
+    import mhcnuggets.src.predict as _p
+    if keras is not None:
+        _adam = keras.optimizers.Adam
+        if not getattr(_adam, '_deepmatchr_shim', False):
+            pass  # Already guarded above
+        _p.Adam = _adam
+except Exception:
+    pass
+
+# As a last resort, raise recursion limit a bit (harmless if not needed)
+try:
+    sys.setrecursionlimit(max(3000, sys.getrecursionlimit()))
 except Exception:
     pass
 ")

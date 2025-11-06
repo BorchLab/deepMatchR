@@ -270,7 +270,7 @@ calculatePeptideBindingLoad <- function(recipient_geno,
       binding_peptides = binding_peptides,
       binding_percentage = if (total_peptides > 0) 100 * binding_peptides / total_peptides else 0,
       ic50_threshold = ic50_threshold,
-      mhc_class = mhc_class,
+      mhc_class = mhc_class
     )
     
     return(summary_df)
@@ -295,7 +295,7 @@ calculatePeptideBindingLoad <- function(recipient_geno,
         binding_peptides = sum(sapply(locus_results, function(x) x$binding_peptides))
       ),
       per_locus = locus_results,
-      all_predictions = do.call(rbind, lapply(locus_results, function(x) x$results)),
+      all_predictions = do.call(rbind, lapply(locus_results, function(x) x$results))
     ))
   }
 }

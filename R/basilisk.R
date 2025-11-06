@@ -5,9 +5,13 @@
   packages = c("python=3.10"),
   pip = c(
     "mhcnuggets==2.4.1",
-    "tensorflow==2.19.1"   # Linux CPU build
+    "tensorflow==2.15.1",  
+    "keras==2.15.0",
+    "numpy<2.0",          
+    "protobuf<4"           
   )
 )
+
 
 # macOS Apple Silicon (for developers/users on M-series Macs)
 .deepmatchrEnv_macos <- basilisk::BasiliskEnvironment(
@@ -16,7 +20,10 @@
   packages = c("python=3.10"),
   pip = c(
     "mhcnuggets==2.4.1",
-    "tensorflow-macos==2.16.1"
+    "tensorflow-macos==2.15.0",
+    "keras==2.15.0",
+    "numpy<2.0",
+    "protobuf<4"
   )
 )
 

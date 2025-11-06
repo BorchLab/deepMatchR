@@ -69,7 +69,7 @@
 #'                       dgeno, 
 #'                       filter_charge = TRUE, 
 #'                       filter_polarity = TRUE)  
-#' 
+#' @export
 calculateMismatchLoad <- function(recipient_geno,
                                   donor_geno,
                                   loci = NULL,

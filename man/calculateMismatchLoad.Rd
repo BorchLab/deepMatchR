@@ -96,5 +96,4 @@ calculateMismatchLoad(rgeno,
                       dgeno, 
                       filter_charge = TRUE, 
                       filter_polarity = TRUE)  
-
 }

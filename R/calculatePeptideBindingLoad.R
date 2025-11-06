@@ -146,7 +146,7 @@ calculatePeptideBindingLoad <- function(recipient_geno,
         
         # Analyze mismatches
         mismatch_analysis <- analyzeMismatches(
-          d_seq_prot, r_seq_prot, d_seq_nuc, r_seq_nuc
+          d_seq_prot, r_seq_prot
         )
         
         if (nrow(mismatch_analysis) == 0) next
@@ -313,7 +313,8 @@ calculatePeptideBindingLoad <- function(recipient_geno,
 #' @importFrom ggplot2 ggplot aes geom_tile geom_bar geom_point scale_fill_gradient2 theme_minimal labs
 #' @importFrom dplyr group_by summarise
 #' @export
-visualizePeptideBinding <- function(binding_results, plot_type = c("heatmap", "bar", "scatter")) {
+visualizePeptideBinding <- function(binding_results, 
+                                    plot_type = c("heatmap", "bar", "scatter")) {
   plot_type <- match.arg(plot_type)
   
   if (!is.list(binding_results) || !"all_predictions" %in% names(binding_results)) {

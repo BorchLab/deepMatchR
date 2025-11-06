@@ -247,7 +247,7 @@ quantifyEpletMismatch("C*07:01", "C*06:02",
 
 ```
 
-## Calculating EpletLoad
+## Calculating the Total Number of Eplets with `calculateEpletLoad()`
 
 When working with donor and recipient HLA genotypes, it is often useful to calculate the total eplet load. The arguments for `calculateEpletLoad()` mirrors `calculateMismatchLoad()`, with the added arguments from `quantifyEpletMismatch()`.
 
@@ -264,6 +264,7 @@ per <- calculateEpletLoad(rgeno,
                           return = "per_locus")
 per
 ```
+
 ### Pairwise allele matrix for B locus
 
 ```{r}
@@ -299,7 +300,142 @@ calculateEpletLoad(rgeno,
                    evidence_level = NULL)
 ```
 
-## plotAntibodies
+## Predicting Peptide Binding with `predictMHCnuggets()`
+
+This function is an R wrapper for the `mhcnuggets` Python library, allowing you to predict peptide-MHC binding affinity (IC50) directly from your R session.
+
+```{r}
+py_env <- deepmatchrEnv()
+
+# Define peptides and allele
+peps <- c("SIINFEKL", "LLFGYPVYV")
+allele <- "A*02:01"
+
+# Run prediction
+binding_results <- predictMHCnuggets(
+  peptides = peps,
+  allele = allele,
+  mhc_class = "I",
+  rank_output = TRUE,
+  hla_env = py_env
+)
+
+print(binding_results)
+```
+
+## Calculating Peptide Binding Load with `calculatePeptideBindingLoad()`
+
+This function integrates the previous concepts to calculate a "Peptide Binding Load." It automates the complex workflow of identifying potential neo-antigens (neo-peptides) created by donor-recipient mismatches and predicting their binding affinity to the recipient's HLA alleles.
+
+The workflow is:
+
+1. Identifies all mismatched amino acid positions between donor and recipient alleles (like `calculateMismatchLoad()`).
+2. Generates all possible peptides (e.g., lengths 8-11 for Class I) that cover these mismatched positions.
+3. Filters for peptides that are "donor-specific" (i.e., the mismatch created a new peptide sequence that is not found in the recipient's own proteome).
+4. Predicts the binding of these donor-specific peptides against all of the recipient's HLA alleles using `predictMHCnuggets()`.
+5. Summarizes the results, counting how many donor-specific peptides are predicted to bind to the recipient's MHCs.
+
+### Get a simple summary
+
+```{r}
+summary_load <- calculatePeptideBindingLoad(
+  recipient_geno = rgeno,
+  donor_geno = dgeno,
+  hla_env = py_env,
+  return = "summary"
+)
+
+print(summary_load)
+```
+
+### Get a per-locus breakdown
+
+This shows which loci are contributing the most to the peptide binding load.
+
+```{r}
+# Get a per-locus breakdown
+per_locus_load <- calculatePeptideBindingLoad(
+  recipient_geno = rgeno,
+  donor_geno = dgeno,
+  hla_env = py_env,
+  return = "per_locus"
+)
+
+print(per_locus_load)
+```
+
+### Get detailed results
+
+This returns a list containing all the raw prediction data, including the specific peptides, their IC50 scores against each recipient allele, and the mismatch positions they came from.
+
+```{r}
+# Get the full detailed output
+detailed_load <- calculatePeptideBindingLoad(
+  recipient_geno = rgeno,
+  donor_geno = dgeno,
+  hla_env = py_env,
+  return = "detailed"
+)
+
+# The result is a list
+names(detailed_load)
+
+# You can inspect the raw predictions
+head(detailed_load$all_predictions)
+```
+
+### Visualizing petide binding results
+
+After generating detailed peptide binding data, you can use visualizePeptideBinding to create plots. This function requires the output from `calculatePeptideBindingLoad()` when `return = "detailed"` is used.
+
+```{r}
+visualizePeptideBinding(
+  detailed_load,
+  plot_type = "heatmap"
+)
+
+visualizePeptideBinding(
+  detailed_load,
+  plot_type = "scatter"
+)
+```
+
+## Comparing Immunogenicity Metrics with `compareLoadMetrics()`
+
+Finally, to tie everything together, compareLoadMetrics provides a high-level summary that runs and compares the three main load types:
+
+1. **Mismatch Load** (using `calculateMismatchLoad()`)
+2. **Eplet Load** (using `calculateEpletLoad()`)
+3. **Peptide Binding Load** (using `calculatePeptideBindingLoad()`)
+
+It returns a single data frame, organized by locus, making it easy to see how the different metrics correlate.
+
+```{r}
+all_metrics <- compareLoadMetrics(
+  recipient_geno = rgeno,
+  donor_geno = dgeno,
+  loci = c("A", "B")
+)
+
+print(all_metrics)
+
+ggplot(all_metrics, aes(x = mismatch_load, y = binding_peptides)) +
+   geom_point() +
+   geom_smooth(method = "lm") +
+   labs(title = "Mismatch vs. Peptide Binding Load",
+        x = "Total Mismatch Load",
+        y = "Binding Peptides")
+
+ggplot(all_metrics, aes(x = eplet_load, y = binding_peptides)) +
+   geom_point() +
+   geom_smooth(method = "lm") +
+   labs(title = "Eplet Load vs. Peptide Binding Load",
+        x = "Total Eplet Load",
+        y = "Binding Peptides")
+```
+
+
+## Plotting Serological Data Using `plotAntibodies()`
 
 The `plotAntibodies()` function is a versatile tool for visualizing antibody data from both Single Antigen Bead (SAB) and Panel Reactive Antibody (PRA) assays. Its primary goal is to create clear, publication-quality bar plots of Mean Fluorescence Intensity (MFI) values. For added detail, it can append a table of antigen specificities directly below the plot, which is useful for interpreting complex results. The function is flexible, accepting data as either a data frame or directly from a file.
 

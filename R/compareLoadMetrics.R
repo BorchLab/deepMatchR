@@ -18,7 +18,7 @@ compareLoadMetrics <- function(recipient_geno,
                                mhc_class = "I") {
   
   # Calculate mismatch load
-  mismatch_load <- calculateMismatchLoadFast(
+  mismatch_load <- calculateMismatchLoad(
     recipient_geno, donor_geno, 
     loci = loci, 
     return = "per_locus"

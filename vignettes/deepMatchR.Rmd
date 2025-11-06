@@ -33,6 +33,7 @@ More information is available at the [deepMatchR GitHub Repo](https://github.com
 ```{r}
 library(deepMatchR)
 library(dplyr)
+library(ggplot2)
 ```
 
 ## Loading Built-In Data

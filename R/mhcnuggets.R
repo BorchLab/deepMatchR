@@ -45,7 +45,6 @@
 #'   peptides = c("SIINFEKL","LLFGYPVYV"),
 #'   allele   = "A*02:01",
 #'   mhc_class = "I",
-#'   hla_env   = hlaFerretEnv,      
 #'   rank_output = TRUE
 #' )
 #' head(res)

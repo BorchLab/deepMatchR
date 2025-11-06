@@ -325,8 +325,8 @@ visualizePeptideBinding <- function(binding_results,
   
   if (plot_type == "heatmap") {
     # Aggregate by allele pairs
-    summary_data <- data %>%
-      dplyr::group_by(donor_allele, test_allele, locus) %>%
+    summary_data <- data |>
+      dplyr::group_by(donor_allele, test_allele, locus) |>
       dplyr::summarise(
         binding_rate = mean(binding) * 100,
         mean_ic50 = mean(ic50[binding]),
@@ -345,8 +345,8 @@ visualizePeptideBinding <- function(binding_results,
     
   } else if (plot_type == "bar") {
     # Bar plot by locus
-    locus_summary <- data %>%
-      dplyr::group_by(locus) %>%
+    locus_summary <- data |>
+      dplyr::group_by(locus) |>
       dplyr::summarise(
         total = n(),
         binding = sum(binding),

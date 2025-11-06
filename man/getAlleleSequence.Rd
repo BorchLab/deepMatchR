@@ -2,18 +2,38 @@
 % Please edit documentation in R/getAlleleSequence.R
 \name{getAlleleSequence}
 \alias{getAlleleSequence}
-\title{Get Amino Acid Sequence for an HLA Allele}
+\title{Get Sequence for an HLA Allele}
 \usage{
-getAlleleSequence(allele_name)
+getAlleleSequence(
+  allele_name,
+  type = c("PROT", "NUC"),
+  use_cache = TRUE,
+  cache_dir = NULL
+)
 }
 \arguments{
-\item{allele_name}{A character string representing the HLA allele name
-(e.g., "A*01:01").}
+\item{allele_name}{A character string representing the HLA allele name}
+
+\item{type}{The type of sequence to retrieve. Either "NUC" for nucleotide or
+"PROT" for protein sequences (default "PROT")}
+
+\item{use_cache}{Logical, whether to use caching (default TRUE)}
+
+\item{cache_dir}{Optional directory for persistent cache}
 }
 \value{
-A character string representing the amino acid sequence.
+A character string representing the sequence (amino acid or nucleotide)
 }
 \description{
-This function retrieves the amino acid sequence for a given HLA allele
-name using the `immReferent` package.
+Improved version with session-level caching to avoid redundant API calls.
+Uses memoise for automatic caching. Supports both nucleotide and protein sequences.
+}
+\examples{
+# Collecting A*02:01 Protein Sequence:
+getAlleleSequence("A*02:01")
+
+# Collecting A*02:01 Nucleotide Sequence:
+getAlleleSequence("A*02:01", type = "NUC")
+
+
 }

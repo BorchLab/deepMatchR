@@ -12,7 +12,9 @@ calculateMismatchLoad(
   filter_polarity = NULL,
   na_action = c("exclude", "error", "count"),
   return = c("total", "per_locus", "pairwise"),
-  pairwise_locus = NULL
+  pairwise_locus = NULL,
+  parallel = TRUE,
+  n_cores = NULL
 )
 }
 \arguments{
@@ -33,6 +35,10 @@ to use all shared loci.}
 
 \item{pairwise_locus}{When `return = "pairwise"`, the locus to visualize
 (e.g., "A", "B", "C"). Ignored otherwise.}
+
+\item{parallel}{Logical, whether to use parallel processing}
+
+\item{n_cores}{Number of cores for parallel processing}
 }
 \value{
 - If `return = "total"`: single integer total mismatch load.
@@ -63,15 +69,32 @@ dgeno <- hlaGeno(donor)
 calculateMismatchLoad(rgeno, dgeno)
 
 # 2) Per-locus summary
-calculateMismatchLoad(rgeno, dgeno, return = "per_locus")
+calculateMismatchLoad(rgeno, 
+                      dgeno, 
+                      return = "per_locus")
 
 # 3) Pairwise matrix for B locus
-mB <- calculateMismatchLoad(rgeno, dgeno, return = "pairwise", pairwise_locus = "B")
+mB <- calculateMismatchLoad(rgeno, 
+                            dgeno, 
+                            return = "pairwise", 
+                            pairwise_locus = "B")
 mB
 
 # 4) Apply biophysical filters
-calculateMismatchLoad(rgeno, dgeno, filter_charge = TRUE)                # charge-changing only
-calculateMismatchLoad(rgeno, dgeno, filter_polarity = TRUE)              # polarity-changing only
-calculateMismatchLoad(rgeno, dgeno, filter_charge = TRUE, filter_polarity = TRUE)  # both
+# charge-changing only
+calculateMismatchLoad(rgeno, 
+                      dgeno, 
+                      filter_charge = TRUE)               
+
+# polarity-changing only
+calculateMismatchLoad(rgeno, 
+                      dgeno, 
+                      filter_polarity = TRUE)             
+
+# Both polarity and charge-changing
+calculateMismatchLoad(rgeno, 
+                      dgeno, 
+                      filter_charge = TRUE, 
+                      filter_polarity = TRUE)  
 
 }

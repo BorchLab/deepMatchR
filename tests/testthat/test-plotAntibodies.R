@@ -1,6 +1,4 @@
-# test script for plotAntibodies.R - testcases are NOT comprehensive!
-
-context("Testing plotAntibodies function")
+# tests/testthat/test-plotAntibodies.R 
 
 test_that("plotAntibodies returns a ggplot object for SAB data (add_table = FALSE)", {
   sab_data <- deepMatchR_example[[1]]

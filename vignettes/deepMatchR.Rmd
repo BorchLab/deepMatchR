@@ -493,57 +493,6 @@ plotAntibodies(result_file = sab_data_list,
                vline_dates = c("2023-02-15"))
 ```
 
-## spiDeconvolute
-
-The `spiDeconvolute()` function addresses a common challenge in HLA labs: reconciling results from Single Antigen Bead (SAB) and Panel Reactive Antibody (PRA) assays. It systematically compares the two, identifying which antibody reactivities are supported by both assays (concordant) and which are found in only one (discordant). This is crucial for distinguishing true reactivities from potential artifacts.
-
-The function returns a list containing four data frames: `concordant`, `sabOnly`, `praOnly`, and a `summary` of the deconvolution process.
-
-**Key Arguments:**
-
-*   `SAB`: A data frame of your SAB results, expected to have `antigen` and `NormalValue` columns.
-*   `PRA`: A data frame of your PRA results, with `BeadID` and `NormalValue`.
-*   `panelLong`: A data frame mapping the antigens on each bead of the PRA panel, with `BeadID` and `antigen` columns.
-
-Here is an example of how to use `spiDeconvolute()` with sample data:
-
-```{r}
-# 1. Create sample data
-sab_data <- data.table::data.table(
-  antigen = c("A1", "A2", "B7", "B8", "DR1"),
-  NormalValue = c(2000, 500, 3000, 400, 4000),
-  class = c("I", "I", "I", "I", "II")
-)
-pra_data <- data.table::data.table(
-  BeadID = c(1, 2, 3, 4),
-  NormalValue = c(1500, 400, 2000, 3000)
-)
-panel_data <- data.table::data.table(
-  BeadID = c(1, 1, 2, 3, 3, 4),
-  antigen = c("A1", "B8", "A2", "B7", "B8", "DR1")
-)
-
-# 2. Run the deconvolution
-decon_results <- spiDeconvolute(
-  SAB = sab_data,
-  PRA = pra_data,
-  panelLong = panel_data
-)
-
-# 3. View the results
-# Concordant antigens
-print(decon_results$concordant)
-
-# SAB-only antigens
-print(decon_results$sabOnly)
-
-# PRA-only antigens
-print(decon_results$praOnly)
-
-# Summary of the run
-print(decon_results$summary)
-```
-
 ## epletAUC
 
 The `epletAUC()` function (and its parent, `calculateAUC`) is designed to assess feature reactivity in a dynamic way. Instead of relying on a single MFI cutoff, it calculates the proportion of positive beads for each feature (like an eplet or CREG) across a whole range of cutoffs. By integrating this curve, it produces an Area Under the Curve (AUC) value, which serves as a robust summary of reactivity that is less sensitive to any single arbitrary cutoff.

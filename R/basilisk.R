@@ -5,10 +5,7 @@
   packages = c("python=3.10"),
   pip = c(
     "mhcnuggets==2.4.1",
-    "tensorflow==2.15.1",    # Linux CPU build
-    "keras==2.15.0",         # optional; OK to omit since TF 2.15 vendors Keras
-    "numpy==1.26.4",         # instead of "numpy<2.0"
-    "protobuf==3.20.3"       # instead of "protobuf<4"
+    "tensorflow==2.19.1"   # Linux CPU build
   )
 )
 
@@ -19,10 +16,7 @@
   packages = c("python=3.10"),
   pip = c(
     "mhcnuggets==2.4.1",
-    "tensorflow-macos==2.15.0",
-    "keras==2.15.0",
-    "numpy==1.26.4",
-    "protobuf==3.20.3"
+    "tensorflow-macos==2.16.1"
   )
 )
 

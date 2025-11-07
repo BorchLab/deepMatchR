@@ -66,8 +66,8 @@ predictMHCnuggets <- function(peptides,
                               normalize_allele = TRUE,
                               model            = "lstm",
                               mass_spec        = FALSE,
-                              ic50_threshold   = 500,
-                              max_ic50         = 50000,
+                              ic50_threshold   = 500L,
+                              max_ic50         = 50000L,
                               embed_peptides   = FALSE,
                               binary_preds     = FALSE,
                               ba_models        = FALSE,
@@ -131,96 +131,23 @@ predictMHCnuggets <- function(peptides,
     
     # Patch Keras Adam lr->learning_rate to tolerate older mhcnuggets code
     reticulate::py_run_string("
-import os, numpy as np
-os.environ.setdefault('KERAS_BACKEND', 'tensorflow')
-
-import tensorflow as tf
-from tensorflow import keras as tf_keras
-
-# Try standalone keras too
 try:
-    import keras as standalone_keras
-except Exception:
-    standalone_keras = None
-
-# Safety: keep float32 policy
-try:
-    from tensorflow.keras import mixed_precision
-    mixed_precision.set_global_policy('float32')
-except Exception:
-    pass
-try:
-    tf_keras.backend.set_floatx('float32')
-except Exception:
-    pass
-
-# ---- Adam(lr=...) -> Adam(learning_rate=...) shim ----
-def _adam_shim_factory(Adam):
+    import keras
+    _old = keras.optimizers.Adam
     def _shim_Adam(*args, **kwargs):
         if 'lr' in kwargs and 'learning_rate' not in kwargs:
             kwargs['learning_rate'] = kwargs.pop('lr')
-        return Adam(*args, **kwargs)
-    return _shim_Adam
-
-try:
-    tf_keras.optimizers.Adam = _adam_shim_factory(tf_keras.optimizers.Adam)
-except Exception:
-    pass
-if standalone_keras is not None:
+        return _old(*args, **kwargs)
+    keras.optimizers.Adam = _shim_Adam
     try:
-        standalone_keras.optimizers.Adam = _adam_shim_factory(standalone_keras.optimizers.Adam)
+        import mhcnuggets.src.predict as _p
+        _p.Adam = keras.optimizers.Adam
     except Exception:
         pass
-try:
-    import mhcnuggets.src.predict as _p
-    if hasattr(_p, 'Adam'):
-        _p.Adam = tf_keras.optimizers.Adam
 except Exception:
     pass
-
-# ---- Helpers to int-cast shapes/indices ----
-def _to_int_list(x):
-    try:
-        if isinstance(x, (list, tuple)):
-            return [int(v) if isinstance(v, (float, np.floating)) else v for v in x]
-        if hasattr(x, 'numpy'):
-            return [int(v) for v in x.numpy().tolist()]
-    except Exception:
-        pass
-    return x
-
-# ---- Slice shims: coerce begin/size/strides to ints ----
-if not getattr(tf, '_deepmatchr_slice_shim_v2', False):
-    _orig_tf_slice = tf.slice
-    def _shim_slice(input_, begin, size, name=None):
-        begin = _to_int_list(begin)
-        size  = _to_int_list(size)
-        return _orig_tf_slice(input_, begin, size, name=name)
-    tf.slice = _shim_slice
-
-    # strided_slice is another common path
-    _orig_tf_strided_slice = tf.strided_slice
-    def _shim_strided_slice(input_, begin, end, strides, begin_mask=0, end_mask=0,
-                            ellipsis_mask=0, new_axis_mask=0, shrink_axis_mask=0, name=None):
-        begin   = _to_int_list(begin)
-        end     = _to_int_list(end)
-        strides = _to_int_list(strides)
-        return _orig_tf_strided_slice(input_, begin, end, strides,
-                                      begin_mask=begin_mask, end_mask=end_mask,
-                                      ellipsis_mask=ellipsis_mask, new_axis_mask=new_axis_mask,
-                                      shrink_axis_mask=shrink_axis_mask, name=name)
-    tf.strided_slice = _shim_strided_slice
-    tf._deepmatchr_slice_shim_v2 = True
-
-# ---- Reshape shim (in case shapes pick up floats via math) ----
-if not getattr(tf, '_deepmatchr_reshape_shim', False):
-    _orig_tf_reshape = tf.reshape
-    def _shim_reshape(tensor, shape, name=None):
-        shape = _to_int_list(shape)
-        return _orig_tf_reshape(tensor, shape, name=name)
-    tf.reshape = _shim_reshape
-    tf._deepmatchr_reshape_shim = True
 ")
+    
     
     predict_mod <- reticulate::import("mhcnuggets.src.predict")
     
@@ -232,8 +159,8 @@ if not getattr(tf, '_deepmatchr_reshape_shim', False):
       model = model,
       output = out_path,
       mass_spec = mass_spec,
-      ic50_threshold = as.numeric(ic50_threshold),
-      max_ic50 = as.numeric(max_ic50),
+      ic50_threshold = ic50_threshold,
+      max_ic50 = max_ic50,
       embed_peptides = embed_peptides,
       binary_preds = binary_preds,
       ba_models = ba_models,

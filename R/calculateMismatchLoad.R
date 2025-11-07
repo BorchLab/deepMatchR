@@ -132,11 +132,8 @@ calculateMismatchLoad <- function(recipient_geno,
       )
     }, recipient, donor)]
     
-    mat <- matrix(pairs$mismatch, 
-                  nrow = length(rL), 
-                  ncol = length(dL),
-                  byrow = FALSE,
-                  dimnames = list(recipient = rL, donor = dL))
+    mat <- as.matrix(xtabs(mismatch ~ recipient + donor,
+                     data = pairs))
     return(mat)
   }
   

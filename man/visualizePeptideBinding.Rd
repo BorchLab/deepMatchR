@@ -6,13 +6,19 @@
 \usage{
 visualizePeptideBinding(
   binding_results,
-  plot_type = c("heatmap", "bar", "scatter")
+  plot_type = c("heatmap", "bar", "scatter"),
+  palette = "spectral",
+  ...
 )
 }
 \arguments{
 \item{binding_results}{Results from calculatePeptideBindingLoad with return="detailed"}
 
 \item{plot_type}{Type of plot: "heatmap", "bar", or "scatter"}
+
+\item{palette}{Character. A color palette name. Defaults to "spectral".}
+
+\item{...}{Additional arguments passed to the ggplot theme.}
 }
 \value{
 ggplot object

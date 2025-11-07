@@ -10,7 +10,12 @@ quantifyMismatch(
   filter_charge = NULL,
   filter_polarity = NULL,
   return = c("count", "detail"),
-  na_action = c("exclude", "error", "count")
+  na_action = c("exclude", "error", "count"),
+  type = c("global", "local", "overlap"),
+  substitutionMatrix = "BLOSUM80",
+  gapOpening = 10,
+  gapExtension = 1,
+  count_gaps = TRUE
 )
 }
 \arguments{
@@ -30,6 +35,23 @@ quantifyMismatch(
 
 \item{na_action}{One of "exclude" (default), "error", "count". Controls handling
 of unknown residues (e.g., X, *, -).}
+
+\item{substitutionMatrix}{Character string or numeric matrix. Substitution 
+scoring matrix used during sequence alignment. Defaults to `"BLOSUM80"`, 
+which provides a conservative amino acid similarity scheme suitable for 
+closely related protein sequences.}
+
+\item{gapOpening}{Numeric scalar. Penalty score applied when initiating a 
+new gap during alignment. Higher values discourage insertion/deletion 
+events and yield more contiguous alignments. Default is `10`.}
+
+\item{gapExtension}{Numeric scalar. Penalty score applied when extending an 
+existing gap. Smaller values permit longer continuous gaps, while larger 
+values favor shorter gaps. Default is `1`.}
+
+\item{count_gaps}{Logical (default `TRUE`). If `TRUE`, positions where one 
+sequence contains a gap (`-`) and the other contains an amino acid are 
+treated as mismatches and included in the mismatch count.}
 }
 \value{
 - If return = "count": integer (count after filters).

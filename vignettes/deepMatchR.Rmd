@@ -162,12 +162,12 @@ Common columns to look at:
 ```{r}
 recipient <- data.frame(
   A_1 = "A*01:01", A_2 = "A*02:01",
-  B_1 = "B*07:02", B_2 = "B*08:01"
-)
+  B_1 = "B*07:02", B_2 = "B*08:01")
+
 donor <- data.frame(
   A_1 = "A*03:01", A_2 = "A*24:02",
-  B_1 = "B*44:02", B_2 = "B*51:01"
-)
+  B_1 = "B*44:02", B_2 = "B*51:01")
+
 rgeno <- hlaGeno(recipient)
 dgeno <- hlaGeno(donor)
 
@@ -306,7 +306,6 @@ calculateEpletLoad(rgeno,
 This function is an R wrapper for the `mhcnuggets` Python library, allowing you to predict peptide-MHC binding affinity (IC50) directly from your R session.
 
 ```{r}
-py_env <- deepmatchrEnv()
 
 # Define peptides and allele
 peps <- c("SIINFEKL", "LLFGYPVYV")
@@ -317,9 +316,7 @@ binding_results <- predictMHCnuggets(
   peptides = peps,
   allele = allele,
   mhc_class = "I",
-  rank_output = TRUE,
-  hla_env = py_env
-)
+  rank_output = TRUE)
 
 print(binding_results)
 ```

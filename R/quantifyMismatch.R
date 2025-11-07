@@ -17,6 +17,9 @@
 #' @param return What to return: one of "count" (default) or "detail"
 #' @param na_action One of "exclude" (default), "error", "count". Controls handling
 #'   of unknown residues (e.g., X, *, -).
+#' @param type Character string. The type of alignment to perform. Defaults to 
+#'   `"global"` but allows for `"local"` and `"overlap"`-based alignments of the 
+#'   sequences.
 #' @param substitutionMatrix Character string or numeric matrix. Substitution 
 #'   scoring matrix used during sequence alignment. Defaults to `"BLOSUM80"`, 
 #'   which provides a conservative amino acid similarity scheme suitable for 
@@ -81,7 +84,8 @@ quantifyMismatch <- function(sequence1,
     stop("filter_polarity must be NULL, TRUE, or FALSE.")
   }
   if (!requireNamespace("Biostrings", quietly = TRUE)) {
-    stop("Package 'Biostrings' is required. Install with BiocManager::install('Biostrings').")
+    stop("Biostrings", " not installed, install or choose a different `method`.",
+         call. = FALSE)
   }
   
   # --- AA property maps (physiologic pH) ---

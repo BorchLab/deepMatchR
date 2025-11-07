@@ -8,14 +8,13 @@ calculatePeptideBindingLoad(
   recipient_geno,
   donor_geno,
   loci = NULL,
-  peptide_lengths = NULL,
-  mhc_class = "I",
-  ic50_threshold = 500,
-  return = c("summary", "detailed", "per_locus"),
+  ic50_threshold = 500L,
+  return = c("summary", "detailed", "by_recipient_allele"),
   parallel = TRUE,
-  n_cores = NULL,
+  n_cores = 2,
   hla_env = deepmatchrEnv(),
-  cache_dir = NULL
+  cache_dir = NULL,
+  compare_to = c("all", "closest")
 )
 }
 \arguments{
@@ -25,13 +24,9 @@ calculatePeptideBindingLoad(
 
 \item{loci}{Character vector of loci to analyze (NULL for all)}
 
-\item{peptide_lengths}{For Class I: integer vector of peptide lengths (default 8:11)}
-
-\item{mhc_class}{"I" or "II" - determines peptide length defaults}
-
 \item{ic50_threshold}{IC50 threshold in nM for binding (default 500)}
 
-\item{return}{What to return: "summary", "detailed", or "per_locus"}
+\item{return}{What to return: "summary", "detailed", "by_recipient_allele"}
 
 \item{parallel}{Use parallel processing}
 
@@ -40,12 +35,17 @@ calculatePeptideBindingLoad(
 \item{hla_env}{Basilisk environment for MHCnuggets}
 
 \item{cache_dir}{Optional directory for sequence caching}
+
+\item{compare_to}{How to select recipient sequences for comparison:
+"all" = compare to all recipient alleles at same locus (default)
+"closest" = compare to most similar recipient allele at same locus}
 }
 \value{
-Enhanced results including nucleotide analysis if requested
+Results dataframe with binding predictions
 }
 \description{
-Generates peptides from mismatched positions between donor and recipient
-and predicts MHC binding using MHCnuggets. Comprehensively examines all
-mismatched peptides between every mismatched allele pair.
+Identifies ALL donor alleles not present in recipient, generates peptides around
+mismatch positions, and predicts MHC binding to ALL recipient alleles regardless 
+of locus. Adaptively tests Class I peptides (8-11mers) against Class I alleles 
+(A, B, C) and Class II peptides (12-25mers) against Class II alleles (DRB1, DQB1, etc.).
 }

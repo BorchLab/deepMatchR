@@ -4,8 +4,10 @@ make_binding_results <- function() {
   # Minimal, plausible all_predictions table
   all_predictions <- data.frame(
     donor_allele = c("A*01:01","A*01:01","A*02:01","A*02:01","B*07:02","B*07:02"),
-    test_allele  = c("A*01:01","A*02:01","A*01:01","A*02:01","B*07:02","B*08:01"),
+    recipient_allele  = c("A*01:01","A*02:01","A*01:01","A*02:01","B*07:02","B*08:01"),
     locus        = c("A","A","A","A","B","B"),
+    recipient_locus = c("A","A","A","A","B","B"),
+    mhc_class   = c(rep("I", 6)),
     binding      = c(TRUE, FALSE, TRUE, TRUE, FALSE, TRUE),
     ic50         = c(50, 5000, 120, 350, 10000, 80),
     stringsAsFactors = FALSE
@@ -30,7 +32,7 @@ test_that("heatmap returns a ggplot with expected mappings/facets", {
 
 test_that("bar plot returns a ggplot and shows counts by locus", {
   br <- make_binding_results()
-  p <- visualizePeptideBinding(br, plot_type = "bar")
+  p <- visualizePeptideBinding(br, plot_type = "bar_by_recipient")
   expect_s3_class(p, "ggplot")
   # Built data should include a bar layer
   built <- ggplot2::ggplot_build(p)

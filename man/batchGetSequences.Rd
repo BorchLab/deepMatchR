@@ -7,7 +7,7 @@
 batchGetSequences(
   alleles,
   type = c("PROT", "NUC"),
-  n_cores = NULL,
+  n_cores = 2,
   use_cache = TRUE,
   cache_dir = NULL,
   verbose = FALSE

@@ -14,7 +14,7 @@ calculateMismatchLoad(
   return = c("total", "per_locus", "pairwise"),
   pairwise_locus = NULL,
   parallel = TRUE,
-  n_cores = NULL
+  n_cores = 2
 )
 }
 \arguments{
@@ -95,5 +95,5 @@ calculateMismatchLoad(rgeno,
 calculateMismatchLoad(rgeno, 
                       dgeno, 
                       filter_charge = TRUE, 
-                      filter_polarity = TRUE)  
+                      filter_polarity = TRUE) 
 }

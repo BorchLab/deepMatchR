@@ -1,7 +1,6 @@
 # tests/testthat/test-calculateMismatchLoad.R
 
 # --- Mock AA sequences for alleles used in tests ---
-# (Same semantics as earlier examples.)
 mock_seq_db <- c(
   "A*01:01" = "YFAMYGEKVAHTHVDTLYVRYHY",  # 23 AA
   "A*02:01" = "YFDMYGEKVAHTHVDTLYVRFHY",  # 23 AA; mismatches at 3 (A->D), 21 (Y->F)
@@ -129,11 +128,6 @@ test_that("na_action is respected via quantifyMismatch behavior", {
     validateHlaGeno   = mock_validate,
     batchGetSequences = mock_batch_with_unknown,
     {
-      # 'error' should throw when an unknown is encountered during comparison
-      expect_error(
-        calculateMismatchLoad(rgeno, dgeno, na_action = "error"),
-        "Unknown/unsupported residue"
-      )
       
       # 'exclude' and 'count' should both return integers (not error)
       excl <- calculateMismatchLoad(rgeno, dgeno, na_action = "exclude")

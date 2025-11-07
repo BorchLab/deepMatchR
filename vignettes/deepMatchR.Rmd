@@ -18,7 +18,7 @@ vignette: >
 ---
 
 ```{r, echo=FALSE, results="hide", message=FALSE}
-knitr::opts_chunk$set(error=FALSE, message=FALSE, warning=FALSE)
+knitr::opts_chunk$set(error=FALSE, message=FALSE, warning=FALSE, tidy = FALSE)
 library(BiocStyle)
 ```
 
@@ -162,11 +162,16 @@ Common columns to look at:
 ```{r}
 recipient <- data.frame(
   A_1 = "A*01:01", A_2 = "A*02:01",
-  B_1 = "B*07:02", B_2 = "B*08:01")
+  B_1 = "B*07:02", B_2 = "B*08:01", 
+  DQA1_1 = "DQA1*02:01", DQA1_2 = "DQA1*05:05", 
+  DQB1_1 = "DQB1*02:02", DQB1_2 = "DQB1*03:01"
+  )
 
 donor <- data.frame(
   A_1 = "A*03:01", A_2 = "A*24:02",
-  B_1 = "B*44:02", B_2 = "B*51:01")
+  B_1 = "B*44:02", B_2 = "B*51:01", 
+  DQA1_1 = "DQA1*05:05", DQA1_2 = "DQA1*01:02", 
+  DQB1_1 = "DQB1*06:02", DQB1_2 = "DQB1*03:01")
 
 rgeno <- hlaGeno(recipient)
 dgeno <- hlaGeno(donor)
@@ -245,7 +250,6 @@ quantifyEpletMismatch("B*07:02", "B*44:02",
 quantifyEpletMismatch("C*07:01", "C*06:02", 
                       evidence_level = NULL, 
                       reactivity_filter = "Confirmed")
-
 ```
 
 ## Calculating the Total Number of Eplets with `calculateEpletLoad()`
@@ -306,7 +310,6 @@ calculateEpletLoad(rgeno,
 This function is an R wrapper for the `mhcnuggets` Python library, allowing you to predict peptide-MHC binding affinity (IC50) directly from your R session.
 
 ```{r}
-
 # Define peptides and allele
 peps <- c("SIINFEKL", "LLFGYPVYV")
 allele <- "A*02:01"
@@ -323,7 +326,7 @@ print(binding_results)
 
 ## Calculating Peptide Binding Load with `calculatePeptideBindingLoad()`
 
-This function integrates the previous concepts to calculate a "Peptide Binding Load." It automates the complex workflow of identifying potential neo-antigens (neo-peptides) created by donor-recipient mismatches and predicting their binding affinity to the recipient's HLA alleles.
+This function integrates the previous concepts to calculate a "Peptide Binding Load." It automates the complex workflow of identifying potential allo-antigens created by donor-recipient mismatches and predicting their binding affinity to the recipient's HLA alleles.
 
 The workflow is:
 
@@ -339,14 +342,13 @@ The workflow is:
 summary_load <- calculatePeptideBindingLoad(
   recipient_geno = rgeno,
   donor_geno = dgeno,
-  hla_env = py_env,
   return = "summary"
 )
 
 print(summary_load)
 ```
 
-### Get a per-locus breakdown
+### Get a per-allele breakdown
 
 This shows which loci are contributing the most to the peptide binding load.
 
@@ -355,8 +357,7 @@ This shows which loci are contributing the most to the peptide binding load.
 per_locus_load <- calculatePeptideBindingLoad(
   recipient_geno = rgeno,
   donor_geno = dgeno,
-  hla_env = py_env,
-  return = "per_locus"
+  return = "by_recipient_allele"
 )
 
 print(per_locus_load)
@@ -371,7 +372,6 @@ This returns a list containing all the raw prediction data, including the specif
 detailed_load <- calculatePeptideBindingLoad(
   recipient_geno = rgeno,
   donor_geno = dgeno,
-  hla_env = py_env,
   return = "detailed"
 )
 
@@ -396,40 +396,6 @@ visualizePeptideBinding(
   detailed_load,
   plot_type = "scatter"
 )
-```
-
-## Comparing Immunogenicity Metrics with `compareLoadMetrics()`
-
-Finally, to tie everything together, compareLoadMetrics provides a high-level summary that runs and compares the three main load types:
-
-1. **Mismatch Load** (using `calculateMismatchLoad()`)
-2. **Eplet Load** (using `calculateEpletLoad()`)
-3. **Peptide Binding Load** (using `calculatePeptideBindingLoad()`)
-
-It returns a single data frame, organized by locus, making it easy to see how the different metrics correlate.
-
-```{r}
-all_metrics <- compareLoadMetrics(
-  recipient_geno = rgeno,
-  donor_geno = dgeno,
-  loci = c("A", "B")
-)
-
-print(all_metrics)
-
-ggplot(all_metrics, aes(x = mismatch_load, y = binding_peptides)) +
-   geom_point() +
-   geom_smooth(method = "lm") +
-   labs(title = "Mismatch vs. Peptide Binding Load",
-        x = "Total Mismatch Load",
-        y = "Binding Peptides")
-
-ggplot(all_metrics, aes(x = eplet_load, y = binding_peptides)) +
-   geom_point() +
-   geom_smooth(method = "lm") +
-   labs(title = "Eplet Load vs. Peptide Binding Load",
-        x = "Total Eplet Load",
-        y = "Binding Peptides")
 ```
 
 

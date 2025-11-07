@@ -1,9 +1,12 @@
 AAs
+BLOSUM
 CMD
 CREG
 CREGs
 Codecov
 DQ
+DQB
+DRB
 Epitope
 Eplet
 Eplets
@@ -13,7 +16,6 @@ IC
 IMGT
 IgG
 IgM
-Immunogenicity
 KarchinLab
 Keras
 MFI
@@ -33,10 +35,10 @@ Treemap
 XLS
 XLSX
 al
+allo
 batchGetSequences
 bioRxiv
 calculatePeptideBindingLoad
-compareLoadMetrics
 creg
 curation
 deconvolution
@@ -59,10 +61,12 @@ linux
 macos
 maximumn
 memoise
+mer
+mers
 mhcnuggets
 nM
-neo
 nonpolar
+nucleotides
 petide
 plotEplets
 positivity

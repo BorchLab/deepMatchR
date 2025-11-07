@@ -68,7 +68,8 @@
 #' calculateMismatchLoad(rgeno, 
 #'                       dgeno, 
 #'                       filter_charge = TRUE, 
-#'                       filter_polarity = TRUE)  
+#'                       filter_polarity = TRUE) 
+#' @importFrom stats xtabs 
 #' @export
 calculateMismatchLoad <- function(recipient_geno,
                                   donor_geno,
@@ -79,7 +80,7 @@ calculateMismatchLoad <- function(recipient_geno,
                                   return = c("total", "per_locus", "pairwise"),
                                   pairwise_locus = NULL,
                                   parallel = TRUE,
-                                  n_cores = NULL) {
+                                  n_cores = 2) {
   
   na_action <- match.arg(na_action)
   return <- match.arg(return)

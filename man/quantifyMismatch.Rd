@@ -36,6 +36,10 @@ quantifyMismatch(
 \item{na_action}{One of "exclude" (default), "error", "count". Controls handling
 of unknown residues (e.g., X, *, -).}
 
+\item{type}{Character string. The type of alignment to perform. Defaults to 
+`"global"` but allows for `"local"` and `"overlap"`-based alignments of the 
+sequences.}
+
 \item{substitutionMatrix}{Character string or numeric matrix. Substitution 
 scoring matrix used during sequence alignment. Defaults to `"BLOSUM80"`, 
 which provides a conservative amino acid similarity scheme suitable for 

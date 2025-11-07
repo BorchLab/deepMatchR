@@ -31,14 +31,14 @@ test_that("calculateAUC (creg/serology) run and wrapper aliases dispatch", {
   
   # CREG
   creg_plot <- calculateAUC(sab, analysis_type = "creg", plot_results = TRUE, label = FALSE)
-  expect_true(ggplot2::is.ggplot(creg_plot))
+  expect_true(ggplot2::is_ggplot(creg_plot))
   creg_df   <- calculateAUC(sab, analysis_type = "creg", plot_results = FALSE, label = FALSE)
   expect_true(is.data.frame(creg_df))
   expect_true(all(c("CREG","AUC","norm_AUC","total_count","loci") %in% names(creg_df)))
   
   # Serology
   sero_plot <- calculateAUC(sab, analysis_type = "serology", plot_results = TRUE, label = FALSE)
-  expect_true(ggplot2::is.ggplot(sero_plot))
+  expect_true(ggplot2::is_ggplot(sero_plot))
   sero_df   <- calculateAUC(sab, analysis_type = "serology", plot_results = FALSE, label = FALSE)
   expect_true(is.data.frame(sero_df))
   expect_true(all(c("serology","AUC","norm_AUC","total_count","loci") %in% names(sero_df)))

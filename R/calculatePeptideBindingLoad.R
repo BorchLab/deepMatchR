@@ -307,6 +307,8 @@ calculatePeptideBindingLoad <- function(recipient_geno,
 #'
 #' @param binding_results Results from calculatePeptideBindingLoad with return="detailed"
 #' @param plot_type Type of plot: "heatmap", "bar", or "scatter"
+#' @param palette Character. A color palette name. Defaults to "spectral".
+#' @param ... Additional arguments passed to the ggplot theme.
 #'
 #' @return ggplot object
 #'
@@ -314,7 +316,9 @@ calculatePeptideBindingLoad <- function(recipient_geno,
 #' @importFrom dplyr group_by summarise
 #' @export
 visualizePeptideBinding <- function(binding_results, 
-                                    plot_type = c("heatmap", "bar", "scatter")) {
+                                    plot_type = c("heatmap", "bar", "scatter"), 
+                                    palette = "spectral", 
+                                    ...) {
   plot_type <- match.arg(plot_type)
   
   if (!is.list(binding_results) || !"all_predictions" %in% names(binding_results)) {
@@ -334,11 +338,11 @@ visualizePeptideBinding <- function(binding_results,
       )
     
     p <- ggplot2::ggplot(summary_data, ggplot2::aes(x = donor_allele, y = test_allele, fill = binding_rate)) +
-      ggplot2::geom_tile() +
-      ggplot2::scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = 50,
+      ggplot2::geom_tile(color = "white", lwd = 0.5) +
+      ggplot2::scale_fill_gradientn(colors = .colorizer(n=11, palette = palette),
                                     name = "Binding %") +
       ggplot2::facet_wrap(~locus, scales = "free") +
-      ggplot2::theme_minimal() +
+      .themeMatchR(...) +
       ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1)) +
       ggplot2::labs(title = "Peptide Binding Rates by Allele Pair",
                     x = "Donor Allele", y = "Recipient Test Allele")
@@ -348,16 +352,17 @@ visualizePeptideBinding <- function(binding_results,
     locus_summary <- data |>
       dplyr::group_by(locus) |>
       dplyr::summarise(
-        total = n(),
+        total = dplyr::n(),
         binding = sum(binding),
         .groups = "drop"
       )
     
     p <- ggplot2::ggplot(locus_summary, ggplot2::aes(x = locus, y = binding)) +
-      ggplot2::geom_bar(stat = "identity", fill = "steelblue") +
+      ggplot2::geom_bar(stat = "identity", fill = .colorizer(n=2, palette = palette)[2]) +
       ggplot2::geom_text(ggplot2::aes(label = paste0(binding, "/", total)), 
                          vjust = -0.5) +
-      ggplot2::theme_minimal() +
+      .themeMatchR(...) +
+      ylim(0,max(locus_summary$binding) + 1) + 
       ggplot2::labs(title = "Binding Peptides by Locus",
                     x = "Locus", y = "Number of Binding Peptides")
     
@@ -366,11 +371,11 @@ visualizePeptideBinding <- function(binding_results,
     p <- ggplot2::ggplot(data, ggplot2::aes(x = ic50, y = test_allele, color = binding)) +
       ggplot2::geom_point(alpha = 0.6, position = ggplot2::position_jitter(height = 0.2)) +
       ggplot2::scale_x_log10() +
-      ggplot2::geom_vline(xintercept = 500, linetype = "dashed", color = "red") +
-      ggplot2::scale_color_manual(values = c("FALSE" = "gray", "TRUE" = "red"),
+      ggplot2::geom_vline(xintercept = 500, linetype = "dashed", color = .colorizer(n=2, palette = palette)[1]) +
+      ggplot2::scale_color_manual(values = c("FALSE" = "gray", "TRUE" = .colorizer(n=2, palette = palette)[1]),
                                   name = "Binding") +
       ggplot2::facet_wrap(~locus, scales = "free_y") +
-      ggplot2::theme_minimal() +
+      .themeMatchR(...) +
       ggplot2::labs(title = "IC50 Distribution by Allele",
                     x = "IC50 (nM, log scale)", y = "Test Allele")
   }

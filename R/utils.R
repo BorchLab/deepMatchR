@@ -20,7 +20,12 @@ if(getRversion() >= "2.15.1") {
       "group", "sizing", "positive.bead", "count_above", "count_total",
       "row_number", "sym", "concordant", "evidence", "positive", "positiveBeads",
       "praOnly", "sabOnly", "sab_cutoff", "sab_mfi", "sab_reactive",
-      "supportFraction", "totalBeads", "evidence_level", "rank")
+      "supportFraction", "totalBeads", "evidence_level", "rank", 
+      "binding", "binding_rate", "d", "donor", "donor_allele", "donor_locus", 
+      "exposition", "ic50", "mhc_class", "mismatch", "n", "n_binding_peptides",
+      "n_distinct", "n_peptides", "n_peptides_tested", "n_recipient_alleles", 
+      "peptide", "r", "reactivity", "recipient", "recipient_allele", 
+      "recipient_locus", "total")
   )
 }
 

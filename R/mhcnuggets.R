@@ -133,17 +133,18 @@ predictMHCnuggets <- function(peptides,
     reticulate::py_run_string("
 try:
     import keras
-    _old = keras.optimizers.Adam
+    # Store the ORIGINAL Adam class before any patching
+    if not hasattr(keras.optimizers, '_original_Adam'):
+        keras.optimizers._original_Adam = keras.optimizers.Adam
+    
+    # Create shim that uses the original
     def _shim_Adam(*args, **kwargs):
         if 'lr' in kwargs and 'learning_rate' not in kwargs:
             kwargs['learning_rate'] = kwargs.pop('lr')
-        return _old(*args, **kwargs)
+        return keras.optimizers._original_Adam(*args, **kwargs)
+    
+    # Replace Adam with shim
     keras.optimizers.Adam = _shim_Adam
-    try:
-        import mhcnuggets.src.predict as _p
-        _p.Adam = keras.optimizers.Adam
-    except Exception:
-        pass
 except Exception:
     pass
 ")
@@ -167,7 +168,7 @@ except Exception:
       rank_output = rank_output
     )
     
-    # Return path existence status (cheap boolean)
+    # Return path existence status 
     file.exists(out_path)
   }
   

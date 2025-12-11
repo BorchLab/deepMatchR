@@ -84,8 +84,7 @@ quantifyMismatch <- function(sequence1,
     stop("filter_polarity must be NULL, TRUE, or FALSE.")
   }
   if (!requireNamespace("Biostrings", quietly = TRUE)) {
-    stop("Biostrings", " not installed, install or choose a different `method`.",
-         call. = FALSE)
+    stop("Biostrings is required for amino acid string alignment.")
   }
   
   # --- AA property maps (physiologic pH) ---

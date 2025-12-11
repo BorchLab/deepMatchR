@@ -1,27 +1,37 @@
 #' Plot Antibody Data with Optional Antigen-Level Table or Time-Series Trend
 #'
-#' This function generates a bar plot of SAB (Single Antigen Beads) or PRA (Panel-Reactive Antibody) results
-#' from a provided data frame or a file path. It can also plot MFI values over time.
+#' This function generates a bar plot of SAB (Single Antigen Beads) or PRA 
+#' (Panel-Reactive Antibody) results from a provided data frame or a file path. 
+#' It can also plot MFI values over time.
 #'
-#' @param result_file A data frame, a list of data frames (for trend plot), or a character string
-#'   specifying the path to a file in CSV, XLS, or XLSX format.
-#' @param type Character. The type of assay, either "SAB" or "PRA". Defaults to "SAB".
-#' @param class Character. For PRA plots, the class of the assay, either "I" or "II". Defaults to "I".
-#' @param plot_trend Logical. If TRUE, a time-series plot is generated. Defaults to FALSE.
+#' @param result_file A data frame, a list of data frames (for trend plot), or 
+#' a character string specifying the path to a file in CSV, XLS, or XLSX format.
+#' @param type Character. The type of assay, either "SAB" or "PRA". Defaults to 
+#' "SAB".
+#' @param class Character. For PRA plots, the class of the assay, either "I" or 
+#' "II". Defaults to "I".
+#' @param plot_trend Logical. If TRUE, a time-series plot is generated. Defaults 
+#' to FALSE.
 #' @param bead_cutoffs Numeric vector. Cutoff values for categorizing MFI values.
-#'   Defaults to `c(2000, 1000, 500, 250)` for SAB and `c(1500, 1000, 500, 250)` for PRA.
-#' @param highlight_threshold Numeric. MFI threshold for highlighting alleles in the trend plot. Defaults to 2000.
-#' @param vline_dates Vector of dates. Dates to draw vertical lines on the trend plot.
+#' Defaults to `c(2000, 1000, 500, 250)` for SAB and `c(1500, 1000, 500, 250)` 
+#' for PRA.
+#' @param highlight_threshold Numeric. MFI threshold for highlighting alleles in 
+#' the trend plot. Defaults to 2000.
+#' @param vline_dates Vector of dates. Dates to draw vertical lines on the trend 
+#' plot.
 #' @param add_table Logical. Whether to add the antigen-level information as a
-#'   table to the bottom of the bar plot. Defaults to TRUE.
-#' @param x_text_angle Numeric. Angle for the antigen/allele text in the table. Defaults to 90.
+#' table to the bottom of the bar plot. Defaults to TRUE.
+#' @param x_text_angle Numeric. Angle for the antigen/allele text in the table. 
+#' Defaults to 90.
 #' @param palette Character. A color palette name. Defaults to "spectral".
 #' @param highlight_antigen Character vector. Optional antigen(s) to highlight.
 #' @param ... Additional arguments passed to the ggplot theme.
 #'
 #' @return A `ggplot` object.
 #'
-#' @importFrom ggplot2 ggplot aes geom_bar scale_fill_manual ylab guides theme element_blank geom_tile geom_text scale_y_discrete scale_color_manual scale_size labs geom_vline geom_line
+#' @importFrom ggplot2 ggplot aes geom_bar scale_fill_manual ylab guides theme 
+#' element_blank geom_tile geom_text scale_y_discrete scale_color_manual 
+#' scale_size labs geom_vline geom_line
 #' @importFrom patchwork plot_layout
 #' @export
 plotAntibodies <- function(result_file,
@@ -56,8 +66,9 @@ plotAntibodies <- function(result_file,
 
     assay_long[, highlight := ifelse(allele %in% alleles_to_highlight, allele, "Other")]
     assay_long[, sample := factor(sample, levels = unique(sample))]
+    assay_long[, uniqueID := paste(allele, BeadID)]
 
-    p <- ggplot(assay_long, aes(x = sample_date, y = NormalValue, group = allele, color = highlight)) +
+    p <- ggplot(assay_long, aes(x = sample_date, y = NormalValue, group = uniqueID, color = highlight)) +
       geom_line(alpha = 0.7) +
       scale_color_manual(values = c("Other" = "gray", setNames(.colorizer(n = length(alleles_to_highlight)), alleles_to_highlight))) +
       .themeMatchR(...) +

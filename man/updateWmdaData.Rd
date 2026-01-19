@@ -2,10 +2,6 @@
 % Please edit documentation in R/updateWmdaData.R
 \name{updateWmdaData}
 \alias{updateWmdaData}
-\alias{.downloadWmdaFile}
-\alias{.parseDnaSer}
-\alias{.parseSerSer}
-\alias{.parseNomP}
 \title{Update WMDA Nomenclature Data}
 \usage{
 updateWmdaData(
@@ -14,14 +10,6 @@ updateWmdaData(
   force = FALSE,
   verbose = TRUE
 )
-
-.downloadWmdaFile(filename, base_url)
-
-.parseDnaSer(lines)
-
-.parseSerSer(lines)
-
-.parseNomP(lines)
 }
 \arguments{
 \item{version}{Character. The IMGT/HLA version to download. Default is "Latest"
@@ -56,17 +44,6 @@ The cache is stored as a single RDS file for fast loading. To clear the cache
 and revert to bundled data, delete the cache directory or set the environment
 variable \code{DEEPMATCHR_CACHE_DIR} to a new location.
 }
-\section{Functions}{
-\itemize{
-\item \code{.downloadWmdaFile()}: Download a WMDA file
-
-\item \code{.parseDnaSer()}: Parse rel_dna_ser.txt
-
-\item \code{.parseSerSer()}: Parse rel_ser_ser.txt
-
-\item \code{.parseNomP()}: Parse hla_nom_p.txt
-
-}}
 \examples{
 \dontrun{
 # Update to latest WMDA data

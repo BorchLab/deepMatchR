@@ -26,26 +26,33 @@ plotSAB(..., type = "SAB")
 plotPRA(..., type = "PRA")
 }
 \arguments{
-\item{result_file}{A data frame, a list of data frames (for trend plot), or a character string
-specifying the path to a file in CSV, XLS, or XLSX format.}
+\item{result_file}{A data frame, a list of data frames (for trend plot), or 
+a character string specifying the path to a file in CSV, XLS, or XLSX format.}
 
-\item{type}{Character. The type of assay, either "SAB" or "PRA". Defaults to "SAB".}
+\item{type}{Character. The type of assay, either "SAB" or "PRA". Defaults to 
+"SAB".}
 
-\item{class}{Character. For PRA plots, the class of the assay, either "I" or "II". Defaults to "I".}
+\item{class}{Character. For PRA plots, the class of the assay, either "I" or 
+"II". Defaults to "I".}
 
-\item{plot_trend}{Logical. If TRUE, a time-series plot is generated. Defaults to FALSE.}
+\item{plot_trend}{Logical. If TRUE, a time-series plot is generated. Defaults 
+to FALSE.}
 
 \item{bead_cutoffs}{Numeric vector. Cutoff values for categorizing MFI values.
-Defaults to `c(2000, 1000, 500, 250)` for SAB and `c(1500, 1000, 500, 250)` for PRA.}
+Defaults to `c(2000, 1000, 500, 250)` for SAB and `c(1500, 1000, 500, 250)` 
+for PRA.}
 
-\item{highlight_threshold}{Numeric. MFI threshold for highlighting alleles in the trend plot. Defaults to 2000.}
+\item{highlight_threshold}{Numeric. MFI threshold for highlighting alleles in 
+the trend plot. Defaults to 2000.}
 
-\item{vline_dates}{Vector of dates. Dates to draw vertical lines on the trend plot.}
+\item{vline_dates}{Vector of dates. Dates to draw vertical lines on the trend 
+plot.}
 
 \item{add_table}{Logical. Whether to add the antigen-level information as a
 table to the bottom of the bar plot. Defaults to TRUE.}
 
-\item{x_text_angle}{Numeric. Angle for the antigen/allele text in the table. Defaults to 90.}
+\item{x_text_angle}{Numeric. Angle for the antigen/allele text in the table. 
+Defaults to 90.}
 
 \item{palette}{Character. A color palette name. Defaults to "spectral".}
 
@@ -57,8 +64,9 @@ table to the bottom of the bar plot. Defaults to TRUE.}
 A `ggplot` object.
 }
 \description{
-This function generates a bar plot of SAB (Single Antigen Beads) or PRA (Panel-Reactive Antibody) results
-from a provided data frame or a file path. It can also plot MFI values over time.
+This function generates a bar plot of SAB (Single Antigen Beads) or PRA 
+(Panel-Reactive Antibody) results from a provided data frame or a file path. 
+It can also plot MFI values over time.
 }
 \examples{
 # Plot SAB Class I data

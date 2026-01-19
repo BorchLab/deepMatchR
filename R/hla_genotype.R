@@ -10,6 +10,19 @@
 #'
 #' @return An object of class `hla_genotype`.
 #'
+#' @examples
+#' # Create a genotype from a data frame
+#' recipient <- data.frame(
+#'   A_1 = "A*01:01", A_2 = "A*02:01",
+#'   B_1 = "B*07:02", B_2 = "B*08:01"
+#' )
+#' geno <- hlaGeno(recipient)
+#' print(geno)
+#'
+#' # Access components
+#' geno$locus_present
+#' geno$data
+#'
 #' @export
 hlaGeno <- function(df) {
 
@@ -57,6 +70,11 @@ validateHlaGeno <- function(x) {
 #' @param ... Additional arguments (not used).
 #'
 #' @return Invisibly returns the original object.
+#'
+#' @examples
+#' df <- data.frame(A_1 = "A*01:01", B_1 = "B*07:02")
+#' geno <- hlaGeno(df)
+#' print(geno)
 #'
 #' @export
 print.hla_genotype <- function(x, ...) {

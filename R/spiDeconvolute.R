@@ -47,6 +47,27 @@
 #'   \item `argsUsed`: A list of the final parameters used in the analysis.
 #' }
 #'
+#' @examples
+#' \dontrun{
+#' # Example with mock data
+#' sab <- data.frame(
+#'   antigen = c("A1", "A2", "B7", "B8"),
+#'   NormalValue = c(5000, 500, 3000, 200)
+#' )
+#' pra <- data.frame(
+#'   BeadID = 1:4,
+#'   NormalValue = c(2000, 800, 1500, 300)
+#' )
+#' panel <- data.frame(
+#'   BeadID = c(1, 1, 2, 2, 3, 3, 4, 4),
+#'   antigen = c("A1", "A2", "A1", "B7", "B7", "B8", "A2", "B8")
+#' )
+#'
+#' result <- spiDeconvolute(sab, pra, panel)
+#' result$concordant
+#' result$summary
+#' }
+#'
 #' @export
 #' @importFrom data.table as.data.table copy fcase rbindlist
 #' @importFrom utils modifyList

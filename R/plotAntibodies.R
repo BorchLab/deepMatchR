@@ -21,6 +21,16 @@
 #'
 #' @return A `ggplot` object.
 #'
+#' @examples
+#' # Plot SAB Class I data
+#' plotAntibodies(deepMatchR_example[[1]], type = "SAB")
+#'
+#' # Plot without table
+#' plotAntibodies(deepMatchR_example[[1]], type = "SAB", add_table = FALSE)
+#'
+#' # Plot SAB Class II data
+#' plotAntibodies(deepMatchR_example[[2]], type = "SAB")
+#'
 #' @importFrom ggplot2 ggplot aes geom_bar scale_fill_manual ylab guides theme element_blank geom_tile geom_text scale_y_discrete scale_color_manual scale_size labs geom_vline geom_line
 #' @importFrom patchwork plot_layout
 #' @export

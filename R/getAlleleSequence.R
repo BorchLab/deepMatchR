@@ -9,6 +9,16 @@
 #'
 #' @return A character string representing the amino acid sequence.
 #'
+#' @examples
+#' \dontrun{
+#' # Get amino acid sequence for an HLA-A allele
+#' seq <- getAlleleSequence("A*01:01")
+#' nchar(seq)  # Length of sequence
+#'
+#' # Get sequence for HLA-B allele
+#' seq_b <- getAlleleSequence("B*07:02")
+#' }
+#'
 #' @importFrom immReferent getIMGT
 #' @export
 getAlleleSequence <- function(allele_name) {

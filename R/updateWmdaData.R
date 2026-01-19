@@ -119,7 +119,7 @@ updateWmdaData <- function(version = "Latest",
   invisible(cache_dir)
 }
 
-#' @describeIn updateWmdaData Download a WMDA file
+#' @noRd
 .downloadWmdaFile <- function(filename, base_url) {
   url <- paste0(base_url, filename)
 
@@ -137,7 +137,7 @@ updateWmdaData <- function(version = "Latest",
   lines
 }
 
-#' @describeIn updateWmdaData Parse rel_dna_ser.txt
+#' @noRd
 .parseDnaSer <- function(lines) {
   # Split by semicolon
   parsed <- strsplit(lines, ";")
@@ -179,7 +179,7 @@ updateWmdaData <- function(version = "Latest",
   dt[, .(locus, allele_2f, serology)]
 }
 
-#' @describeIn updateWmdaData Parse rel_ser_ser.txt
+#' @noRd
 .parseSerSer <- function(lines) {
   parsed <- strsplit(lines, ";")
 
@@ -197,7 +197,7 @@ updateWmdaData <- function(version = "Latest",
   dt_agg
 }
 
-#' @describeIn updateWmdaData Parse hla_nom_p.txt
+#' @noRd
 .parseNomP <- function(lines) {
   parsed <- strsplit(lines, ";")
 

@@ -326,22 +326,21 @@ print(binding_results)
 
 ## Calculating Peptide Binding Load with `calculatePeptideBindingLoad()`
 
-This function integrates the previous concepts to calculate a "Peptide Binding Load." It automates the complex workflow of identifying potential allo-antigens created by donor-recipient mismatches and predicting their binding affinity to the recipient's HLA alleles.
+This function integrates the previous concepts to calculate a "Peptide Binding Load." It predicts transplant risk by calculating peptide-HLA binding affinities between recipient HLA molecules and donor-mismatched peptides.
 
 The workflow is:
 
-1. Identifies all mismatched amino acid positions between donor and recipient alleles (like `calculateMismatchLoad()`).
-2. Generates all possible peptides (e.g., lengths 8-11 for Class I) that cover these mismatched positions.
-3. Filters for peptides that are "donor-specific" (i.e., the mismatch created a new peptide sequence that is not found in the recipient's own proteome).
-4. Predicts the binding of these donor-specific peptides against all of the recipient's HLA alleles using `predictMHCnuggets()`.
-5. Summarizes the results, counting how many donor-specific peptides are predicted to bind to the recipient's MHCs.
+1. **Input processing**: Converts recipient and donor inputs to standard format (allele names and peptides).
+2. **Peptide derivation**: If donor is a genotype/alleles, derives mismatched peptides by comparing sequences and generating overlapping k-mers from mismatch regions.
+3. **Binding prediction**: Uses the selected backend (PWM, NetMHCpan, or MHCflurry) to predict IC50 values for each peptide-allele combination.
+4. **Risk calculation**: Aggregates binding predictions into a risk score based on strong (IC50 ≤ 500 nM) and weak (IC50 ≤ 5000 nM) binders.
 
 ### Get a simple summary
 
 ```{r}
 summary_load <- calculatePeptideBindingLoad(
-  recipient_geno = rgeno,
-  donor_geno = dgeno,
+  recipient = rgeno,
+  donor = dgeno,
   return = "summary"
 )
 
@@ -350,52 +349,41 @@ print(summary_load)
 
 ### Get a per-allele breakdown
 
-This shows which loci are contributing the most to the peptide binding load.
+The `return = "summary"` option provides a per-HLA-allele breakdown showing which alleles are contributing the most to the peptide binding load.
 
 ```{r}
-# Get a per-locus breakdown
-per_locus_load <- calculatePeptideBindingLoad(
-  recipient_geno = rgeno,
-  donor_geno = dgeno,
-  return = "by_recipient_allele"
-)
-
-print(per_locus_load)
+# The summary return already provides per-allele breakdown
+print(summary_load)
 ```
 
 ### Get detailed results
 
-This returns a list containing all the raw prediction data, including the specific peptides, their IC50 scores against each recipient allele, and the mismatch positions they came from.
+This returns a data frame with per-peptide binding predictions, including the peptide sequences, HLA alleles, predicted IC50 values, binding levels, and contribution scores.
 
 ```{r}
 # Get the full detailed output
 detailed_load <- calculatePeptideBindingLoad(
-  recipient_geno = rgeno,
-  donor_geno = dgeno,
-  return = "detailed"
+  recipient = rgeno,
+  donor = dgeno,
+  return = "detail"
 )
 
-# The result is a list
-names(detailed_load)
-
-# You can inspect the raw predictions
-head(detailed_load$all_predictions)
+# The result is a data frame with per-peptide predictions
+head(detailed_load)
 ```
 
-### Visualizing petide binding results
+### Getting a total risk score
 
-After generating detailed peptide binding data, you can use visualizePeptideBinding to create plots. This function requires the output from `calculatePeptideBindingLoad()` when `return = "detailed"` is used.
+You can also get a single aggregated risk score using `return = "total"`:
 
 ```{r}
-visualizePeptideBinding(
-  detailed_load,
-  plot_type = "heatmap"
+total_risk <- calculatePeptideBindingLoad(
+  recipient = rgeno,
+  donor = dgeno,
+  return = "total"
 )
 
-visualizePeptideBinding(
-  detailed_load,
-  plot_type = "scatter"
-)
+print(total_risk)
 ```
 
 

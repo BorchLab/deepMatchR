@@ -2,10 +2,14 @@ Package: deepMatchR
 Title: Deep Learning Models for HLA Matching
 Version: 0.99.0
 Date: 2024-07-24
-Authors@R: c(
-    person(given = "Nick", family = "Borcherding", role = c("aut", "cre"), email = "ncborch@gmail.com"))
-Description: A set of tools and models for analyzing HLA matching. This includes the identification and quantification of immunogenicity mismatches, the generation of in silico patients based on frequency table, and interaction with common tools in HLA. 
-License: MIT + file LICENSE 
+Authors@R:
+    person(given = "Nick", family = "Borcherding", role = c("aut", "cre"),
+           email = "ncborch@gmail.com")
+Description: A set of tools and models for analyzing HLA matching. This includes
+    the identification and quantification of immunogenicity mismatches, the
+    generation of in silico patients based on frequency table, and interaction
+    with common tools in HLA.
+License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 LazyDataCompression: xz
@@ -13,7 +17,7 @@ RoxygenNote: 7.3.3
 biocViews: Software, Classification, Annotation, Sequencing
 Depends: 
 	R (>= 4.1.0)
-Imports: 
+Imports:
 	basilisk,
 	data.table,
 	directlabels,
@@ -23,27 +27,22 @@ Imports:
 	immReferent,
 	memoise,
 	parallel,
-	patchwork
-Suggests:
-	BiocStyle,
-	directlabels,
-	pracma,
+	patchwork,
 	pwalign,
 	readxl,
-	stats,
 	reticulate,
-	treemapify,
-	utils
-Suggests: 
+	stats
+Suggests:
 	BiocStyle,
+	Biostrings,
 	knitr,
 	pracma,
 	rappdirs,
-	reticulate,
 	rmarkdown,
 	spelling,
 	testthat (>= 3.0.0),
-	treemapify
+	treemapify,
+	withr
 Remotes:
     BorchLab/immReferent
 SystemRequirements: Python (via basilisk)

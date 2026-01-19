@@ -2,16 +2,6 @@
 % Please edit documentation in R/toSerology.R
 \name{toSerology}
 \alias{toSerology}
-\alias{.toSerologyGenotype}
-\alias{.convertSingleAllele}
-\alias{.parseAllele}
-\alias{.getSerologyPrefix}
-\alias{.lookupSerology}
-\alias{.resolvePGroup}
-\alias{.resolveBroadToSplit}
-\alias{.handleUnknown}
-\alias{.loadWmdaData}
-\alias{.getWmdaCacheDir}
 \title{Convert HLA Alleles to Serological Equivalents}
 \usage{
 toSerology(
@@ -21,32 +11,6 @@ toSerology(
   return = c("serology", "genotype", "data.frame"),
   na_action = c("NA", "warn", "error")
 )
-
-.toSerologyGenotype(geno, locus, resolve_splits, return, na_action)
-
-.convertSingleAllele(
-  allele,
-  locus_override,
-  resolve_splits,
-  na_action,
-  wmda_data
-)
-
-.parseAllele(allele)
-
-.getSerologyPrefix(locus)
-
-.lookupSerology(locus, allele_2f, serology_db)
-
-.resolvePGroup(locus, allele_2f, pgroups_db)
-
-.resolveBroadToSplit(input_locus, allele_2f, serology, wmda_data)
-
-.handleUnknown(allele, na_action, message)
-
-.loadWmdaData()
-
-.getWmdaCacheDir()
 }
 \arguments{
 \item{x}{Character vector of HLA alleles OR an \code{hla_genotype} object.}
@@ -92,29 +56,6 @@ split antigens (DR15 or DR16) based on the specific allele.
 
 P-group notation (e.g., "A*01:01P") is automatically resolved to the reference allele.
 }
-\section{Functions}{
-\itemize{
-\item \code{.toSerologyGenotype()}: Process hla_genotype object
-
-\item \code{.convertSingleAllele()}: Convert a single allele to serology
-
-\item \code{.parseAllele()}: Parse allele into components
-
-\item \code{.getSerologyPrefix()}: Get serology prefix for locus
-
-\item \code{.lookupSerology()}: Look up serology in database
-
-\item \code{.resolvePGroup()}: Resolve P-group to reference allele
-
-\item \code{.resolveBroadToSplit()}: Resolve broad antigen to split
-
-\item \code{.handleUnknown()}: Handle unknown allele based on na_action
-
-\item \code{.loadWmdaData()}: Load WMDA data from package or cache
-
-\item \code{.getWmdaCacheDir()}: Get WMDA cache directory
-
-}}
 \examples{
 # Single allele conversion
 toSerology("A*01:01")

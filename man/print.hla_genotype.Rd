@@ -17,3 +17,9 @@ Invisibly returns the original object.
 \description{
 Print an hla_genotype object
 }
+\examples{
+df <- data.frame(A_1 = "A*01:01", B_1 = "B*07:02")
+geno <- hlaGeno(df)
+print(geno)
+
+}

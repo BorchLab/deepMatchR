@@ -2,50 +2,101 @@
 % Please edit documentation in R/calculatePeptideBindingLoad.R
 \name{calculatePeptideBindingLoad}
 \alias{calculatePeptideBindingLoad}
-\title{Calculate Peptide Binding Load from Mismatched Positions}
+\title{Calculate Peptide Binding Load for Transplant Risk Assessment}
 \usage{
 calculatePeptideBindingLoad(
-  recipient_geno,
-  donor_geno,
-  loci = NULL,
-  ic50_threshold = 500L,
-  return = c("summary", "detailed", "by_recipient_allele"),
-  parallel = TRUE,
-  n_cores = 2,
-  hla_env = deepmatchrEnv(),
-  cache_dir = NULL,
-  compare_to = c("all", "closest")
+  recipient,
+  donor,
+  backend = c("pwm", "netmhcpan", "mhcflurry"),
+  backend_path = NULL,
+  peptide_length = 9L,
+  binding_threshold = 500,
+  weak_threshold = 5000,
+  return = c("total", "summary", "detail"),
+  aggregate_method = c("sum", "max", "mean")
 )
 }
 \arguments{
-\item{recipient_geno}{Recipient HLA genotype object}
+\item{recipient}{An `hla_genotype` object or character vector of HLA allele names.}
 
-\item{donor_geno}{Donor HLA genotype object}
+\item{donor}{An `hla_genotype` object, character vector of HLA allele names, or
+a character vector of peptide sequences. If `hla_genotype` or allele names,
+mismatched peptides are derived automatically from sequence differences.}
 
-\item{loci}{Character vector of loci to analyze (NULL for all)}
+\item{backend}{Character. Binding prediction method: `"pwm"` (default, no external
+dependencies), `"netmhcpan"`, or `"mhcflurry"`.}
 
-\item{ic50_threshold}{IC50 threshold in nM for binding (default 500)}
+\item{backend_path}{Character. Path to external tool executable. Required for
+`"netmhcpan"` backend.}
 
-\item{return}{What to return: "summary", "detailed", "by_recipient_allele"}
+\item{peptide_length}{Integer. Peptide length(s) to consider. Default `9L`.}
 
-\item{parallel}{Use parallel processing}
+\item{binding_threshold}{Numeric. IC50 threshold (nM) for "strong binder".
+Default `500`.}
 
-\item{n_cores}{Number of cores for parallel processing}
+\item{weak_threshold}{Numeric. IC50 threshold (nM) for "weak binder".
+Default `5000`.}
 
-\item{hla_env}{Basilisk environment for MHCnuggets}
+\item{return}{Character. One of `"total"` (risk score), `"summary"` (per-allele),
+or `"detail"` (per-peptide table). Default `"total"`.}
 
-\item{cache_dir}{Optional directory for sequence caching}
-
-\item{compare_to}{How to select recipient sequences for comparison:
-"all" = compare to all recipient alleles at same locus (default)
-"closest" = compare to most similar recipient allele at same locus}
+\item{aggregate_method}{Character. How to combine per-peptide scores:
+`"sum"`, `"max"`, `"mean"`. Default `"sum"`.}
 }
 \value{
-Results dataframe with binding predictions
+Depends on `return`:
+  - `"total"`: Numeric risk score.
+  - `"summary"`: data.frame with per-HLA-allele binding summary.
+  - `"detail"`: data.frame with columns: `peptide`, `hla_allele`, `predicted_ic50`,
+    `binding_level`, `contribution`.
 }
 \description{
-Identifies ALL donor alleles not present in recipient, generates peptides around
-mismatch positions, and predicts MHC binding to ALL recipient alleles regardless 
-of locus. Adaptively tests Class I peptides (8-11mers) against Class I alleles 
-(A, B, C) and Class II peptides (12-25mers) against Class II alleles (DRB1, DQB1, etc.).
+Predicts transplant risk by calculating peptide-HLA binding affinities
+between recipient HLA molecules and donor-mismatched peptides. Supports
+multiple binding prediction backends: built-in position weight matrix (PWM),
+NetMHCpan, or MHCflurry.
+}
+\details{
+The function works in several steps:
+1. **Input processing**: Converts inputs to standard format (allele names and peptides)
+2. **Peptide derivation**: If donor is genotype/alleles, derives mismatched peptides
+   by comparing sequences and generating overlapping k-mers from mismatch regions
+3. **Binding prediction**: Uses selected backend to predict IC50 values
+4. **Risk calculation**: Aggregates binding predictions into a risk score
+
+The **PWM backend** uses simplified position weight matrices based on HLA supertypes.
+For production use with high accuracy requirements, NetMHCpan is recommended.
+
+Risk score formula:
+\deqn{contribution = (1 - IC50/weak\_threshold) \times multiplier}
+where multiplier is 2 for strong binders, 1 for weak binders.
+}
+\examples{
+# Create donor and recipient genotypes
+recipient <- data.frame(
+  A_1 = "A*02:01", A_2 = "A*03:01",
+  B_1 = "B*07:02", B_2 = "B*44:02"
+)
+donor <- data.frame(
+  A_1 = "A*01:01", A_2 = "A*24:02",
+  B_1 = "B*08:01", B_2 = "B*35:01"
+)
+rgeno <- hlaGeno(recipient)
+dgeno <- hlaGeno(donor)
+
+\dontrun{
+# Calculate total binding load (requires sequence data)
+calculatePeptideBindingLoad(rgeno, dgeno)
+
+# Get detailed per-peptide results
+calculatePeptideBindingLoad(rgeno, dgeno, return = "detail")
+
+# Use with raw peptides
+peptides <- c("GILGFVFTL", "NLVPMVATV", "FLKEKGGL")
+calculatePeptideBindingLoad(rgeno, peptides)
+}
+
+}
+\seealso{
+\code{\link{calculateMismatchLoad}}, \code{\link{quantifyMismatch}}
 }

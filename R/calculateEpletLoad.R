@@ -51,7 +51,6 @@
 #' calculateEpletLoad(rgeno, dgeno, exposition_filter = "High")
 #' calculateEpletLoad(rgeno, dgeno, reactivity_filter = c("IgG"))
 #'
-#' @importFrom utils data
 #' @importFrom data.table as.data.table setkey
 #' @export
 calculateEpletLoad <- function(recipient_geno,
@@ -71,7 +70,7 @@ calculateEpletLoad <- function(recipient_geno,
   # Determine loci
   shared_loci <- intersect(recipient_geno$locus_present, donor_geno$locus_present)
   if (!is.null(loci)) shared_loci <- intersect(shared_loci, loci)
-  if (length(shared_loci) == 0L) stop("No shared loci between donor and recipient (after 'loci' filter).")
+  if (length(shared_loci) == 0L) stop("No shared loci between donor and recipient after filtering 'loci'.")
   
   # Extract allele strings (1st row), subset columns by loci
   pick_cols <- function(g, loci_vec) {
@@ -90,7 +89,6 @@ calculateEpletLoad <- function(recipient_geno,
   if (length(r_alleles) == 0L || length(d_alleles) == 0L) stop("No allele strings found in genotype data.")
   
   # Load eplet table & apply global filters once
-  utils::data(deepMatchR_eplets, envir = environment())
   eplet_dt <- data.table::as.data.table(deepMatchR_eplets)
   
   # Apply conjunctive filters if provided

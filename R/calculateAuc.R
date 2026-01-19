@@ -35,9 +35,18 @@
 #'   will contain columns for the feature (`eplet`, `creg`, `serology`), `AUC`,
 #'   `norm_AUC`, `total_count`, and `loci`.
 #'
-#' @importFrom ggplot2 ggplot aes geom_line xlim ylim labs scale_color_manual
-#' @importFrom directlabels geom_dl last.points
-#' @importFrom pracma trapz
+#' @examples
+#' # Calculate eplet AUC
+#' epletAUC(deepMatchR_example[[1]])
+#'
+#' # Get data instead of plot
+#' auc_data <- epletAUC(deepMatchR_example[[1]], plot_results = FALSE)
+#' head(auc_data)
+#'
+#' # Calculate CREG AUC
+#' cregAUC(deepMatchR_example[[1]])
+#'
+#' @importFrom ggplot2 ggplot aes geom_line geom_text xlim ylim labs scale_color_manual
 #' @export
 calculateAUC <- function(result_file,
                          analysis_type,
@@ -50,7 +59,7 @@ calculateAUC <- function(result_file,
                          cut_step = 250,
                          plot_results = TRUE,
                          palette = "spectral",
-                         evidence_level = c("A1", "A2", "B", "D"),
+                         evidence_level = c("A1", "A2"),
                          eplet_filter = 3,
                          top_eplets = 10,
                          creg_filter = 3,
@@ -138,7 +147,7 @@ calculateAUC <- function(result_file,
   
   # --- 7. Calculate AUC ---
   feature_AUC <- analysis_dt[, .(
-    AUC = pracma::trapz(cut, percent_positive),
+    AUC = .trapz(cut, percent_positive),
     total_count = unique(subtotal)[1],
     loci = paste0(unique(loci), collapse = "; ")
   ), by = c(config[["feature_col"]])]
@@ -170,8 +179,18 @@ calculateAUC <- function(result_file,
       )
     
     if (label) {
-      p <- p + geom_dl(aes(label = .data[[config$feature_col]]),
-                       method = list("last.points", cex = 0.8))
+      if (requireNamespace("directlabels", quietly = TRUE)) {
+        p <- p + directlabels::geom_dl(aes(label = .data[[config$feature_col]]),
+                         method = list("last.points", cex = 0.8))
+      } else {
+        # Fallback: use ggplot2 geom_text at the last point
+        label_data <- plot_data[plot_data$cut == max(plot_data$cut), ]
+        p <- p + geom_text(
+          data = label_data,
+          aes(label = .data[[config$feature_col]]),
+          hjust = 0, nudge_x = 100, size = 2.5, show.legend = FALSE
+        )
+      }
     }
     return(p)
     

@@ -23,7 +23,10 @@ Imports:
 	immReferent,
 	memoise,
 	parallel,
-	patchwork,
+	patchwork
+Suggests:
+	BiocStyle,
+	directlabels,
 	pracma,
 	pwalign,
 	readxl,
@@ -34,9 +37,13 @@ Imports:
 Suggests: 
 	BiocStyle,
 	knitr,
+	pracma,
+	rappdirs,
+	reticulate,
 	rmarkdown,
 	spelling,
-	testthat
+	testthat (>= 3.0.0),
+	treemapify
 Remotes:
     BorchLab/immReferent
 SystemRequirements: Python (via basilisk)

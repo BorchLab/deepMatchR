@@ -34,3 +34,14 @@ internal `deepMatchR_eplets` dataset. Supports filtering by **evidence**
 (e.g., A1/A2), **exposition** (e.g., "High", "Moderate"), and **reactivity**
 (e.g., IgG/IgM labels if present in the table).
 }
+\examples{
+# Count eplet mismatches between two alleles
+quantifyEpletMismatch("A*01:01", "A*02:01")
+
+# With evidence level filter
+quantifyEpletMismatch("A*01:01", "A*02:01", evidence_level = "A1")
+
+# Same allele returns 0
+quantifyEpletMismatch("A*01:01", "A*01:01")
+
+}

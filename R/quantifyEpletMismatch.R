@@ -17,7 +17,16 @@
 #' @return Integer: size of the **symmetric difference** of eplet sets between
 #'   the two alleles after filters (i.e., eplets present in one allele but not the other).
 #'
-#' @importFrom utils data
+#' @examples
+#' # Count eplet mismatches between two alleles
+#' quantifyEpletMismatch("A*01:01", "A*02:01")
+#'
+#' # With evidence level filter
+#' quantifyEpletMismatch("A*01:01", "A*02:01", evidence_level = "A1")
+#'
+#' # Same allele returns 0
+#' quantifyEpletMismatch("A*01:01", "A*01:01")
+#'
 #' @importFrom data.table as.data.table setkey
 #' @export
 quantifyEpletMismatch <- function(allele1,
@@ -33,7 +42,6 @@ quantifyEpletMismatch <- function(allele1,
   if (identical(allele1, allele2)) return(0L)
   
   # Load & prep
-  utils::data(deepMatchR_eplets, envir = environment())
   eplet_dt <- data.table::as.data.table(deepMatchR_eplets)
   data.table::setkey(eplet_dt, allele)
   

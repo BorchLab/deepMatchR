@@ -18,3 +18,17 @@ Creates a new `hla_genotype` object from a data frame of HLA calls. The
 object is a list containing the genotype data and a record of the loci
 present.
 }
+\examples{
+# Create a genotype from a data frame
+recipient <- data.frame(
+  A_1 = "A*01:01", A_2 = "A*02:01",
+  B_1 = "B*07:02", B_2 = "B*08:01"
+)
+geno <- hlaGeno(recipient)
+print(geno)
+
+# Access components
+geno$locus_present
+geno$data
+
+}

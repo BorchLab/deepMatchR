@@ -37,3 +37,14 @@ getAlleleSequence("A*02:01", type = "NUC")
 
 
 }
+\examples{
+\dontrun{
+# Get amino acid sequence for an HLA-A allele
+seq <- getAlleleSequence("A*01:01")
+nchar(seq)  # Length of sequence
+
+# Get sequence for HLA-B allele
+seq_b <- getAlleleSequence("B*07:02")
+}
+
+}

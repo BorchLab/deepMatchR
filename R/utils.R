@@ -1,7 +1,8 @@
 #' @importFrom ggplot2 %+replace% rel coord_flip element_blank theme scale_fill_manual
-#' @importFrom data.table data.table set setorder fifelse rbindlist setcolorder setnames
-#' @importFrom utils head read.csv globalVariables
-#' @importFrom stats as.formula
+#' @importFrom data.table data.table set setorder fifelse rbindlist setcolorder setnames shift
+#' @importFrom utils head read.csv globalVariables data
+#' @importFrom stats as.formula reorder setNames
+#' @importFrom dplyr desc
 NULL
 
 # Quiet R CMD check notes about non-standard evaluation in data.table
@@ -25,6 +26,7 @@ if (getRversion() >= "2.15.1") {
     # Plotting columns
     "max_val", "sample_date", "highlight", "category",
     "group", "sizing", "positive.bead", "count_above", "count_total",
+    "uniqueID",
     # spiDeconvolute columns
     "concordant", "positive", "positiveBeads", "praOnly", "sabOnly",
     "sab_cutoff", "sab_mfi", "sab_reactive", "supportFraction", "totalBeads",
@@ -34,7 +36,13 @@ if (getRversion() >= "2.15.1") {
     "allele_2f", "serology", "serology_full", "broad", "splits",
     "p_group", "reference_2f", "unambiguous", "possible", "assumed", "expert",
     # updateWmdaData columns
-    "locus"
+    "locus",
+    # calculateMismatchLoad columns
+    "mismatch", "recipient", "donor", "r", "d",
+    # visualizePeptideBinding columns
+    "donor_allele", "recipient_allele", "binding", "binding_rate",
+    "n_peptides", "recipient_locus", "mhc_class", "total", "donor_locus",
+    "n_recipient_alleles", "ic50", "desc"
   ))
 }
 

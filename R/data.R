@@ -117,3 +117,93 @@
 #' @seealso \code{\link{deepMatchR_eplets}}, \code{\link{deepMatchR_cregs}}
 #' @keywords datasets SAB PRA MFI
 "deepMatchR_example"
+
+
+#' WMDA DNA-to-Serology Mapping
+#'
+#' A lookup table mapping HLA alleles to their serological equivalents based on
+#' WMDA (World Marrow Donor Association) nomenclature. Used internally by
+#' \code{\link{toSerology}} for allele-to-serology conversion.
+#'
+#' @format A data.table with the following columns:
+#' \describe{
+#'   \item{locus}{`character`. HLA locus with asterisk (e.g., `"A*"`, `"B*"`, `"DRB1*"`).}
+#'   \item{allele_2f}{`character`. Two-field allele designation (e.g., `"01:01"`, `"07:02"`).}
+#'   \item{serology}{`character`. Serological antigen number (e.g., `"1"`, `"7"`).}
+#' }
+#'
+#' @details
+#' The mapping prioritizes serology assignments in this order:
+#' \enumerate{
+#'   \item Unambiguous assignments
+#'   \item Possible assignments
+#'   \item Assumed assignments
+#'   \item Expert assignments
+#' }
+#'
+#' @source WMDA nomenclature files from IMGT/HLA GitHub repository
+#'   (\url{https://github.com/ANHIG/IMGTHLA/tree/Latest/wmda}).
+#'
+#' @usage data(deepMatchR_wmda_serology)
+#' @seealso \code{\link{toSerology}}, \code{\link{updateWmdaData}},
+#'   \code{\link{deepMatchR_wmda_splits}}, \code{\link{deepMatchR_wmda_pgroups}}
+#' @keywords datasets HLA serology WMDA
+"deepMatchR_wmda_serology"
+
+
+#' WMDA Broad-to-Split Antigen Relationships
+#'
+#' A lookup table mapping broad serological antigens to their split antigens
+#' based on WMDA nomenclature. Used internally by \code{\link{toSerology}}
+#' when \code{resolve_splits = TRUE}.
+#'
+#' @format A data.table with the following columns:
+#' \describe{
+#'   \item{locus}{`character`. Serology locus prefix (e.g., `"A"`, `"B"`, `"DR"`).}
+#'   \item{broad}{`character`. Broad antigen number (e.g., `"2"`, `"5"`).}
+#'   \item{splits}{`character`. Pipe-separated split antigen numbers (e.g., `"15|16"`).}
+#' }
+#'
+#' @details
+#' Common examples of broad-to-split relationships:
+#' \itemize{
+#'   \item DR2 -> DR15, DR16
+#'   \item DR5 -> DR11, DR12
+#'   \item B5 -> B51, B52
+#' }
+#'
+#' @source WMDA nomenclature files from IMGT/HLA GitHub repository
+#'   (\url{https://github.com/ANHIG/IMGTHLA/tree/Latest/wmda}).
+#'
+#' @usage data(deepMatchR_wmda_splits)
+#' @seealso \code{\link{toSerology}}, \code{\link{deepMatchR_wmda_serology}}
+#' @keywords datasets HLA serology WMDA
+"deepMatchR_wmda_splits"
+
+
+#' WMDA P-Group Definitions
+#'
+#' A lookup table containing HLA P-group definitions from WMDA nomenclature.
+#' P-groups are sets of alleles with identical protein sequences in the
+#' antigen recognition site. Used internally by \code{\link{toSerology}}
+#' to resolve P-group notation.
+#'
+#' @format A data.table with the following columns:
+#' \describe{
+#'   \item{locus}{`character`. HLA locus (e.g., `"A"`, `"B"`, `"DRB1"`).}
+#'   \item{p_group}{`character`. P-group designation (e.g., `"01:01P"`).}
+#'   \item{reference_2f}{`character`. Reference two-field allele for the P-group.}
+#' }
+#'
+#' @details
+#' P-group notation (e.g., `"A*01:01P"`) indicates that multiple alleles share
+#' the same protein sequence in the antigen recognition domain. This table
+#' maps P-groups to their representative reference alleles for serology lookup.
+#'
+#' @source WMDA nomenclature files from IMGT/HLA GitHub repository
+#'   (\url{https://github.com/ANHIG/IMGTHLA/tree/Latest/wmda}).
+#'
+#' @usage data(deepMatchR_wmda_pgroups)
+#' @seealso \code{\link{toSerology}}, \code{\link{deepMatchR_wmda_serology}}
+#' @keywords datasets HLA WMDA P-group
+"deepMatchR_wmda_pgroups"

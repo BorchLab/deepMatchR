@@ -4,32 +4,36 @@ Version: 0.99.0
 Date: 2024-07-24
 Authors@R: c(
     person(given = "Nick", family = "Borcherding", role = c("aut", "cre"), email = "ncborch@gmail.com"))
+Author: Nick Borcherding [aut, cre]
+Maintainer: Nick Borcherding <ncborch@gmail.com>
 Description: A set of tools and models for analyzing HLA matching. This includes the identification and quantification of immunogenicity mismatches, the generation of in silico patients based on frequency table, and interaction with common tools in HLA. 
 License: MIT + file LICENSE 
 Encoding: UTF-8
 LazyData: true
 LazyDataCompression: xz
-RoxygenNote: 7.3.2
+RoxygenNote: 7.3.3
 biocViews: Software, Classification, Annotation, Sequencing
 Depends: 
 	R (>= 4.0)
-Imports: 
+Imports:
 	ggplot2,
 	grDevices,
 	readxl,
 	data.table,
 	patchwork,
-	directlabels,
-	pracma,
-	treemapify,
 	immReferent
-Suggests: 
+Suggests:
 	BiocStyle,
+	directlabels,
 	dplyr,
 	knitr,
+	pracma,
+	rappdirs,
+	reticulate,
 	rmarkdown,
 	spelling,
-	testthat
+	testthat (>= 3.0.0),
+	treemapify
 Remotes:
     BorchLab/immReferent
 VignetteBuilder: knitr

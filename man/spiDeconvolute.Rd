@@ -60,3 +60,25 @@ The function performs the following steps:
 4. Calculates PRA support for each antigen based on the panel composition.
 5. Partitions results into three tables: `concordant`, `sabOnly`, and `praOnly`.
 }
+\examples{
+\dontrun{
+# Example with mock data
+sab <- data.frame(
+  antigen = c("A1", "A2", "B7", "B8"),
+  NormalValue = c(5000, 500, 3000, 200)
+)
+pra <- data.frame(
+  BeadID = 1:4,
+  NormalValue = c(2000, 800, 1500, 300)
+)
+panel <- data.frame(
+  BeadID = c(1, 1, 2, 2, 3, 3, 4, 4),
+  antigen = c("A1", "A2", "A1", "B7", "B7", "B8", "A2", "B8")
+)
+
+result <- spiDeconvolute(sab, pra, panel)
+result$concordant
+result$summary
+}
+
+}

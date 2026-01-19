@@ -17,3 +17,14 @@ A character string representing the amino acid sequence.
 This function retrieves the amino acid sequence for a given HLA allele
 name using the `immReferent` package.
 }
+\examples{
+\dontrun{
+# Get amino acid sequence for an HLA-A allele
+seq <- getAlleleSequence("A*01:01")
+nchar(seq)  # Length of sequence
+
+# Get sequence for HLA-B allele
+seq_b <- getAlleleSequence("B*07:02")
+}
+
+}

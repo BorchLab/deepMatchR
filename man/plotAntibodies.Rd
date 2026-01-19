@@ -60,3 +60,14 @@ A `ggplot` object.
 This function generates a bar plot of SAB (Single Antigen Beads) or PRA (Panel-Reactive Antibody) results
 from a provided data frame or a file path. It can also plot MFI values over time.
 }
+\examples{
+# Plot SAB Class I data
+plotAntibodies(deepMatchR_example[[1]], type = "SAB")
+
+# Plot without table
+plotAntibodies(deepMatchR_example[[1]], type = "SAB", add_table = FALSE)
+
+# Plot SAB Class II data
+plotAntibodies(deepMatchR_example[[2]], type = "SAB")
+
+}

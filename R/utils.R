@@ -1,27 +1,41 @@
-#' @importFrom ggplot2 %+replace% rel coord_flip
-#' @importFrom data.table data.table set setorder fifelse rbindlist setcolorder
-#' @importFrom treemapify geom_treemap geom_treemap_text geom_treemap_subgroup_border geom_treemap_subgroup_text
+#' @importFrom ggplot2 %+replace% rel coord_flip element_blank theme scale_fill_manual
+#' @importFrom data.table data.table set setorder fifelse rbindlist setcolorder setnames
 #' @importFrom utils head read.csv globalVariables
-#' @importFrom data.table setnames
 #' @importFrom stats as.formula
 NULL
 
-# Quiet R CMD check notes about non-standard evaluation
-if(getRversion() >= "2.15.1") {
-  utils::globalVariables(
-    c(".", "BeadID", "SpecAbbr", "Specificity", "NormalValue", "antigen_vec",
-      "allele_vec", "rid", ".I", "position", "is_bw", "antigen", "is_cant",
-      "allele", "prev_antigen", "shift", "allele_locus", "loci_family0",
-      "loci_family", "bw_label", "bw46", "mfi_min", "pairs", ".N",
-      "Specificity_truncated", "desc", "count", "positive_count", "subtotal",
-      "percent_positive", "pp_max", "loci", "AUC", "norm_AUC", ".data",
-      "deepMatchR_cregs", "creg", "deepMatchR_eplets", "eplet", "median",
-      "max_val", "sample_date", "highlight", "setNames", "reorder", "category",
-      "group", "sizing", "positive.bead", "count_above", "count_total",
-      "row_number", "sym", "concordant", "evidence", "positive", "positiveBeads",
-      "praOnly", "sabOnly", "sab_cutoff", "sab_mfi", "sab_reactive",
-      "supportFraction", "totalBeads", "evidence_level", "rank")
-  )
+# Quiet R CMD check notes about non-standard evaluation in data.table
+if (getRversion() >= "2.15.1") {
+ utils::globalVariables(c(
+    # data.table special symbols
+    ".", ".N", ".I", ".data",
+    # SAB/PRA processing columns (utils.R)
+    "BeadID", "SpecAbbr", "Specificity", "NormalValue",
+    "antigen_vec", "allele_vec", "rid", "position",
+    "is_bw", "antigen", "is_cant", "allele", "prev_antigen",
+    "allele_locus", "loci_family0", "loci_family", "bw_label",
+    "bw46", "mfi_min", "pairs", "Specificity_truncated",
+    # AUC calculation columns (calculateAuc.R)
+    "count", "subtotal", "positive_count", "percent_positive",
+    "pp_max", "loci", "AUC", "norm_AUC", "cut",
+    # Eplet columns
+    "eplet", "evidence", "creg", "exposition", "reactivity",
+    # Package data
+    "deepMatchR_eplets",
+    # Plotting columns
+    "max_val", "sample_date", "highlight", "category",
+    "group", "sizing", "positive.bead", "count_above", "count_total",
+    # spiDeconvolute columns
+    "concordant", "positive", "positiveBeads", "praOnly", "sabOnly",
+    "sab_cutoff", "sab_mfi", "sab_reactive", "supportFraction", "totalBeads",
+    # Class column for spiDeconvolute
+    "class",
+    # toSerology columns
+    "allele_2f", "serology", "serology_full", "broad", "splits",
+    "p_group", "reference_2f", "unambiguous", "possible", "assumed", "expert",
+    # updateWmdaData columns
+    "locus"
+  ))
 }
 
 # Basic theme for all plots
@@ -196,7 +210,6 @@ if(getRversion() >= "2.15.1") {
   paste0(vec, padding)
 }
 
-#TODO fix DPA reporting
 #' @importFrom data.table as.data.table `:=`
 .processPRA <- function(result0, class = "I") {
   
@@ -361,6 +374,15 @@ if(getRversion() >= "2.15.1") {
   return(as.data.frame(out))
 }
 
+
+# Base R trapezoidal integration (fallback for pracma::trapz)
+.trapz <- function(x, y) {
+  if (!is.numeric(x) || !is.numeric(y)) stop("x and y must be numeric")
+  if (length(x) != length(y)) stop("x and y must have same length")
+  n <- length(x)
+  if (n < 2) return(0)
+  sum(diff(x) * (y[-n] + y[-1]) / 2)
+}
 
 .alphanumericalSort <- function(x, ignore.case = TRUE) {
   if (!is.character(x)) {

@@ -93,7 +93,7 @@ toSerology <- function(x,
          stop("Invalid return type"))
 }
 
-#' @describeIn toSerology Process hla_genotype object
+#' @noRd
 .toSerologyGenotype <- function(geno, locus, resolve_splits, return, na_action) {
   validateHlaGeno(geno)
 
@@ -144,7 +144,7 @@ toSerology <- function(x,
   }
 }
 
-#' @describeIn toSerology Convert a single allele to serology
+#' @noRd
 .convertSingleAllele <- function(allele, locus_override, resolve_splits, na_action, wmda_data) {
   # Handle NA/empty
   if (is.na(allele) || !nzchar(trimws(allele))) {
@@ -204,7 +204,7 @@ toSerology <- function(x,
   )
 }
 
-#' @describeIn toSerology Parse allele into components
+#' @noRd
 .parseAllele <- function(allele) {
   allele <- trimws(allele)
 
@@ -238,7 +238,7 @@ toSerology <- function(x,
   list(locus = locus, allele_2f = allele_2f)
 }
 
-#' @describeIn toSerology Get serology prefix for locus
+#' @noRd
 .getSerologyPrefix <- function(locus) {
   # Map HLA loci to their serological prefixes
   prefix_map <- c(
@@ -264,7 +264,7 @@ toSerology <- function(x,
   locus
 }
 
-#' @describeIn toSerology Look up serology in database
+#' @noRd
 .lookupSerology <- function(locus, allele_2f, serology_db) {
   # WMDA data has locus with asterisk (e.g., "A*", "DRB1*")
   locus_key <- paste0(locus, "*")
@@ -284,7 +284,7 @@ toSerology <- function(x,
   result[1]
 }
 
-#' @describeIn toSerology Resolve P-group to reference allele
+#' @noRd
 .resolvePGroup <- function(locus, allele_2f, pgroups_db) {
   # P-groups data has locus WITHOUT asterisk (e.g., "A" not "A*")
   locus_key <- locus
@@ -306,7 +306,7 @@ toSerology <- function(x,
   result[1]
 }
 
-#' @describeIn toSerology Resolve broad antigen to split
+#' @noRd
 .resolveBroadToSplit <- function(input_locus, allele_2f, serology, wmda_data) {
   # Get the serology locus prefix
   ser_locus <- .getSerologyPrefix(input_locus)
@@ -340,7 +340,7 @@ toSerology <- function(x,
   serology
 }
 
-#' @describeIn toSerology Handle unknown allele based on na_action
+#' @noRd
 .handleUnknown <- function(allele, na_action, message) {
   if (na_action == "error") {
     stop(message)
@@ -359,7 +359,7 @@ toSerology <- function(x,
   )
 }
 
-#' @describeIn toSerology Load WMDA data from package or cache
+#' @noRd
 .loadWmdaData <- function() {
   # Check for cached/updated data first
   cache_dir <- .getWmdaCacheDir()
@@ -378,11 +378,31 @@ toSerology <- function(x,
     })
   }
 
-  # Access bundled package data
-  # Use get0 to safely access from package namespace
-  serology <- get0("deepMatchR_wmda_serology", envir = asNamespace("deepMatchR"), ifnotfound = NULL)
-  splits <- get0("deepMatchR_wmda_splits", envir = asNamespace("deepMatchR"), ifnotfound = NULL)
-  pgroups <- get0("deepMatchR_wmda_pgroups", envir = asNamespace("deepMatchR"), ifnotfound = NULL)
+  # Access bundled package data - try multiple methods
+  serology <- NULL
+  splits <- NULL
+  pgroups <- NULL
+
+  # Method 1: Try from package namespace (when package is loaded)
+  tryCatch({
+    ns <- asNamespace("deepMatchR")
+    serology <- get0("deepMatchR_wmda_serology", envir = ns, ifnotfound = NULL)
+    splits <- get0("deepMatchR_wmda_splits", envir = ns, ifnotfound = NULL)
+    pgroups <- get0("deepMatchR_wmda_pgroups", envir = ns, ifnotfound = NULL)
+  }, error = function(e) NULL)
+
+  # Method 2: Try using utils::data() to load from package
+  if (is.null(serology) || is.null(splits) || is.null(pgroups)) {
+    tryCatch({
+      env <- new.env()
+      data("deepMatchR_wmda_serology", package = "deepMatchR", envir = env)
+      data("deepMatchR_wmda_splits", package = "deepMatchR", envir = env)
+      data("deepMatchR_wmda_pgroups", package = "deepMatchR", envir = env)
+      serology <- env$deepMatchR_wmda_serology
+      splits <- env$deepMatchR_wmda_splits
+      pgroups <- env$deepMatchR_wmda_pgroups
+    }, error = function(e) NULL)
+  }
 
   if (is.null(serology) || is.null(splits) || is.null(pgroups)) {
     stop("WMDA data not found. Package data may not be properly installed.")
@@ -404,7 +424,7 @@ toSerology <- function(x,
   )
 }
 
-#' @describeIn toSerology Get WMDA cache directory
+#' @noRd
 .getWmdaCacheDir <- function() {
   cache_base <- Sys.getenv("DEEPMATCHR_CACHE_DIR", "")
   if (nzchar(cache_base)) {

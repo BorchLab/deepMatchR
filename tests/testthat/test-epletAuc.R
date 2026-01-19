@@ -72,3 +72,90 @@ test_that("epletAUC() final tibble has expected numeric values for AUC", {
   expect_type(result_df$AUC, "double")
   expect_type(result_df$total_count, "integer")
 })
+
+# --- Tests for cregAUC ---
+
+test_that("cregAUC() returns ggplot when plot_results=TRUE", {
+  result_plot <- cregAUC(
+    result_file = sab_data_example,
+    plot_results = TRUE
+  )
+
+  expect_s3_class(result_plot, "ggplot")
+})
+
+test_that("cregAUC() returns data.frame when plot_results=FALSE", {
+  result_df <- cregAUC(
+    result_file = sab_data_example,
+    plot_results = FALSE
+  )
+
+  expect_s3_class(result_df, "data.frame")
+  expect_true("CREG" %in% names(result_df))
+  expect_true("AUC" %in% names(result_df))
+})
+
+test_that("cregAUC() respects creg_filter parameter", {
+  result_strict <- cregAUC(
+    result_file = sab_data_example,
+    creg_filter = 10,
+    plot_results = FALSE
+  )
+
+  result_loose <- cregAUC(
+    result_file = sab_data_example,
+    creg_filter = 1,
+    plot_results = FALSE
+  )
+
+  # Stricter filter should return fewer or equal rows
+  expect_true(nrow(result_strict) <= nrow(result_loose))
+})
+
+# --- Tests for serologyAUC ---
+
+test_that("serologyAUC() returns ggplot when plot_results=TRUE", {
+  result_plot <- serologyAUC(
+    result_file = sab_data_example,
+    plot_results = TRUE
+  )
+
+  expect_s3_class(result_plot, "ggplot")
+})
+
+test_that("serologyAUC() returns data.frame when plot_results=FALSE", {
+  result_df <- serologyAUC(
+    result_file = sab_data_example,
+    plot_results = FALSE
+  )
+
+  expect_s3_class(result_df, "data.frame")
+  expect_true("serology" %in% names(result_df))
+  expect_true("AUC" %in% names(result_df))
+})
+
+test_that("serologyAUC() respects serology_filter parameter", {
+  result_strict <- serologyAUC(
+    result_file = sab_data_example,
+    serology_filter = 10,
+    plot_results = FALSE
+  )
+
+  result_loose <- serologyAUC(
+    result_file = sab_data_example,
+    serology_filter = 1,
+    plot_results = FALSE
+  )
+
+  # Stricter filter should return fewer or equal rows
+  expect_true(nrow(result_strict) <= nrow(result_loose))
+})
+
+# --- Tests for calculateAUC base function ---
+
+test_that("calculateAUC() errors on invalid analysis_type", {
+  expect_error(
+    calculateAUC(sab_data_example, analysis_type = "invalid"),
+    "analysis_type"
+  )
+})

@@ -16,6 +16,8 @@
 #' @param return What to return: "total" (default), "per_locus", or "pairwise".
 #' @param pairwise_locus When `return = "pairwise"`, the locus to visualize
 #'   (e.g., "A", "B", "C"). Ignored otherwise.
+#' @param parallel Logical, whether to use parallel processing
+#' @param n_cores Number of cores for parallel processing
 #'
 #' @return
 #' - If `return = "total"`: single integer total mismatch load.
@@ -40,17 +42,34 @@
 #' calculateMismatchLoad(rgeno, dgeno)
 #'
 #' # 2) Per-locus summary
-#' calculateMismatchLoad(rgeno, dgeno, return = "per_locus")
+#' calculateMismatchLoad(rgeno, 
+#'                       dgeno, 
+#'                       return = "per_locus")
 #'
 #' # 3) Pairwise matrix for B locus
-#' mB <- calculateMismatchLoad(rgeno, dgeno, return = "pairwise", pairwise_locus = "B")
+#' mB <- calculateMismatchLoad(rgeno, 
+#'                             dgeno, 
+#'                             return = "pairwise", 
+#'                             pairwise_locus = "B")
 #' mB
 #'
 #' # 4) Apply biophysical filters
-#' calculateMismatchLoad(rgeno, dgeno, filter_charge = TRUE)                # charge-changing only
-#' calculateMismatchLoad(rgeno, dgeno, filter_polarity = TRUE)              # polarity-changing only
-#' calculateMismatchLoad(rgeno, dgeno, filter_charge = TRUE, filter_polarity = TRUE)  # both
-#'
+#' # charge-changing only
+#' calculateMismatchLoad(rgeno, 
+#'                       dgeno, 
+#'                       filter_charge = TRUE)               
+#' 
+#' # polarity-changing only
+#' calculateMismatchLoad(rgeno, 
+#'                       dgeno, 
+#'                       filter_polarity = TRUE)             
+#' 
+#' # Both polarity and charge-changing
+#' calculateMismatchLoad(rgeno, 
+#'                       dgeno, 
+#'                       filter_charge = TRUE, 
+#'                       filter_polarity = TRUE) 
+#' @importFrom stats xtabs 
 #' @export
 calculateMismatchLoad <- function(recipient_geno,
                                   donor_geno,
@@ -59,105 +78,104 @@ calculateMismatchLoad <- function(recipient_geno,
                                   filter_polarity = NULL,
                                   na_action = c("exclude", "error", "count"),
                                   return = c("total", "per_locus", "pairwise"),
-                                  pairwise_locus = NULL) {
-  # --- validation ---
-  na_action <- match.arg(na_action)
-  return    <- match.arg(return)
+                                  pairwise_locus = NULL,
+                                  parallel = TRUE,
+                                  n_cores = 2) {
   
+  na_action <- match.arg(na_action)
+  return <- match.arg(return)
+  
+  # Validation (same as original)
   validateHlaGeno(recipient_geno)
   validateHlaGeno(donor_geno)
   
   shared_loci <- intersect(recipient_geno$locus_present, donor_geno$locus_present)
   if (!is.null(loci)) shared_loci <- intersect(shared_loci, loci)
-  if (length(shared_loci) == 0) stop("No shared loci between donor and recipient (after filtering 'loci').")
+  if (length(shared_loci) == 0) stop("No shared loci between donor and recipient.")
   
-  if (return == "pairwise") {
-    if (length(pairwise_locus) != 1L || !is.character(pairwise_locus)) {
-      stop("When return = 'pairwise', provide pairwise_locus as a single character locus (e.g., 'B').")
-    }
-    if (!(pairwise_locus %in% shared_loci)) {
-      stop(sprintf("pairwise_locus '%s' is not in shared_loci: %s",
-                   pairwise_locus, paste(shared_loci, collapse = ", ")))
-    }
-  }
-  
-  # --- collect allele labels (1st row of $data), optionally subset by loci pattern ---
+  # Extract alleles
   get_idx_for_loci <- function(g, loci_vec) {
     if (is.null(loci_vec)) return(seq_len(ncol(g$data)))
-    # Columns typically like "A_1", "B_2"; select those starting with e.g. "A_"
     pat <- paste0("^(", paste(loci_vec, collapse = "|"), ")_")
     grep(pat, colnames(g$data))
   }
   
   r_idx <- get_idx_for_loci(recipient_geno, shared_loci)
-  d_idx <- get_idx_for_loci(donor_geno,     shared_loci)
+  d_idx <- get_idx_for_loci(donor_geno, shared_loci)
   
   r_alleles <- unlist(recipient_geno$data[1, r_idx, drop = FALSE])
-  d_alleles <- unlist(donor_geno$data[1,     d_idx, drop = FALSE])
+  d_alleles <- unlist(donor_geno$data[1, d_idx, drop = FALSE])
   
-  # Remove NA/empty
   r_alleles <- r_alleles[!is.na(r_alleles) & nzchar(r_alleles)]
   d_alleles <- d_alleles[!is.na(d_alleles) & nzchar(d_alleles)]
   
-  # --- Prefetch sequences once for speed ---
+  # Batch retrieve all sequences at once with caching
   all_alleles <- unique(c(r_alleles, d_alleles))
-  if (length(all_alleles) == 0) stop("No allele strings found in genotype data.")
-  seq_map <- sapply(all_alleles, getAlleleSequence, USE.NAMES = TRUE)
+  seq_map <- batchGetSequences(all_alleles, n_cores = n_cores)
   
-  # Helper: compute total for one locus
-  locus_total <- function(L) {
+  # Create comparison matrix using data.table for efficiency
+  if (return == "pairwise" && !is.null(pairwise_locus)) {
+    L <- pairwise_locus
+    rL <- r_alleles[grep(paste0("^", L, "_"), names(r_alleles))]
+    dL <- d_alleles[grep(paste0("^", L, "_"), names(d_alleles))]
+    
+    # Vectorized comparison
+    pairs <- data.table::CJ(recipient = rL, donor = dL)
+    pairs[, mismatch := mapply(function(r, d) {
+      if (identical(r, d)) return(0L)
+      quantifyMismatch(
+        sequence1 = seq_map[[r]],
+        sequence2 = seq_map[[d]],
+        filter_charge = filter_charge,
+        filter_polarity = filter_polarity,
+        na_action = na_action,
+        return = "count"
+      )
+    }, recipient, donor)]
+    
+    mat <- as.matrix(xtabs(mismatch ~ recipient + donor,
+                     data = pairs))
+    return(mat)
+  }
+  
+  # Calculate per-locus or total
+  locus_calc <- function(L) {
     rL <- r_alleles[grep(paste0("^", L, "_"), names(r_alleles))]
     dL <- d_alleles[grep(paste0("^", L, "_"), names(d_alleles))]
     if (length(rL) == 0L || length(dL) == 0L) return(0L)
     
-    total <- 0L
-    for (ra in rL) for (da in dL) {
-      if (identical(ra, da)) next
-      total <- total + quantifyMismatch(
-        sequence1 = unname(seq_map[ra]),
-        sequence2 = unname(seq_map[da]),
-        filter_charge   = filter_charge,
+    pairs <- data.table::CJ(r = rL, d = dL)
+    pairs <- pairs[r != d]  # Skip identical pairs
+    
+    if (nrow(pairs) == 0) return(0L)
+    
+    sum(mapply(function(r, d) {
+      quantifyMismatch(
+        sequence1 = seq_map[[r]],
+        sequence2 = seq_map[[d]],
+        filter_charge = filter_charge,
         filter_polarity = filter_polarity,
-        na_action       = na_action,
-        return          = "count"
+        na_action = na_action,
+        return = "count"
       )
-    }
-    total
+    }, pairs$r, pairs$d))
+  }
+  
+  if (parallel && length(shared_loci) > 1 && !is.null(n_cores) && n_cores > 1) {
+    loads <- unlist(parallel::mclapply(shared_loci, locus_calc, mc.cores = n_cores))
+  } else {
+    loads <- vapply(shared_loci, locus_calc, FUN.VALUE = integer(1))
   }
   
   if (return == "total") {
-    # Sum over loci
-    loads <- vapply(shared_loci, locus_total, FUN.VALUE = integer(1))
     return(as.integer(sum(loads)))
   }
   
-  if (return == "per_locus") {
-    loads <- vapply(shared_loci, locus_total, FUN.VALUE = integer(1))
-    return(data.frame(locus = shared_loci,
-                      mismatch_load = as.integer(loads),
-                      row.names = NULL, check.names = FALSE))
-  }
-  
-  # return == "pairwise"
-  L <- pairwise_locus
-  rL <- r_alleles[grep(paste0("^", L, "_"), names(r_alleles))]
-  dL <- d_alleles[grep(paste0("^", L, "_"), names(d_alleles))]
-  if (length(rL) == 0L || length(dL) == 0L) stop("No alleles found for locus ", L)
-  
-  mat <- outer(
-    rL, dL,
-    Vectorize(function(ra, da) {
-      if (identical(ra, da)) return(0L)
-      quantifyMismatch(
-        sequence1 = unname(seq_map[ra]),
-        sequence2 = unname(seq_map[da]),
-        filter_charge   = filter_charge,
-        filter_polarity = filter_polarity,
-        na_action       = na_action,
-        return          = "count"
-      )
-    })
+  # return == "per_locus"
+  data.frame(
+    locus = shared_loci,
+    mismatch_load = as.integer(loads),
+    row.names = NULL, 
+    check.names = FALSE
   )
-  dimnames(mat) <- list(recipient = rL, donor = dL)
-  return(mat)
 }

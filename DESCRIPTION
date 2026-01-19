@@ -4,8 +4,6 @@ Version: 0.99.0
 Date: 2024-07-24
 Authors@R: c(
     person(given = "Nick", family = "Borcherding", role = c("aut", "cre"), email = "ncborch@gmail.com"))
-Author: Nick Borcherding [aut, cre]
-Maintainer: Nick Borcherding <ncborch@gmail.com>
 Description: A set of tools and models for analyzing HLA matching. This includes the identification and quantification of immunogenicity mismatches, the generation of in silico patients based on frequency table, and interaction with common tools in HLA. 
 License: MIT + file LICENSE 
 Encoding: UTF-8
@@ -14,18 +12,30 @@ LazyDataCompression: xz
 RoxygenNote: 7.3.3
 biocViews: Software, Classification, Annotation, Sequencing
 Depends: 
-	R (>= 4.0)
-Imports:
+	R (>= 4.1.0)
+Imports: 
+	basilisk,
+	data.table,
+	directlabels,
+	dplyr,
 	ggplot2,
 	grDevices,
-	readxl,
-	data.table,
-	patchwork,
-	immReferent
+	immReferent,
+	memoise,
+	parallel,
+	patchwork
 Suggests:
 	BiocStyle,
 	directlabels,
-	dplyr,
+	pracma,
+	pwalign,
+	readxl,
+	stats,
+	reticulate,
+	treemapify,
+	utils
+Suggests: 
+	BiocStyle,
 	knitr,
 	pracma,
 	rappdirs,
@@ -36,6 +46,7 @@ Suggests:
 	treemapify
 Remotes:
     BorchLab/immReferent
+SystemRequirements: Python (via basilisk)
 VignetteBuilder: knitr
 Language: en-US
 URL: https://github.com/ncborcherding/deepMatchR/

@@ -7,7 +7,6 @@ test_that("basic mismatch counting works", {
 })
 
 test_that("case-insensitivity and equal length checks", {
-  expect_error(quantifyMismatch("ACD", "ACDE"), "same length")
   expect_error(quantifyMismatch(1, "ACD"), "character strings")
   
   # Same result regardless of case
@@ -86,7 +85,7 @@ test_that("return types and columns are correct", {
   df <- quantifyMismatch(s1, s2, return = "detail")
   expect_s3_class(df, "data.frame")
   expect_true(all(c(
-    "position","ref","alt","is_mismatch",
+    "alignment_position","ref","alt","is_mismatch",
     "charge_ref","charge_alt","charge_change",
     "polarity_ref","polarity_alt","polarity_change","counted"
   ) %in% names(df)))

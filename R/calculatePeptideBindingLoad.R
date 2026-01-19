@@ -263,15 +263,6 @@ calculatePeptideBindingLoad <- function(
             pep <- substr(d_seq, start, start + peptide_length - 1)
             if (nchar(pep) == peptide_length && !grepl("-|X", pep)) {
               peptides <- c(peptides, pep)
-            }
-          }
-        }
-      }
-    }
-  }
-
-  return(unique(peptides))
-}
 
 
 #' Predict binding using selected backend
@@ -541,4 +532,405 @@ calculatePeptideBindingLoad <- function(
   }
 
   return(results)
+
+  }
+  
+  # Helper function to find most similar recipient allele at same locus
+  findClosestRecipient <- function(donor_allele, donor_seq, recipient_seqs, recipient_alleles) {
+    # Get locus of donor allele
+    donor_locus <- sub("\\*.*", "", donor_allele)
+    
+    # Find recipient alleles at same locus
+    same_locus <- grep(paste0("^", donor_locus, "\\*"), recipient_alleles)
+    
+    if (length(same_locus) == 0) {
+      # No recipient alleles at same locus - use all
+      return(recipient_alleles)
+    }
+    
+    if (length(same_locus) == 1) {
+      return(recipient_alleles[same_locus[1]])
+    }
+    
+    # Compare to each recipient at same locus and find the one with fewest mismatches
+    mismatch_counts <- sapply(same_locus, function(i) {
+      quantifyMismatch(donor_seq, recipient_seqs[[i]], return = "count")
+    })
+    
+    recipient_alleles[same_locus[which.min(mismatch_counts)]]
+  }
+  
+  # Step 4: Generate ALL peptides from ALL mismatched alleles
+  message("=== Generating peptides from mismatched alleles ===")
+  
+  all_peptide_data <- list()
+  comparison_summary <- list()
+  
+  for (donor_allele in mismatched_alleles) {
+    donor_seq <- prot_seq_map[[donor_allele]]
+    
+    if (is.null(donor_seq) || nchar(donor_seq) == 0) {
+      warning(sprintf("Could not retrieve sequence for %s", donor_allele))
+      next
+    }
+    
+    # Get locus of donor allele
+    donor_locus <- sub("\\*.*", "", donor_allele)
+    
+    # Determine which recipient allele(s) to compare against for peptide generation
+    # (This is just for alignment to find mismatches - we'll test against ALL later)
+    if (compare_to == "closest") {
+      # Find recipients at same locus
+      locus_pattern <- paste0("^", donor_locus, "\\*")
+      recipient_locus <- r_alleles[grep(locus_pattern, r_alleles)]
+      
+      if (length(recipient_locus) > 0) {
+        recipient_seqs <- lapply(recipient_locus, function(a) prot_seq_map[[a]])
+        names(recipient_seqs) <- recipient_locus
+        compare_alleles <- findClosestRecipient(donor_allele, donor_seq, recipient_seqs, recipient_locus)
+      } else {
+        # No recipients at same locus - use first available
+        compare_alleles <- r_alleles[1]
+      }
+    } else {
+      # Compare to all recipients at same locus
+      locus_pattern <- paste0("^", donor_locus, "\\*")
+      compare_alleles <- r_alleles[grep(locus_pattern, r_alleles)]
+      
+      if (length(compare_alleles) == 0) {
+        # No recipients at same locus - use all
+        compare_alleles <- r_alleles
+      }
+    }
+    
+    # Generate peptides by comparing to selected recipient allele(s)
+    for (compare_allele in compare_alleles) {
+      recipient_seq <- prot_seq_map[[compare_allele]]
+      
+      peptide_data <- generatePeptidesFromMismatches(
+        donor_seq, recipient_seq,
+        donor_allele, compare_allele,
+        class_I_lengths = 8:11,
+        class_II_lengths = 12:25
+      )
+      
+      if (length(peptide_data) > 0) {
+        all_peptide_data <- c(all_peptide_data, peptide_data)
+        
+        comparison_summary[[paste(donor_allele, compare_allele, sep = "_vs_")]] <- list(
+          donor = donor_allele,
+          recipient = compare_allele,
+          n_mismatches = length(unique(sapply(peptide_data, function(x) x$mismatch_position))),
+          n_peptides = length(peptide_data)
+        )
+      }
+    }
+    
+    message(sprintf("  %s: Generated peptides from alignment comparisons", donor_allele))
+  }
+  
+  if (length(all_peptide_data) == 0) {
+    stop("No peptides generated from mismatched alleles.")
+  }
+  
+  # Create peptide metadata dataframe
+  message("=== Creating peptide database ===")
+  peptide_metadata <- do.call(rbind, lapply(all_peptide_data, function(pd) {
+    data.frame(
+      peptide = pd$peptide,
+      peptide_length = pd$length,
+      mhc_class = pd$mhc_class,
+      start_position = pd$start,
+      end_position = pd$end,
+      mismatch_position = pd$mismatch_position,
+      position_in_peptide = pd$position_in_peptide,
+      compared_to = pd$compared_to,
+      donor_allele = pd$donor_allele,
+      donor_locus = sub("\\*.*", "", pd$donor_allele),
+      stringsAsFactors = FALSE
+    )
+  }))
+  
+  # Get unique peptides by class
+  class_I_peptides <- unique(peptide_metadata$peptide[peptide_metadata$mhc_class == "I"])
+  class_II_peptides <- unique(peptide_metadata$peptide[peptide_metadata$mhc_class == "II"])
+  
+  message(sprintf("Generated %d unique Class I peptides (8-11mers)", length(class_I_peptides)))
+  message(sprintf("Generated %d unique Class II peptides (12-25mers)", length(class_II_peptides)))
+  
+  # Step 5: Test ALL peptides against ALL recipient alleles (with appropriate class matching)
+  message("=== Testing peptides against recipient alleles ===")
+  
+  all_results <- list()
+  
+  # Test Class I peptides against Class I recipient alleles
+  if (length(class_I_peptides) > 0 && length(class_I_recipients) > 0) {
+    message(sprintf("\nTesting %d Class I peptides against %d Class I recipient alleles",
+                    length(class_I_peptides), length(class_I_recipients)))
+    
+    for (recipient_allele in class_I_recipients) {
+      tryCatch({
+        predictions <- predictMHCnuggets(
+          peptides = class_I_peptides,
+          allele = recipient_allele,
+          mhc_class = "I",
+          ic50_threshold = ic50_threshold,
+          rank_output = TRUE,
+          hla_env = hla_env
+        )
+        
+        # Merge with metadata (keeping all metadata)
+        predictions <- merge(predictions, 
+                             peptide_metadata[peptide_metadata$mhc_class == "I", ], 
+                             by = "peptide", all.x = TRUE)
+        
+        predictions$recipient_allele <- recipient_allele
+        predictions$recipient_locus <- sub("\\*.*", "", recipient_allele)
+        predictions$binding <- predictions$ic50 <= ic50_threshold
+        
+        all_results[[paste("ClassI", recipient_allele, sep = "_")]] <- predictions
+        
+        message(sprintf("  %s: %d/%d peptides bind (IC50 <= %d nM)",
+                        recipient_allele, 
+                        sum(predictions$binding),
+                        nrow(predictions),
+                        ic50_threshold))
+        
+      }, error = function(e) {
+        warning(sprintf("Failed to predict for allele %s: %s", recipient_allele, e$message))
+      })
+    }
+  }
+  
+  # Test Class II peptides against Class II recipient alleles
+  if (length(class_II_peptides) > 0 && length(class_II_recipients) > 0) {
+    message(sprintf("\nTesting %d Class II peptides against %d Class II recipient alleles",
+                    length(class_II_peptides), length(class_II_recipients)))
+    
+    class_II_pairs <- get_classII_pairs(class_II_recipients)
+    for (recipient_allele in class_II_pairs) {
+      tryCatch({
+        predictions <- predictMHCnuggets(
+          peptides = class_II_peptides,
+          allele = recipient_allele,
+          mhc_class = "II",
+          ic50_threshold = ic50_threshold,
+          rank_output = TRUE,
+          hla_env = hla_env
+        )
+        
+        # Merge with metadata (keeping all metadata)
+        predictions <- merge(predictions, 
+                             peptide_metadata[peptide_metadata$mhc_class == "II", ], 
+                             by = "peptide", all.x = TRUE)
+        
+        predictions$recipient_allele <- recipient_allele
+        predictions$recipient_locus <- sub("\\*.*", "", recipient_allele)
+        predictions$binding <- predictions$ic50 <= ic50_threshold
+        
+        all_results[[paste("ClassII", recipient_allele, sep = "_")]] <- predictions
+        
+        message(sprintf("  %s: %d/%d peptides bind (IC50 <= %d nM)",
+                        recipient_allele, 
+                        sum(predictions$binding),
+                        nrow(predictions),
+                        ic50_threshold))
+        
+      }, error = function(e) {
+        warning(sprintf("Failed to predict for allele %s: %s", recipient_allele, e$message))
+      })
+    }
+  }
+  
+  if (length(all_results) == 0) {
+    stop("No predictions were generated.")
+  }
+  
+  # Combine all results
+  all_predictions <- do.call(rbind, all_results)
+  
+  # Format return value based on request
+  if (return == "summary") {
+    total_peptides <- nrow(all_predictions)
+    binding_peptides <- sum(all_predictions$binding)
+    
+    summary_df <- data.frame(
+      total_predictions = total_peptides,
+      unique_peptides_tested = length(unique(all_predictions$peptide)),
+      binding_predictions = binding_peptides,
+      binding_percentage = if (total_peptides > 0) 100 * binding_peptides / total_peptides else 0,
+      ic50_threshold = ic50_threshold,
+      n_mismatched_alleles = length(mismatched_alleles),
+      n_recipient_alleles = length(r_alleles),
+      n_class_I_recipients = length(class_I_recipients),
+      n_class_II_recipients = length(class_II_recipients)
+    )
+    
+    return(summary_df)
+    
+  } else if (return == "by_recipient_allele") {
+    # Group by recipient allele showing total bound peptides
+    by_recipient <- all_predictions |>
+      group_by(recipient_allele, recipient_locus, mhc_class) |>
+      summarise(
+        n_peptides_tested = n(),
+        n_unique_peptides = n_distinct(peptide),
+        n_binding_peptides = sum(binding),
+        binding_percentage = 100 * n_binding_peptides / n_peptides_tested,
+        mean_ic50_all = mean(ic50, na.rm = TRUE),
+        mean_ic50_binders = mean(ic50[binding], na.rm = TRUE),
+        median_ic50_binders = median(ic50[binding], na.rm = TRUE),
+        n_donor_alleles = n_distinct(donor_allele),
+        donor_loci = paste(unique(donor_locus), collapse = ", "),
+        .groups = "drop"
+      ) |>
+      arrange(desc(n_binding_peptides))
+    
+    return(as.data.frame(by_recipient))
+    
+  } else {  # return == "detailed"
+    return(list(
+      summary = data.frame(
+        total_predictions = nrow(all_predictions),
+        unique_peptides_tested = length(unique(all_predictions$peptide)),
+        binding_predictions = sum(all_predictions$binding),
+        n_mismatched_alleles = length(mismatched_alleles),
+        n_recipient_alleles = length(r_alleles)
+      ),
+      mismatched_alleles = mismatched_alleles,
+      recipient_alleles = r_alleles,
+      class_I_recipients = class_I_recipients,
+      class_II_recipients = class_II_recipients,
+      comparison_summary = comparison_summary,
+      all_predictions = all_predictions
+    ))
+  }
+}
+
+
+#' Visualize Cross-Locus Peptide Binding Results
+#'
+#' @description
+#' Creates visualizations of peptide binding predictions across all loci
+#'
+#' @param binding_results Results from calculatePeptideBindingLoad with return="detailed"
+#' @param plot_type Type of plot: "heatmap", "bar_by_recipient", "bar_by_donor", or "scatter"
+#' @param palette Character. A color palette name. Defaults to "spectral".
+#' @param ... Additional arguments passed to the ggplot theme.
+#'
+#' @return ggplot object
+#'
+#' @importFrom ggplot2 ggplot aes geom_tile geom_bar geom_point scale_fill_gradient2 theme_minimal labs
+#' @importFrom dplyr group_by summarise
+#' @export
+visualizePeptideBinding <- function(binding_results, 
+                                    plot_type = c("heatmap", "bar_by_recipient", "bar_by_donor", "scatter"), 
+                                    palette = "spectral", 
+                                    ...) {
+  plot_type <- match.arg(plot_type)
+  
+  if (!is.list(binding_results) || !"all_predictions" %in% names(binding_results)) {
+    stop("binding_results must be output from calculatePeptideBindingLoad with return='detailed'")
+  }
+  
+  data <- binding_results$all_predictions
+  
+  if (plot_type == "heatmap") {
+    # Cross-locus heatmap: donor alleles vs recipient alleles
+    summary_data <- data |>
+      dplyr::group_by(donor_allele, recipient_allele) |>
+      dplyr::summarise(
+        binding_rate = mean(binding) * 100,
+        n_peptides = dplyr::n(),
+        .groups = "drop"
+      )
+    
+    p <- ggplot2::ggplot(summary_data, ggplot2::aes(x = donor_allele, y = recipient_allele, fill = binding_rate)) +
+      ggplot2::geom_tile(color = "white", lwd = 0.5) +
+      ggplot2::geom_text(ggplot2::aes(label = sprintf("%.0f%%\n(%d)", binding_rate, n_peptides)),
+                         size = 3, color = "black") +
+      ggplot2::scale_fill_gradientn(colors = rev(.colorizer(n=11, palette = palette)),
+                                    name = "Binding %",
+                                    limits = c(0, 100)) +
+      .themeMatchR(...) +
+      ggplot2::theme(
+        axis.text.x = ggplot2::element_text(angle = 45, hjust = 1),
+        axis.text.y = ggplot2::element_text(size = 9)
+      ) +
+      ggplot2::labs(title = "Cross-Locus Peptide Binding: All Mismatched Peptides vs All Recipients",
+                    subtitle = "Percentage of binding peptides (number tested)",
+                    x = "Mismatched Donor Allele", 
+                    y = "Recipient Allele")
+    
+  } else if (plot_type == "bar_by_recipient") {
+    # Bar plot by recipient allele showing total bound peptides
+    recipient_summary <- data |>
+      dplyr::group_by(recipient_allele, recipient_locus, mhc_class) |>
+      dplyr::summarise(
+        total = dplyr::n(),
+        binding = sum(binding),
+        .groups = "drop"
+      ) |>
+      dplyr::arrange(desc(binding))
+    
+    p <- ggplot2::ggplot(recipient_summary, ggplot2::aes(x = reorder(recipient_allele, binding), 
+                                                         y = binding, 
+                                                         fill = mhc_class)) +
+      ggplot2::geom_bar(stat = "identity") +
+      ggplot2::geom_text(ggplot2::aes(label = paste0(binding, "/", total)), 
+                         hjust = -0.1, size = 3) +
+      ggplot2::coord_flip() +
+      ggplot2::scale_fill_manual(values = c("I" = .colorizer(n=2, palette = palette)[1],
+                                            "II" = .colorizer(n=2, palette = palette)[2]),
+                                 name = "MHC Class") +
+      .themeMatchR(...) +
+      ggplot2::labs(title = "Binding Peptides by Recipient Allele",
+                    subtitle = "Total bound mismatched peptides from all donor alleles",
+                    x = "Recipient Allele", 
+                    y = "Number of Binding Peptides")
+    
+  } else if (plot_type == "bar_by_donor") {
+    # Bar plot by donor allele
+    donor_summary <- data |>
+      dplyr::group_by(donor_allele, donor_locus) |>
+      dplyr::summarise(
+        total = dplyr::n(),
+        binding = sum(binding),
+        n_recipient_alleles = dplyr::n_distinct(recipient_allele),
+        .groups = "drop"
+      ) |>
+      dplyr::arrange(desc(binding))
+    
+    p <- ggplot2::ggplot(donor_summary, ggplot2::aes(x = reorder(donor_allele, binding), 
+                                                     y = binding)) +
+      ggplot2::geom_bar(stat = "identity", fill = .colorizer(n=2, palette = palette)[2]) +
+      ggplot2::geom_text(ggplot2::aes(label = sprintf("%d/%d\n(%d alleles)", 
+                                                      binding, total, n_recipient_alleles)), 
+                         hjust = -0.1, size = 3) +
+      ggplot2::coord_flip() +
+      .themeMatchR(...) +
+      ggplot2::labs(title = "Binding Peptides by Donor Allele",
+                    subtitle = "Total peptides binding to any recipient allele",
+                    x = "Mismatched Donor Allele", 
+                    y = "Number of Binding Peptides")
+    
+  } else {  # scatter
+    # Scatter plot of IC50 values by recipient allele
+    p <- ggplot2::ggplot(data, ggplot2::aes(x = ic50, y = recipient_allele, color = binding)) +
+      ggplot2::geom_point(alpha = 0.4, position = ggplot2::position_jitter(height = 0.2)) +
+      ggplot2::scale_x_log10() +
+      ggplot2::geom_vline(xintercept = 500, linetype = "dashed", 
+                          color = .colorizer(n=2, palette = palette)[1]) +
+      ggplot2::scale_color_manual(values = c("FALSE" = "gray", 
+                                             "TRUE" = .colorizer(n=2, palette = palette)[1]),
+                                  name = "Binding") +
+      ggplot2::facet_wrap(~mhc_class, scales = "free_y") +
+      .themeMatchR(...) +
+      ggplot2::labs(title = "IC50 Distribution by Recipient Allele",
+                    subtitle = "All mismatched peptides tested",
+                    x = "IC50 (nM, log scale)", 
+                    y = "Recipient Allele")
+  }
+  
+  return(p)
 }

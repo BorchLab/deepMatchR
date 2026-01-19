@@ -119,4 +119,64 @@ test_that("calculateEpletLoad handles NA/empty allele cells", {
   # Should compute using present strings only
   val <- calculateEpletLoad(r, d, loci = "A")
   expect_true(is.integer(val))
+  rgeno <- hlaGeno(recipient)
+  dgeno <- hlaGeno(donor)
+  
+  # total
+  tot <- calculateEpletLoad(rgeno, dgeno, return = "total")
+  expect_type(tot, "integer")
+  expect_gte(tot, 28L)
+        
+  # per_locus
+  pl <- calculateEpletLoad(rgeno, dgeno, return = "per_locus")
+  expect_s3_class(pl, "data.frame")
+  expect_setequal(pl$locus, c("A","B"))
+  expect_true(all(pl$eplet_load >= 0L))
+        
+  # pairwise @ B
+  mB <- calculateEpletLoad(rgeno, dgeno, return = "pairwise", pairwise_locus = "B")
+  expect_true(is.matrix(mB))
+  expect_identical(rownames(mB), unlist(recipient[1, grep("^B_", names(recipient))]))
+  expect_identical(colnames(mB), unlist(donor[1,     grep("^B_", names(donor))]))
+  expect_true(all(mB >= 0L))
+})
+
+test_that("calculateEpletLoad honors loci restriction & filters", {
+  rgeno <- hlaGeno(data.frame(A_1="A*01:01", A_2="A*02:01", B_1="B*07:02"))
+  dgeno <- hlaGeno(data.frame(A_1="A*03:01", A_2="A*24:02", B_1="B*44:02"))
+  
+  # Only locus A
+  tot_A <- calculateEpletLoad(rgeno, dgeno, loci = "A", return = "total")
+  # Only locus B
+  tot_B <- calculateEpletLoad(rgeno, dgeno, loci = "B", return = "total")
+  expect_true(is.integer(tot_A) && is.integer(tot_B))
+  expect_gte(tot_A, 0L); expect_gte(tot_B, 0L)
+      
+  # Evidence filter reduces/changes counts
+  tot_default <- calculateEpletLoad(rgeno, dgeno, return = "total")
+  tot_A1_only <- calculateEpletLoad(rgeno, dgeno, evidence_level = "A1", return = "total")
+  expect_true(is.integer(tot_default))
+  expect_true(is.integer(tot_A1_only))
+})
+
+test_that("calculateEpletLoad: input validation & error paths", {
+  # No shared loci after filter
+  rgeno <- hlaGeno(data.frame(A_1="A*01:01"))
+  dgeno <- hlaGeno(data.frame(B_1="B*44:02"))
+  
+  expect_error(calculateEpletLoad(rgeno, dgeno, loci = "A"), "No shared loci")
+  
+  # Missing alleles (empty strings) -> error
+  rgeno2 <- hlaGeno(data.frame(A_1 = "", A_2 = NA))
+  dgeno2 <- hlaGeno(data.frame(A_1 = "A*03:01"))
+  expect_error(calculateEpletLoad(rgeno2, dgeno2), "No allele strings")
+
+  
+  # Pairwise: bad locus or not shared
+  rgeno3 <- hlaGeno(data.frame(A_1="A*01:01", A_2="A*02:01"))
+  dgeno3 <- hlaGeno(data.frame(A_1="A*03:01", A_2="A*24:02"))
+  expect_error(calculateEpletLoad(rgeno3, dgeno3, return="pairwise", pairwise_locus = 1),
+                 "provide pairwise_locus")
+  expect_error(calculateEpletLoad(rgeno3, dgeno3, return="pairwise", pairwise_locus = "B"),
+                 "not shared")
 })

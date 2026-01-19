@@ -18,7 +18,7 @@ vignette: >
 ---
 
 ```{r, echo=FALSE, results="hide", message=FALSE}
-knitr::opts_chunk$set(error=FALSE, message=FALSE, warning=FALSE)
+knitr::opts_chunk$set(error=FALSE, message=FALSE, warning=FALSE, tidy = FALSE)
 library(BiocStyle)
 ```
 
@@ -33,6 +33,7 @@ More information is available at the [deepMatchR GitHub Repo](https://github.com
 ```{r}
 library(deepMatchR)
 library(dplyr)
+library(ggplot2)
 ```
 
 ## Loading Built-In Data
@@ -161,12 +162,17 @@ Common columns to look at:
 ```{r}
 recipient <- data.frame(
   A_1 = "A*01:01", A_2 = "A*02:01",
-  B_1 = "B*07:02", B_2 = "B*08:01"
-)
+  B_1 = "B*07:02", B_2 = "B*08:01", 
+  DQA1_1 = "DQA1*02:01", DQA1_2 = "DQA1*05:05", 
+  DQB1_1 = "DQB1*02:02", DQB1_2 = "DQB1*03:01"
+  )
+
 donor <- data.frame(
   A_1 = "A*03:01", A_2 = "A*24:02",
-  B_1 = "B*44:02", B_2 = "B*51:01"
-)
+  B_1 = "B*44:02", B_2 = "B*51:01", 
+  DQA1_1 = "DQA1*05:05", DQA1_2 = "DQA1*01:02", 
+  DQB1_1 = "DQB1*06:02", DQB1_2 = "DQB1*03:01")
+
 rgeno <- hlaGeno(recipient)
 dgeno <- hlaGeno(donor)
 
@@ -244,10 +250,9 @@ quantifyEpletMismatch("B*07:02", "B*44:02",
 quantifyEpletMismatch("C*07:01", "C*06:02", 
                       evidence_level = NULL, 
                       reactivity_filter = "Confirmed")
-
 ```
 
-## Calculating EpletLoad
+## Calculating the Total Number of Eplets with `calculateEpletLoad()`
 
 When working with donor and recipient HLA genotypes, it is often useful to calculate the total eplet load. The arguments for `calculateEpletLoad()` mirrors `calculateMismatchLoad()`, with the added arguments from `quantifyEpletMismatch()`.
 
@@ -264,6 +269,7 @@ per <- calculateEpletLoad(rgeno,
                           return = "per_locus")
 per
 ```
+
 ### Pairwise allele matrix for B locus
 
 ```{r}
@@ -299,7 +305,101 @@ calculateEpletLoad(rgeno,
                    evidence_level = NULL)
 ```
 
-## plotAntibodies
+## Predicting Peptide Binding with `predictMHCnuggets()`
+
+This function is an R wrapper for the `mhcnuggets` Python library, allowing you to predict peptide-MHC binding affinity (IC50) directly from your R session.
+
+```{r}
+# Define peptides and allele
+peps <- c("SIINFEKL", "LLFGYPVYV")
+allele <- "A*02:01"
+
+# Run prediction
+binding_results <- predictMHCnuggets(
+  peptides = peps,
+  allele = allele,
+  mhc_class = "I",
+  rank_output = TRUE)
+
+print(binding_results)
+```
+
+## Calculating Peptide Binding Load with `calculatePeptideBindingLoad()`
+
+This function integrates the previous concepts to calculate a "Peptide Binding Load." It automates the complex workflow of identifying potential allo-antigens created by donor-recipient mismatches and predicting their binding affinity to the recipient's HLA alleles.
+
+The workflow is:
+
+1. Identifies all mismatched amino acid positions between donor and recipient alleles (like `calculateMismatchLoad()`).
+2. Generates all possible peptides (e.g., lengths 8-11 for Class I) that cover these mismatched positions.
+3. Filters for peptides that are "donor-specific" (i.e., the mismatch created a new peptide sequence that is not found in the recipient's own proteome).
+4. Predicts the binding of these donor-specific peptides against all of the recipient's HLA alleles using `predictMHCnuggets()`.
+5. Summarizes the results, counting how many donor-specific peptides are predicted to bind to the recipient's MHCs.
+
+### Get a simple summary
+
+```{r}
+summary_load <- calculatePeptideBindingLoad(
+  recipient_geno = rgeno,
+  donor_geno = dgeno,
+  return = "summary"
+)
+
+print(summary_load)
+```
+
+### Get a per-allele breakdown
+
+This shows which loci are contributing the most to the peptide binding load.
+
+```{r}
+# Get a per-locus breakdown
+per_locus_load <- calculatePeptideBindingLoad(
+  recipient_geno = rgeno,
+  donor_geno = dgeno,
+  return = "by_recipient_allele"
+)
+
+print(per_locus_load)
+```
+
+### Get detailed results
+
+This returns a list containing all the raw prediction data, including the specific peptides, their IC50 scores against each recipient allele, and the mismatch positions they came from.
+
+```{r}
+# Get the full detailed output
+detailed_load <- calculatePeptideBindingLoad(
+  recipient_geno = rgeno,
+  donor_geno = dgeno,
+  return = "detailed"
+)
+
+# The result is a list
+names(detailed_load)
+
+# You can inspect the raw predictions
+head(detailed_load$all_predictions)
+```
+
+### Visualizing petide binding results
+
+After generating detailed peptide binding data, you can use visualizePeptideBinding to create plots. This function requires the output from `calculatePeptideBindingLoad()` when `return = "detailed"` is used.
+
+```{r}
+visualizePeptideBinding(
+  detailed_load,
+  plot_type = "heatmap"
+)
+
+visualizePeptideBinding(
+  detailed_load,
+  plot_type = "scatter"
+)
+```
+
+
+## Plotting Serological Data Using `plotAntibodies()`
 
 The `plotAntibodies()` function is a versatile tool for visualizing antibody data from both Single Antigen Bead (SAB) and Panel Reactive Antibody (PRA) assays. Its primary goal is to create clear, publication-quality bar plots of Mean Fluorescence Intensity (MFI) values. For added detail, it can append a table of antigen specificities directly below the plot, which is useful for interpreting complex results. The function is flexible, accepting data as either a data frame or directly from a file.
 
@@ -355,57 +455,6 @@ plotAntibodies(result_file = sab_data_list,
                plot_trend = TRUE,
                highlight_threshold = 5000,
                vline_dates = c("2023-02-15"))
-```
-
-## spiDeconvolute
-
-The `spiDeconvolute()` function addresses a common challenge in HLA labs: reconciling results from Single Antigen Bead (SAB) and Panel Reactive Antibody (PRA) assays. It systematically compares the two, identifying which antibody reactivities are supported by both assays (concordant) and which are found in only one (discordant). This is crucial for distinguishing true reactivities from potential artifacts.
-
-The function returns a list containing four data frames: `concordant`, `sabOnly`, `praOnly`, and a `summary` of the deconvolution process.
-
-**Key Arguments:**
-
-*   `SAB`: A data frame of your SAB results, expected to have `antigen` and `NormalValue` columns.
-*   `PRA`: A data frame of your PRA results, with `BeadID` and `NormalValue`.
-*   `panelLong`: A data frame mapping the antigens on each bead of the PRA panel, with `BeadID` and `antigen` columns.
-
-Here is an example of how to use `spiDeconvolute()` with sample data:
-
-```{r}
-# 1. Create sample data
-sab_data <- data.table::data.table(
-  antigen = c("A1", "A2", "B7", "B8", "DR1"),
-  NormalValue = c(2000, 500, 3000, 400, 4000),
-  class = c("I", "I", "I", "I", "II")
-)
-pra_data <- data.table::data.table(
-  BeadID = c(1, 2, 3, 4),
-  NormalValue = c(1500, 400, 2000, 3000)
-)
-panel_data <- data.table::data.table(
-  BeadID = c(1, 1, 2, 3, 3, 4),
-  antigen = c("A1", "B8", "A2", "B7", "B8", "DR1")
-)
-
-# 2. Run the deconvolution
-decon_results <- spiDeconvolute(
-  SAB = sab_data,
-  PRA = pra_data,
-  panelLong = panel_data
-)
-
-# 3. View the results
-# Concordant antigens
-print(decon_results$concordant)
-
-# SAB-only antigens
-print(decon_results$sabOnly)
-
-# PRA-only antigens
-print(decon_results$praOnly)
-
-# Summary of the run
-print(decon_results$summary)
 ```
 
 ## epletAUC

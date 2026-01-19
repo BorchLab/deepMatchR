@@ -114,16 +114,20 @@ plotEplets <- function(result_file,
   color.palette <- .colorizer(palette, length(unique(summary_dt[[group_by]])))
   
   if (plot_type == "treemap") {
+    if (!requireNamespace("treemapify", quietly = TRUE)) {
+      stop("Package 'treemapify' is required for treemap plots. ",
+           "Install it with: install.packages('treemapify')")
+    }
     plot <- ggplot(summary_dt, aes(area = abs(count_above) * pp_max,
                                    fill = .data[[group_by]],
                                    label = eplet,
                                    subgroup = loci)) +
-      geom_treemap() +
-      geom_treemap_text(aes(label = paste(eplet, "\n", pp_max * 100, "%\n",
+      treemapify::geom_treemap() +
+      treemapify::geom_treemap_text(aes(label = paste(eplet, "\n", pp_max * 100, "%\n",
                                           count_above, "of", count_total)),
                         place = "centre", grow = FALSE, min.size = 1, color = "black") +
-      geom_treemap_subgroup_border(color = "black", size = 2) +
-      geom_treemap_subgroup_text(place = "centre", grow = TRUE, alpha = 0.3, colour = "black") +
+      treemapify::geom_treemap_subgroup_border(color = "black", size = 2) +
+      treemapify::geom_treemap_subgroup_text(place = "centre", grow = TRUE, alpha = 0.3, colour = "black") +
       scale_fill_manual(values = color.palette) +
       .themeMatchR(grid_lines = "No") +
       labs(fill = group_by) +

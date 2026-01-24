@@ -106,22 +106,27 @@ calculateEpletLoad <- function(recipient_geno,
   )
   names(eplet_sets) <- all_alleles
   
-  # Helper: donor-specific eplet count for one pair
+  # Helper: donor-specific eplet count for one pair (used for pairwise matrix)
   pair_count <- function(rec_a, don_a) {
     if (identical(rec_a, don_a)) return(0L)
     rec_set <- eplet_sets[[rec_a]]
     don_set <- eplet_sets[[don_a]]
     length(setdiff(don_set, rec_set))
   }
-  
-  # Helper: total per locus
+
+ # Helper: total per locus - uses union of all recipient allele eplets vs union of all donor allele eplets
   locus_total <- function(L) {
     rL <- r_alleles[grep(paste0("^", L, "_"), names(r_alleles))]
     dL <- d_alleles[grep(paste0("^", L, "_"), names(d_alleles))]
     if (length(rL) == 0L || length(dL) == 0L) return(0L)
-    total <- 0L
-    for (ra in rL) for (da in dL) total <- total + pair_count(ra, da)
-    total
+
+    # Union of all recipient eplets at this locus
+    rec_union <- unique(unlist(eplet_sets[rL], use.names = FALSE))
+    # Union of all donor eplets at this locus
+    don_union <- unique(unlist(eplet_sets[dL], use.names = FALSE))
+
+    # Count donor-specific eplets (in donor but not in recipient)
+    length(setdiff(don_union, rec_union))
   }
   
   if (return == "total") {

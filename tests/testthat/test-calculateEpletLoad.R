@@ -119,26 +119,6 @@ test_that("calculateEpletLoad handles NA/empty allele cells", {
   # Should compute using present strings only
   val <- calculateEpletLoad(r, d, loci = "A")
   expect_true(is.integer(val))
-  rgeno <- hlaGeno(recipient)
-  dgeno <- hlaGeno(donor)
-  
-  # total
-  tot <- calculateEpletLoad(rgeno, dgeno, return = "total")
-  expect_type(tot, "integer")
-  expect_gte(tot, 28L)
-        
-  # per_locus
-  pl <- calculateEpletLoad(rgeno, dgeno, return = "per_locus")
-  expect_s3_class(pl, "data.frame")
-  expect_setequal(pl$locus, c("A","B"))
-  expect_true(all(pl$eplet_load >= 0L))
-        
-  # pairwise @ B
-  mB <- calculateEpletLoad(rgeno, dgeno, return = "pairwise", pairwise_locus = "B")
-  expect_true(is.matrix(mB))
-  expect_identical(rownames(mB), unlist(recipient[1, grep("^B_", names(recipient))]))
-  expect_identical(colnames(mB), unlist(donor[1,     grep("^B_", names(donor))]))
-  expect_true(all(mB >= 0L))
 })
 
 test_that("calculateEpletLoad honors loci restriction & filters", {

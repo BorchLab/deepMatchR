@@ -265,62 +265,65 @@ toSerology <- function(x,
 }
 
 #' @noRd
-.lookupSerology <- function(locus, allele_2f, serology_db) {
+.lookupSerology <- function(locus, allele_2f_input, serology_db) {
   # WMDA data has locus with asterisk (e.g., "A*", "DRB1*")
   locus_key <- paste0(locus, "*")
 
-  # Direct lookup - take first match only
-  result <- serology_db[list(locus_key, allele_2f), serology, nomatch = NA, mult = "first"]
+  # Direct lookup using data.table's native column reference in i
+  # Need to avoid variable name conflicts with column names
+  matches <- serology_db[locus == locus_key & allele_2f == allele_2f_input, ]
 
-  if (length(result) == 1 && !is.na(result)) {
-    return(result)
+  if (nrow(matches) > 0 && !is.na(matches[["serology"]][1])) {
+    return(matches[["serology"]][1])
   }
 
   # Try without leading zeros (e.g., "1:01" instead of "01:01")
-  allele_2f_no_lead <- sub("^0+", "", allele_2f)
-  result <- serology_db[list(locus_key, allele_2f_no_lead), serology, nomatch = NA, mult = "first"]
+  allele_2f_no_lead <- sub("^0+", "", allele_2f_input)
+  matches <- serology_db[locus == locus_key & allele_2f == allele_2f_no_lead, ]
 
-  if (length(result) == 0) return(NA_character_)
-  result[1]
+  if (nrow(matches) == 0) return(NA_character_)
+  matches[["serology"]][1]
 }
 
 #' @noRd
-.resolvePGroup <- function(locus, allele_2f, pgroups_db) {
+.resolvePGroup <- function(locus_input, allele_2f_input, pgroups_db) {
   # P-groups data has locus WITHOUT asterisk (e.g., "A" not "A*")
-  locus_key <- locus
+  locus_key <- locus_input
 
   # Remove trailing P for lookup
-  p_group <- sub("P$", "", allele_2f)
+  p_group_key <- sub("P$", "", allele_2f_input)
 
-  result <- pgroups_db[list(locus_key, p_group), reference_2f, nomatch = NA, mult = "first"]
+  # Use data.table's native column reference in i
+  matches <- pgroups_db[locus == locus_key & p_group == p_group_key, ]
 
-  if (length(result) == 0 || is.na(result[1])) {
+  if (nrow(matches) == 0 || is.na(matches[["reference_2f"]][1])) {
     # Try with P suffix in lookup
-    result <- pgroups_db[list(locus_key, allele_2f), reference_2f, nomatch = NA, mult = "first"]
+    matches <- pgroups_db[locus == locus_key & p_group == allele_2f_input, ]
   }
 
-  if (length(result) == 0 || is.na(result[1])) {
+  if (nrow(matches) == 0 || is.na(matches[["reference_2f"]][1])) {
     return(NULL)
   }
 
-  result[1]
+  matches[["reference_2f"]][1]
 }
 
 #' @noRd
-.resolveBroadToSplit <- function(input_locus, allele_2f, serology, wmda_data) {
+.resolveBroadToSplit <- function(input_locus, allele_2f_input, serology_input, wmda_data) {
   # Get the serology locus prefix
   ser_locus <- .getSerologyPrefix(input_locus)
 
   # Check if this serology is a broad antigen
   splits_db <- wmda_data$splits
-  split_info <- splits_db[list(ser_locus, serology), splits, nomatch = NA, mult = "first"]
+  # Use data.table's native column reference in i
+  matches <- splits_db[locus == ser_locus & broad == serology_input, ]
 
-  if (length(split_info) == 0 || is.na(split_info[1])) {
-    return(serology)
+  if (nrow(matches) == 0 || is.na(matches[["splits"]][1])) {
+    return(serology_input)
   }
 
   # Parse the available splits
-  available_splits <- strsplit(split_info[1], "\\|")[[1]]
+  available_splits <- strsplit(matches[["splits"]][1], "\\|")[[1]]
 
   # Try to determine which split based on allele
   # Look up each split's allele patterns in serology database
@@ -328,16 +331,17 @@ toSerology <- function(x,
   locus_key <- paste0(input_locus, "*")
 
   for (split in available_splits) {
-    # Find alleles that map to this split - use explicit column reference
-    split_alleles <- serology_db[serology_db$locus == locus_key & serology_db$serology == split, allele_2f]
+    # Find alleles that map to this split
+    split_matches <- serology_db[locus == locus_key & serology == split, ]
+    split_alleles <- split_matches[["allele_2f"]]
 
-    if (allele_2f %in% split_alleles) {
+    if (allele_2f_input %in% split_alleles) {
       return(split)
     }
   }
 
   # Could not determine split, return original serology
-  serology
+  serology_input
 }
 
 #' @noRd

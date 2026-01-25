@@ -9,7 +9,7 @@ Tools for HLA Testing and Matching
 
 ## Introduction
 
-<img align="right" src="https://github.com/BorchLab/deepMatchR/blob/main/www/deepMatchR_hex.png" width="305" height="352">
+<img align="right" src="man/figures/logo.png" width="305" height="352">
 
 There are currently several computational approaches to quantifying the risk of 
 the development of donor-specific antibodies during organ transplantation. 

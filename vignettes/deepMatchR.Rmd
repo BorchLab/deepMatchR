@@ -1,575 +1,589 @@
 ---
-title: Using deepMatchR in research and clinical workflows
-author: 
+title: "Getting Started with deepMatchR"
+author:
 - name: Nick Borcherding
-  email: ncborch@gmail.com
   affiliation: Washington University in St. Louis, School of Medicine, St. Louis, MO, USA
-
 date: 'Compiled: `r format(Sys.Date(), "%B %d, %Y")`'
-
 output:
   BiocStyle::html_document:
+    toc: true
+    toc_depth: 3
     toc_float: true
+    number_sections: true
 package: deepMatchR
 vignette: >
   %\VignetteEngine{knitr::rmarkdown}
-  %\VignetteIndexEntry{Using deepMatchR}
-  %\VignetteEncoding{UTF-8} 
+  %\VignetteIndexEntry{Getting Started with deepMatchR}
+  %\VignetteEncoding{UTF-8}
 ---
 
-```{r, echo=FALSE, results="hide", message=FALSE}
-knitr::opts_chunk$set(error=FALSE, message=FALSE, warning=FALSE, tidy = FALSE)
+```{r setup, echo=FALSE, results="hide", message=FALSE}
+knitr::opts_chunk$set(
+  error = FALSE,
+  message = FALSE,
+  warning = FALSE,
+  tidy = FALSE,
+  collapse = TRUE,
+  comment = "#>"
+)
 library(BiocStyle)
+
+# Check if running on Windows (for skipping Python-dependent sections)
+is_windows <- .Platform$OS.type == "windows"
 ```
 
 # Introduction
 
-Human leukocyte antigen (HLA) are a central node in innate and adaptive immune responses. The characterization of HLA antibodies and typing play a pivotal role in bone marrow and organ transplantation. **deepMatchR** is a collection of tools using advanced statistical approaches and deep learning to better characterize HLA immunogenicity in the context of clinical or research questions. 
+Human leukocyte antigen (HLA) molecules are central to both innate and adaptive immune responses. Characterizing HLA antibodies and typing plays a pivotal role in bone marrow and solid organ transplantation.
 
-More information is available at the [deepMatchR GitHub Repo](https://github.com/BorchLab/deepMatchR).
+**deepMatchR** provides a collection of tools that use advanced statistical approaches and deep learning to better characterize HLA immunogenicity for clinical and research applications.
 
-## Loading Libraries
+**Key capabilities include:**
 
-```{r}
+- Sequence-level mismatch quantification (amino acid and eplet)
+- Peptide-MHC binding prediction
+- Visualization of antibody reactivity data
+- Integration with standard HLA nomenclature
+
+For more information, visit the [deepMatchR GitHub repository](https://github.com/BorchLab/deepMatchR).
+
+## Installation
+
+```{r install, eval=FALSE}
+# Install from Bioconductor (when available)
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+BiocManager::install("deepMatchR")
+
+# Or install the development version from GitHub
+# remotes::install_github("BorchLab/deepMatchR")
+```
+
+## Quick Start
+
+```{r quickstart}
 library(deepMatchR)
 library(dplyr)
 library(ggplot2)
 ```
 
-## Loading Built-In Data
+# Working with HLA Data
 
-**deepMatchR** has a set of 3 simulated assay outputs, 1) class I SAB, 2) class II SAB, and 3) PRA assay results with clear patterns of reactivity and eplets. We will explore the analysis of these data sets further in later sections. It is important to note that that the examples have fixed formatting.
+## Built-in Example Data
 
-Specifically required for downstream analysis: 
+**deepMatchR** includes simulated assay data for learning and testing:
 
-* `BeadID`: Identifies each bead in the assay
-* `SpecAbbr`: Abbreviated specificity (e.g., A01, B35, etc.)
-* `Specifcity`: Full specificity strings (e.g., "A\*01:01, B\*07:01")
-* `NormalValue`: The measured MFI for each bead
+1. **Class I SAB** - Single Antigen Bead assay results
+2. **Class II SAB** - Single Antigen Bead assay results
+3. **PRA** - Panel Reactive Antibody assay results
 
-```{r}
+```{r load-data}
 data("deepMatchR_example")
+```
 
-#SAB Class I example data
-head(deepMatchR_example[[1]])
+### Data Format Requirements
 
-#SAB Class II example data
-head(deepMatchR_example[[2]])
+For downstream analysis, your data must include these columns:
 
-#PRA example data
-head(deepMatchR_example[[3]])
+| Column | Description | Example |
+|--------|-------------|---------|
+| `BeadID` | Unique bead identifier | 1, 2, 3... |
+| `SpecAbbr` | Abbreviated specificity | A01, B35 |
+| `Specificity` | Full specificity string | "A*01:01, B*07:01" |
+| `NormalValue` | Measured MFI value | 15234 |
+
+```{r show-data}
+# Class I SAB example
+head(deepMatchR_example[[1]], 3)
+
+# Class II SAB example
+head(deepMatchR_example[[2]], 3)
+
+# PRA example
+head(deepMatchR_example[[3]], 3)
+```
+
+## Creating HLA Genotypes
+
+The `hlaGeno()` function creates standardized genotype objects used throughout the package.
+
+```{r create-genotypes}
+# Define recipient and donor genotypes
+recipient <- data.frame(
+  A_1 = "A*01:01", A_2 = "A*02:01",
+  B_1 = "B*07:02", B_2 = "B*08:01",
+  DQA1_1 = "DQA1*02:01", DQA1_2 = "DQA1*05:05",
+  DQB1_1 = "DQB1*02:02", DQB1_2 = "DQB1*03:01"
+)
+
+donor <- data.frame(
+  A_1 = "A*03:01", A_2 = "A*24:02",
+  B_1 = "B*44:02", B_2 = "B*51:01",
+  DQA1_1 = "DQA1*05:05", DQA1_2 = "DQA1*01:02",
+  DQB1_1 = "DQB1*06:02", DQB1_2 = "DQB1*03:01"
+)
+
+# Create genotype objects
+rgeno <- hlaGeno(recipient)
+dgeno <- hlaGeno(donor)
 ```
 
 # Sequence-Level Analysis
 
-`deepMatchR` includes several functions for comparing and analyzing HLA sequences at the amino acid and eplet level. These are fundamental tools for quantifying the differences between alleles.
+## Retrieving Allele Sequences
 
-## Retrieving Allele Sequences with `getAlleleSequence`
+The `getAlleleSequence()` function retrieves protein sequences from the IMGT/HLA database.
 
-To perform these comparisons, you first need the protein sequences for the HLA alleles of interest. The `getAlleleSequence` function retrieves these sequences from the IMGT/HLA database. Note that this function requires an internet connection.
-
-**Arguments:**
-
-*   `allele_name`: The name of the HLA allele (e.g., `"A*01:01"`).
-
-**Example:**
-
-```{r, results='hide'}
-# Requires internet connection
+```{r get-sequence, results='hide'}
+# Get the amino acid sequence for A*01:01
 a0101_seq <- getAlleleSequence("A*01:01")
-head(a0101_seq)
 ```
 
-## Quantifying mismatches with `quantifyMismatch`
+```{r show-sequence}
+# View first 50 amino acids
+substr(a0101_seq, 1, 50)
+```
 
-`quantifyMismatch()` compares two equal-length amino-acid sequences and (optionally) filters mismatches by **charge** and/or **polarity** changes.
+## Quantifying Amino Acid Mismatches
 
-### Arguments
+The `quantifyMismatch()` function compares two protein sequences and counts differences. You can optionally filter by biophysical properties.
 
-| Argument        | Type              | Default      | What it does                                                | Allowed values |
-|-----------------|------------------|--------------|-------------------------------------------------------------|----------------|
-| `sequence1`, `sequence2` | character (length-1) | —            | The two protein sequences to compare (same length).          | Strings of standard one-letter AAs (case-insensitive). |
-| `filter_charge` | logical / `NULL` | `NULL`       | Filter counted mismatches by charge change.                  | `NULL` (no filter), `TRUE` (only charge-changing), `FALSE` (only not charge-changing). |
-| `filter_polarity` | logical / `NULL` | `NULL`     | Filter counted mismatches by polarity change.                | `NULL`, `TRUE`, `FALSE`. |
-| `return`        | character        | `"count"`    | Controls the output.                                         | `"count"`, `detail` |
-| `na_action`     | character        | `"exclude"`  | How to handle unknown residues (e.g., `X`, `*`, `-`).        | `"exclude"`, `"error"`, `"count"` |
+### Basic Usage
 
-
-**Charge model:** K/R/H = positive; D/E = negative; all others = neutral.  
-**Polarity model:** nonpolar {A,V,L,I,P,M,F,W,G}; polar {S,T,N,Q,Y,C,H,K,R,D,E}.
-
-### Returns
-
-- `return = "count"` (default): an integer (mismatch count after filters).  
-- `return = "detail"`: a table with columns  
-  `position, ref, alt, is_mismatch, charge_ref, charge_alt, charge_change, polarity_ref, polarity_alt, polarity_change, counted`.
-
-```{r}
+```{r mismatch-basic}
 seq1 <- "YFAMYGEKVAHTHVDTLYVRYHY"
 seq2 <- "YFDMYGEKVAHTHVDTLYVRFHY"
 
-# Total mismatches (original behavior)
-quantifyMismatch(seq1, 
-                 seq2)
+# Count all mismatches
+quantifyMismatch(seq1, seq2)
+```
 
-# Only mismatches that change CHARGE
+### Filtering by Biophysical Properties
+
+**deepMatchR** uses these classification models:
+
+- **Charge:** K/R/H = positive; D/E = negative; others = neutral
+- **Polarity:** Nonpolar {A,V,L,I,P,M,F,W,G}; Polar {S,T,N,Q,Y,C,H,K,R,D,E}
+
+```{r mismatch-filters}
+# Only charge-changing mismatches
 quantifyMismatch(seq1, 
                  seq2, 
                  filter_charge = TRUE)
 
-# Only mismatches that change POLARITY
+# Only polarity-changing mismatches
 quantifyMismatch(seq1, 
                  seq2, 
                  filter_polarity = TRUE)
 
-# Mismatches that change BOTH charge AND polarity
+# Both charge AND polarity changing
 quantifyMismatch(seq1, 
                  seq2, 
                  filter_charge = TRUE, 
                  filter_polarity = TRUE)
 ```
 
-### Inspect details per position
+### Detailed Position-by-Position Analysis
 
-```{r}
-df <- quantifyMismatch(seq1, 
-                       seq2, 
-                       return = "detail")
-head(df)
+```{r mismatch-detail}
+details <- quantifyMismatch(seq1, 
+                            seq2, 
+                            return = "detail")
+head(details)
 ```
 
-Common columns to look at:
+The detail output includes:
 
-* `is_mismatch`: amino acids differ at this position
-* `charge_change`, `polarity_change`: whether that property changed
-* `counted`: whether this position is included in the final tally given your filters
+- `is_mismatch`: Whether amino acids differ at this position
+- `charge_change` / `polarity_change`: Whether that property changed
+- `counted`: Whether this position counts toward the final tally
 
-## Calculating donor–recipient mismatch load with `calculateMismatchLoad`
+### Function Reference
 
-`calculateMismatchLoad()` aggregates amino-acid mismatches between recipient and donor across HLA loci, leveraging `quantifyMismatch()` for each recipient–donor allele pair.
+| Argument | Default | Description |
+|----------|---------|-------------|
+| `sequence1`, `sequence2` | -- | Two protein sequences (same length) |
+| `filter_charge` | `NULL` | Filter by charge change (`TRUE`/`FALSE`/`NULL`) |
+| `filter_polarity` | `NULL` | Filter by polarity change (`TRUE`/`FALSE`/`NULL`) |
+| `return` | `"count"` | Output type: `"count"` or `"detail"` |
+| `na_action` | `"exclude"` | Handle unknown residues: `"exclude"`, `"error"`, `"count"` |
 
-### Arguments (high level)
+# Donor-Recipient Matching
 
-| Argument | Default | What it does |
-|---|---:|---|
-| `recipient_geno`, `donor_geno` | — | HLA genotypes from `hlaGeno()`. |
-| `loci` | `NULL` | Restrict to a set of loci (e.g., `c("A","B","C")`); `NULL` = all shared. |
-| `filter_charge`, `filter_polarity` | `NULL` | Forwarded to `quantifyMismatch()` to count only charge- and/or polarity-changing mismatches. |
-| `na_action` | `"exclude"` | Handling of unknown residues in `quantifyMismatch()`. |
-| `return` | `"total"` | `"total"` (single integer), `"per_locus"` (summary table), or `"pairwise"` (matrix for one locus). |
-| `pairwise_locus` | `NULL` | When `return = "pairwise"`, which locus (e.g., `"B"`). |
+## Calculating Mismatch Load
 
-```{r}
-recipient <- data.frame(
-  A_1 = "A*01:01", A_2 = "A*02:01",
-  B_1 = "B*07:02", B_2 = "B*08:01", 
-  DQA1_1 = "DQA1*02:01", DQA1_2 = "DQA1*05:05", 
-  DQB1_1 = "DQB1*02:02", DQB1_2 = "DQB1*03:01"
-  )
+The `calculateMismatchLoad()` function aggregates amino acid mismatches across HLA loci between a donor and recipient.
 
-donor <- data.frame(
-  A_1 = "A*03:01", A_2 = "A*24:02",
-  B_1 = "B*44:02", B_2 = "B*51:01", 
-  DQA1_1 = "DQA1*05:05", DQA1_2 = "DQA1*01:02", 
-  DQB1_1 = "DQB1*06:02", DQB1_2 = "DQB1*03:01")
+### Total Mismatch Load
 
-rgeno <- hlaGeno(recipient)
-dgeno <- hlaGeno(donor)
-
-calculateMismatchLoad(rgeno,
-                      dgeno,
+```{r mismatch-load-total}
+calculateMismatchLoad(rgeno, 
+                      dgeno, 
                       parallel = FALSE)
 ```
 
-### Per-locus contributions
+### Per-Locus Breakdown
 
-```{r}
-per_locus <- calculateMismatchLoad(rgeno,
-                                   dgeno,
-                                   return = "per_locus",
-                                   parallel = FALSE)
+```{r mismatch-load-locus}
+per_locus <- calculateMismatchLoad(
+  rgeno, dgeno,
+  return = "per_locus",
+  parallel = FALSE
+)
 per_locus
 ```
 
-### Pairwise allele matrix for a locus
+### Pairwise Allele Matrix
 
-```{r}
-mB <- calculateMismatchLoad(rgeno,
-                            dgeno,
-                            return = "pairwise",
-                            pairwise_locus = "B",
-                            parallel = FALSE)
+View mismatches between each recipient-donor allele pair at a specific locus:
+
+```{r mismatch-load-pairwise}
+mB <- calculateMismatchLoad(
+  rgeno, dgeno,
+  return = "pairwise",
+  pairwise_locus = "B",
+  parallel = FALSE
+)
 mB
 ```
 
-### Apply biophysical filters*
+### Applying Filters
 
-Count only mismatches that change charge:
+```{r mismatch-load-filters}
+# Charge-changing mismatches only
+calculateMismatchLoad(rgeno, 
+                      dgeno, 
+                      filter_charge = TRUE, 
+                      parallel = FALSE)
 
-```{r}
-calculateMismatchLoad(rgeno,
-                      dgeno,
-                      filter_charge = TRUE,
+# Polarity-changing mismatches only
+calculateMismatchLoad(rgeno, 
+                      dgeno, 
+                      filter_polarity = TRUE, 
+                      parallel = FALSE)
+
+# Restrict to specific loci
+calculateMismatchLoad(rgeno, 
+                      dgeno, 
+                      loci = "A", 
                       parallel = FALSE)
 ```
 
-Count only mismatches that change polarity:
+### Function Reference
 
-```{r}
-calculateMismatchLoad(rgeno,
-                      dgeno,
-                      filter_polarity = TRUE,
-                      parallel = FALSE)
-```
+| Argument | Default | Description |
+|----------|---------|-------------|
+| `recipient_geno`, `donor_geno` | -- | HLA genotypes from `hlaGeno()` |
+| `loci` | `NULL` | Restrict to specific loci (e.g., `c("A","B")`) |
+| `filter_charge`, `filter_polarity` | `NULL` | Biophysical filters |
+| `return` | `"total"` | `"total"`, `"per_locus"`, or `"pairwise"` |
+| `pairwise_locus` | `NULL` | Locus for pairwise matrix |
+| `parallel` | `TRUE` | Use parallel processing |
 
-### Restrict by locus (e.g., A)
+# Eplet Analysis
 
-```{r}
-calculateMismatchLoad(rgeno,
-                      dgeno,
-                      loci = "A",
-                      parallel = FALSE)
-```
+Eplets are short amino acid sequences that form antibody-binding epitopes on HLA molecules. They are key determinants of HLA immunogenicity.
 
-## Quantifying Eplet Mismatches with `quantifyEpletMismatch`
+## Quantifying Eplet Mismatches
 
-Eplets are key components of HLA immunogenicity. The `quantifyEpletMismatch` function calculates the number of eplets that are not shared between two HLA alleles, giving a measure of the potential for an antibody response. It uses an internal database of known eplets.
+The `quantifyEpletMismatch()` function calculates the number of non-shared eplets between two alleles.
 
-**Arguments:**
+```{r eplet-mismatch}
+# Basic eplet comparison (A1/A2 evidence level)
+quantifyEpletMismatch("A*01:01", 
+                      "A*02:01")
 
-* `allele1`, `allele2`: The names of the two HLA alleles to compare.
-* `evidence_level`: Filters eplets based on their level of experimental evidence (e.g., `"A1"`, `"A2"`, `"B"`, `"D`).
-* `exposition_filter`: e.g., `"High"` or `c("High","Intermediate")`.
-* `reactivity_filter`: dataset-specific classes (e.g., `"Confirmed"`), if present.
-
-**Example:**
-
-```{r}
-# Symmetric eplet difference between two alleles, A1/A2 evidence only
-quantifyEpletMismatch("A*01:01", "A*02:01")
-
-# Restrict to High exposition only
-quantifyEpletMismatch("B*07:02", "B*44:02", 
+# Filter by exposition level
+quantifyEpletMismatch("B*07:02", 
+                      "B*44:02", 
                       exposition_filter = "High")
 
-# No evidence filter, but require specific reactivity class
-quantifyEpletMismatch("C*07:01", "C*06:02", 
-                      evidence_level = NULL, 
+# Filter by reactivity confirmation
+quantifyEpletMismatch("C*07:01", 
+                      "C*06:02",
+                      evidence_level = NULL,
                       reactivity_filter = "Confirmed")
 ```
 
-## Calculating the Total Number of Eplets with `calculateEpletLoad()`
+## Calculating Eplet Load
 
-When working with donor and recipient HLA genotypes, it is often useful to calculate the total eplet load. The arguments for `calculateEpletLoad()` mirrors `calculateMismatchLoad()`, with the added arguments from `quantifyEpletMismatch()`.
+The `calculateEpletLoad()` function calculates total donor-specific eplets across all loci.
 
-```{r}
+### Total Eplet Load
+
+```{r eplet-load-total}
 calculateEpletLoad(rgeno, 
                    dgeno)
 ```
 
-### Per-locus summary
+### Per-Locus Summary
 
-```{r}
-per <- calculateEpletLoad(rgeno,
-                          dgeno,
+```{r eplet-load-locus}
+per <- calculateEpletLoad(rgeno, 
+                          dgeno, 
                           return = "per_locus")
 per
 ```
 
-### Pairwise allele matrix for B locus
+### Pairwise Allele Matrix
 
-```{r}
-mB <- calculateEpletLoad(rgeno, 
-                         dgeno, 
-                         return = "pairwise", 
-                         pairwise_locus = "B")
+```{r eplet-load-pairwise}
+mB <- calculateEpletLoad(
+  rgeno, dgeno,
+  return = "pairwise",
+  pairwise_locus = "B"
+)
 mB
 ```
-### Applying Filters
 
-High-exposition Only
+### Applying Evidence and Exposition Filters
 
-```{r}
+```{r eplet-load-filters}
+# High-exposition eplets only
 calculateEpletLoad(rgeno, 
                    dgeno, 
                    exposition_filter = "High")
-```
 
-Antibody-confirmed Eplets
-
-```{r}
+# Antibody-confirmed eplets only
 calculateEpletLoad(rgeno, 
                    dgeno, 
                    reactivity_filter = "Confirmed")
-```
 
-No Evidence Level Filter
-
-```{r}
+# All evidence levels (no filter)
 calculateEpletLoad(rgeno, 
-                   dgeno,  
+                   dgeno, 
                    evidence_level = NULL)
 ```
 
-## Predicting Peptide Binding with `predictMHCnuggets()`
+# Peptide Binding Prediction
 
-This function is an R wrapper for the `mhcnuggets` Python library, allowing you to predict peptide-MHC binding affinity (IC50) directly from your R session.
+## MHCnuggets Integration
 
-```{r}
+The `predictMHCnuggets()` function provides an R interface to the MHCnuggets deep learning model for peptide-MHC binding prediction.
+
+> **Note:** This section requires Python dependencies and is skipped on Windows due to path length limitations with the TensorFlow/MHCnuggets installation.
+
+```{r mhcnuggets, eval=!is_windows}
 # Define peptides and allele
-peps <- c("SIINFEKL", "LLFGYPVYV")
+peptides <- c("SIINFEKL", "LLFGYPVYV")
 allele <- "A*02:01"
 
-# Run prediction
+# Predict binding affinity (IC50)
 binding_results <- predictMHCnuggets(
-  peptides = peps,
+  peptides = peptides,
   allele = allele,
   mhc_class = "I",
-  rank_output = TRUE)
+  rank_output = TRUE
+)
 
 print(binding_results)
 ```
 
-## Calculating Peptide Binding Load with `calculatePeptideBindingLoad()`
+## Calculating Peptide Binding Load
 
-This function integrates the previous concepts to calculate a "Peptide Binding Load." It predicts transplant risk by calculating peptide-HLA binding affinities between recipient HLA molecules and donor-mismatched peptides.
+The `calculatePeptideBindingLoad()` function predicts transplant risk by analyzing peptide-HLA binding between recipient molecules and donor-derived peptides.
 
-The workflow is:
+**Workflow:**
 
-1. **Input processing**: Converts recipient and donor inputs to standard format (allele names and peptides).
-2. **Peptide derivation**: If donor is a genotype/alleles, derives mismatched peptides by comparing sequences and generating overlapping k-mers from mismatch regions.
-3. **Binding prediction**: Uses the selected backend (PWM, NetMHCpan, or MHCflurry) to predict IC50 values for each peptide-allele combination.
-4. **Risk calculation**: Aggregates binding predictions into a risk score based on strong (IC50 ≤ 500 nM) and weak (IC50 ≤ 5000 nM) binders.
+1. **Input processing** - Standardizes recipient/donor allele formats
+2. **Peptide derivation** - Generates mismatched peptides from sequence differences
+3. **Binding prediction** - Predicts IC50 using PWM, NetMHCpan, or MHCflurry
+4. **Risk calculation** - Aggregates predictions into risk scores
 
-### Get a simple summary
+### Total Risk Score
 
-```{r}
-summary_load <- calculatePeptideBindingLoad(
-  recipient = rgeno,
-  donor = dgeno,
-  return = "summary"
-)
-
-print(summary_load)
-```
-
-### Get a per-allele breakdown
-
-The `return = "summary"` option provides a per-HLA-allele breakdown showing which alleles are contributing the most to the peptide binding load.
-
-```{r}
-# The summary return already provides per-allele breakdown
-print(summary_load)
-```
-
-### Get detailed results
-
-This returns a data frame with per-peptide binding predictions, including the peptide sequences, HLA alleles, predicted IC50 values, binding levels, and contribution scores.
-
-```{r}
-# Get the full detailed output
-detailed_load <- calculatePeptideBindingLoad(
-  recipient = rgeno,
-  donor = dgeno,
-  return = "detail"
-)
-
-# The result is a data frame with per-peptide predictions
-head(detailed_load)
-```
-
-### Getting a total risk score
-
-You can also get a single aggregated risk score using `return = "total"`:
-
-```{r}
+```{r peptide-total}
 total_risk <- calculatePeptideBindingLoad(
   recipient = rgeno,
   donor = dgeno,
   return = "total"
 )
-
 print(total_risk)
 ```
 
+### Per-Allele Summary
 
-## Plotting Serological Data Using `plotAntibodies()`
-
-The `plotAntibodies()` function is a versatile tool for visualizing antibody data from both Single Antigen Bead (SAB) and Panel Reactive Antibody (PRA) assays. Its primary goal is to create clear, publication-quality bar plots of Mean Fluorescence Intensity (MFI) values. For added detail, it can append a table of antigen specificities directly below the plot, which is useful for interpreting complex results. The function is flexible, accepting data as either a data frame or directly from a file.
-
-**Key Arguments:**
-
-*   `result_file`: The input data, which can be a data frame or a path to a CSV/XLS file.
-*   `type`: Must be either `"SAB"` or `"PRA"` to specify the assay type.
-*   `add_table`: A logical value (`TRUE`/`FALSE`) to control whether the antigen table is displayed.
-*   `highlight_antigen`: Allows you to specify one or more antigens to highlight in red for emphasis.
-
-### Bar Plot for SAB data
-
-Here is an example of how to use `plotAntibodies` for SAB data. We set `type = "SAB"` and highlight the `"Bw4"` antigen.
-
-```{r}
-plotAntibodies(result_file = deepMatchR_example[[1]],
-               type = "SAB",
-               bead_cutoffs = c(2000, 1000, 500, 250),
-               add_table = TRUE,
-               palette = "spectral",
-               highlight_antigen = c("Bw4"))
+```{r peptide-summary}
+summary_load <- calculatePeptideBindingLoad(
+  recipient = rgeno,
+  donor = dgeno,
+  return = "summary"
+)
+print(summary_load)
 ```
 
-### Bar Plot for PRA data
+### Detailed Peptide-Level Results
 
-For PRA data, we set `type = "PRA"` and specify the `class` ("I" or "II").
+```{r peptide-detail}
+detailed_load <- calculatePeptideBindingLoad(
+  recipient = rgeno,
+  donor = dgeno,
+  return = "detail"
+)
+head(detailed_load)
+```
 
-```{r}
-plotAntibodies(result_file = deepMatchR_example[[3]],
-               type = "PRA",
-               class = "I",
-               add_table = TRUE,
-               palette = "spectral")
+# Visualizing Antibody Data
+
+## Antibody Plots with `plotAntibodies()`
+
+The `plotAntibodies()` function creates publication-quality visualizations of SAB and PRA assay data.
+
+### SAB Bar Plot
+
+```{r plot-sab, fig.width=10, fig.height=8}
+plotAntibodies(
+  result_file = deepMatchR_example[[1]],
+  type = "SAB",
+  bead_cutoffs = c(2000, 1000, 500, 250),
+  add_table = TRUE,
+  palette = "spectral",
+  highlight_antigen = c("Bw4")
+)
+```
+
+### PRA Bar Plot
+
+```{r plot-pra, fig.width=10, fig.height=6}
+plotAntibodies(
+  result_file = deepMatchR_example[[3]],
+  type = "PRA",
+  class = "I",
+  add_table = TRUE,
+  palette = "spectral"
+)
 ```
 
 ### Time-Series Trend Plot
 
-The function can also plot MFI values over time. For this, `plot_trend` must be set to `TRUE`, and `result_file` should be a named list of data frames, where the names are the dates of the assays.
+Track antibody levels over multiple time points:
 
-Here is an example with simulated data:
-
-```{r}
-# Simulate a list of SAB results over time
+```{r plot-trend, fig.width=10, fig.height=6}
+# Simulate longitudinal data
 set.seed(123)
 sab_data_list <- list(
   "01/01/2023" = deepMatchR_example[[1]],
-  "02/01/2023" = deepMatchR_example[[1]] %>% mutate(NormalValue = NormalValue * runif(n(), 0.5, 0.8)),
-  "03/01/2023" = deepMatchR_example[[1]] %>% mutate(NormalValue = NormalValue * runif(n(), 1, 3))
+  "02/01/2023" = deepMatchR_example[[1]] %>%
+    mutate(NormalValue = NormalValue * runif(n(), 0.5, 0.8)),
+  "03/01/2023" = deepMatchR_example[[1]] %>%
+    mutate(NormalValue = NormalValue * runif(n(), 1, 3))
 )
 
-plotAntibodies(result_file = sab_data_list,
-               type = "SAB",
-               plot_trend = TRUE,
-               highlight_threshold = 5000,
-               vline_dates = c("2023-02-15"))
-```
-
-## epletAUC
-
-The `epletAUC()` function (and its parent, `calculateAUC`) is designed to assess feature reactivity in a dynamic way. Instead of relying on a single MFI cutoff, it calculates the proportion of positive beads for each feature (like an eplet or CREG) across a whole range of cutoffs. By integrating this curve, it produces an Area Under the Curve (AUC) value, which serves as a robust summary of reactivity that is less sensitive to any single arbitrary cutoff.
-
-This function can return either a plot of the positivity curves or a data frame of the calculated AUC values.
-
-**Key Arguments:**
-
-*   `result_file`: Your SAB data, as a data frame or file path.
-*   `analysis_type`: The feature you want to analyze, e.g., `"eplet"`, `"creg"`, or `"serology"`.
-*   `plot_results`: Set to `TRUE` to get a `ggplot` object, or `FALSE` to get a data frame of AUC values.
-*   `feature_filter`: A threshold to remove features that appear on too few beads to be reliable.
-*   `percPos_filter`: A threshold to filter out features that never reach a certain level of positivity across all cutoffs.
-
-```{r}
-plot_result <- epletAUC(
-  result_file   = deepMatchR_example[[1]],
-  group_by = "evidence",        # Color by evidence
-  evidence_level = c("A1", "A2", "B", "D"),
-  plot_results  = TRUE,         # Request a plot
-  cut_min       = 250,          # Starting cutoff
-  cut_max       = 10000,        # Ending cutoff
-  cut_step      = 250,          # Step between cutoffs
-  palette       = "inferno"     # Color palette for lines
+plotAntibodies(
+  result_file = sab_data_list,
+  type = "SAB",
+  plot_trend = TRUE,
+  highlight_threshold = 5000,
+  vline_dates = c("2023-02-15")
 )
-
-plot_result
 ```
 
-If you prefer a data table with the computed AUC values, simply set `plot_results = FALSE`. The function will then compute and return a data frame:
+## Eplet Reactivity Analysis with `epletAUC()`
 
-```{r}
-auc_result <- epletAUC(
-  result_file   = deepMatchR_example[[1]],
-  plot_results  = FALSE,  # Return AUC data instead of a plot
-  cut_min       = 250,
-  cut_max       = 10000,
-  cut_step      = 250
-)
+The `epletAUC()` function calculates the Area Under the Curve (AUC) for eplet reactivity across multiple MFI thresholds. This provides a more robust measure than a single cutoff.
 
-auc_result
-```
+### Visualize Reactivity Curves
 
-We can use more advanced filtering strategies to extract clinically actionable data. `eplet_filter` allows us to consider eplets that appear at least a certain number of times in your assay. Likewise, `percPos_filter` can be used to threshold the maximumn positivity for each eplet across the cutoffs.
-
-```{r}
+```{r eplet-auc-plot, fig.width=8, fig.height=6}
 epletAUC(
-  result_file   = deepMatchR_example[[1]],
-  label = FALSE,
-  plot_results  = TRUE,
-  eplet_filter  = 10,
-  percPos_filter = 1.0
+  result_file = deepMatchR_example[[1]],
+  group_by = "evidence",
+  evidence_level = c("A1", "A2", "B", "D"),
+  plot_results = TRUE,
+  cut_min = 250,
+  cut_max = 10000,
+  cut_step = 250,
+  palette = "inferno"
 )
 ```
 
-## plotEplets
+### Get AUC Values as Data
 
-The `plotEplets()` function offers several ways to visualize eplet-level reactivity from SAB data, allowing you to choose the representation that best suits your question. It simplifies the workflow by handling data loading, merging with eplet definitions, and generating one of three distinct plot types.
-
-**Key Arguments:**
-
-*   `result_file`: Your SAB data, as a data frame or file path.
-*   `plot_type`: The visualization to create. Can be `"treemap"`, `"bar"`, or `"AUC"`.
-    *   **`"treemap"`**: Good for an overview of the most prominent eplets. The area of each tile is proportional to the eplet's importance.
-    *   **`"bar"`**: Best for clearly ranking the top eplets based on the proportion of positive beads at a single MFI `cutoff`.
-    *   **`"AUC"`**: Ranks eplets by their reactivity across a *range* of cutoffs, providing a more robust performance metric.
-*   `cutoff`: The MFI threshold for defining a positive bead (used for `"treemap"` and `"bar"` plots).
-*   `evidence_level`: Filters eplets based on their level of experimental evidence (e.g., `"A1"`, `"A2"`, `"B"`).
-
-### Generating a Treemap
-
-In the treemap visualization, the area of each rectangle represents the product of the number of positive beads and the positive bead percentage for each eplet. This plot is ideal for getting an overall sense of eplet performance across the assay.
-
-```{r}
-plotEplets(result_file = deepMatchR_example[[1]],
-           plot_type = "treemap",
-           cutoff = 2000,
-           evidence_level = c("A1", "A2", "B"),
-           percPos_filter = 0.4,
-           palette = "spectral")
+```{r eplet-auc-data}
+auc_result <- epletAUC(
+  result_file = deepMatchR_example[[1]],
+  plot_results = FALSE,
+  cut_min = 250,
+  cut_max = 10000,
+  cut_step = 250
+)
+head(auc_result)
 ```
 
-### Generating a Barplot
+### Advanced Filtering
 
-The bar plot ranks eplets by the proportion of positive beads defined by the cutoff. This visualization is useful when you want to focus on the top-performing eplets based on their positivity rate
-
-```{r}
-plotEplets(result_file = deepMatchR_example[[1]],
-           plot_type = "bar",
-           group_by = "loci",
-           cutoff = 2000,
-           evidence_level = c("A1", "A2", "B"),
-           percPos_filter = 0.4,
-           top_eplets = 20,
-           palette = "spectral")
+```{r eplet-auc-filter, fig.width=8, fig.height=6}
+epletAUC(
+  result_file = deepMatchR_example[[1]],
+  label = FALSE,
+  plot_results = TRUE,
+  eplet_filter = 10,      # Minimum bead count
+  percPos_filter = 1.0    # Minimum positivity threshold
+)
 ```
 
-### Generating AUC Barplot
+## Eplet Visualization with `plotEplets()`
 
-The AUC plot visualizes the normalized area under the curve for eplets across a range of MFI cutoffs. This approach provides insight into the performance consistency of each eplet across different assay thresholds.
+The `plotEplets()` function offers three visualization types for eplet reactivity data.
 
-```{r}
-plotEplets(result_file = deepMatchR_example[[1]],
-           plot_type = "AUC",
-           percPos_filter = 0.4,
-           group_by = "evidence_level",
-           cut_min = 250,
-           cut_max = 10000,
-           cut_step = 250,
-           top_eplets = 20,
-           palette = "spectral")
+### Treemap View
+
+Ideal for an overview of eplet prominence. Tile area represents importance (positive beads x positivity rate):
+
+```{r plot-treemap, fig.width=10, fig.height=8}
+plotEplets(
+  result_file = deepMatchR_example[[1]],
+  plot_type = "treemap",
+  cutoff = 2000,
+  evidence_level = c("A1", "A2", "B"),
+  percPos_filter = 0.4,
+  palette = "spectral"
+)
 ```
 
-***
+### Bar Plot
 
-# Conclusions
+Ranks eplets by positivity rate at a specific threshold:
 
-If you have any questions, comments or suggestions, feel free to visit the [github repository](https://github.com/ncborcherding/deepMatchR).
+```{r plot-bar, fig.width=8, fig.height=6}
+plotEplets(
+  result_file = deepMatchR_example[[1]],
+  plot_type = "bar",
+  group_by = "loci",
+  cutoff = 2000,
+  evidence_level = c("A1", "A2", "B"),
+  percPos_filter = 0.4,
+  top_eplets = 20,
+  palette = "spectral"
+)
+```
 
-```{r}
+### AUC Bar Plot
+
+Ranks eplets by performance across multiple thresholds:
+
+```{r plot-auc-bar, fig.width=8, fig.height=6}
+plotEplets(
+ result_file = deepMatchR_example[[1]],
+  plot_type = "AUC",
+  percPos_filter = 0.4,
+  group_by = "evidence_level",
+  cut_min = 250,
+  cut_max = 10000,
+  cut_step = 250,
+  top_eplets = 20,
+  palette = "spectral"
+)
+```
+
+# Session Information
+
+```{r sessioninfo}
 sessionInfo()
 ```
+
+# Getting Help
+
+If you have questions, suggestions, or encounter issues:
+
+- **GitHub Issues:** [github.com/ncborcherding/deepMatchR/issues](https://github.com/ncborcherding/deepMatchR/issues)

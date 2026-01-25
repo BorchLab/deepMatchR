@@ -1,0 +1,138 @@
+url: https://www.borch.dev/uploads/deepMatchR
+
+template:
+  bootstrap: 5
+  bootswatch: flatly
+  bslib:
+    primary: "#3288bd"
+    border-radius: 0.5rem
+    btn-border-radius: 0.25rem
+
+home:
+  title: deepMatchR - Deep Learning Models for HLA Matching
+  description: >
+    Tools for HLA testing, matching, and immunogenicity analysis using
+    advanced statistical approaches and deep learning.
+  sidebar:
+    structure: [links, license, community, citation, authors, dev]
+
+navbar:
+  structure:
+    left: [intro, reference, articles, tutorials, news]
+    right: [search, github]
+  components:
+    intro:
+      text: Get Started
+      href: articles/deepMatchR.html
+    articles:
+      text: Articles
+      menu:
+      - text: Overview
+        href: articles/index.html
+      - text: "---"
+      - text: "Core Workflows"
+      - text: Sequence & Mismatch Analysis
+        href: articles/sequence-analysis.html
+      - text: Eplet Analysis
+        href: articles/eplet-analysis.html
+      - text: Peptide Binding Prediction
+        href: articles/peptide-binding.html
+      - text: "---"
+      - text: "Visualization"
+      - text: Antibody Visualization
+        href: articles/antibody-visualization.html
+    github:
+      icon: fab fa-github
+      href: https://github.com/BorchLab/deepMatchR
+      aria-label: GitHub
+
+reference:
+- title: HLA Genotypes
+  desc: Create and work with HLA genotype objects
+  contents:
+  - hlaGeno
+  - validateHlaGeno
+  - print.hla_genotype
+
+- title: Sequence Analysis
+  desc: Functions for retrieving and comparing HLA sequences
+  contents:
+  - getAlleleSequence
+  - quantifyMismatch
+  - calculateMismatchLoad
+  - getSequenceStats
+  - clearSequenceCache
+
+- title: Eplet Analysis
+  desc: Functions for eplet-based immunogenicity analysis
+  contents:
+  - quantifyEpletMismatch
+  - calculateEpletLoad
+
+- title: Peptide Binding Prediction
+  desc: Deep learning models for peptide-MHC binding prediction
+  contents:
+  - predictMHCnuggets
+  - calculatePeptideBindingLoad
+  - visualizePeptideBinding
+
+- title: Serology Conversion
+  desc: Convert between molecular and serological HLA nomenclature
+  contents:
+  - toSerology
+  - updateWmdaData
+  - clearWmdaCache
+
+- title: Antibody Visualization
+  desc: Visualize SAB and PRA assay results
+  contents:
+  - plotAntibodies
+  - plotEplets
+  - epletAUC
+  - calculateAUC
+
+- title: Data
+  desc: Built-in datasets
+  contents:
+  - deepMatchR_example
+  - deepMatchR_cregs
+  - deepMatchR_eplets
+  - deepMatchR_wmda_pgroups
+  - deepMatchR_wmda_serology
+  - deepMatchR_wmda_splits
+  - starts_with("wmda_")
+  - starts_with("eplet_")
+
+- title: Utilities
+  desc: Helper functions and internal utilities
+  contents:
+  - deepmatchrEnv
+  - batchGetSequences
+
+articles:
+- title: Getting Started
+  navbar: ~
+  contents:
+  - deepMatchR
+
+- title: Core Workflows
+  desc: Detailed guides for specific analysis tasks
+  contents:
+  - sequence-analysis
+  - eplet-analysis
+  - peptide-binding
+
+- title: Visualization
+  desc: Creating publication-quality figures
+
+  contents:
+  - antibody-visualization
+
+footer:
+  structure:
+    left: developed_by
+    right: built_with
+
+authors:
+  Nick Borcherding:
+    href: https://github.com/ncborcherding

@@ -36,6 +36,8 @@ Suggests:
 	BiocStyle,
 	Biostrings,
 	knitr,
+	mockery,
+	pkgdown,
 	pracma,
 	rappdirs,
 	rmarkdown,
@@ -48,5 +50,5 @@ Remotes:
 SystemRequirements: Python (via basilisk)
 VignetteBuilder: knitr
 Language: en-US
-URL: https://github.com/ncborcherding/deepMatchR/
-BugReports: https://github.com/ncborcherding/deepMatchR/issues
+URL: https://github.com/BorchLab/deepMatchR
+BugReports: https://github.com/BorchLab/deepMatchR/issues

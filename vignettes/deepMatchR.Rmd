@@ -176,53 +176,59 @@ donor <- data.frame(
 rgeno <- hlaGeno(recipient)
 dgeno <- hlaGeno(donor)
 
-calculateMismatchLoad(rgeno, 
-                      dgeno)
+calculateMismatchLoad(rgeno,
+                      dgeno,
+                      parallel = FALSE)
 ```
 
 ### Per-locus contributions
 
 ```{r}
-per_locus <- calculateMismatchLoad(rgeno, 
-                                   dgeno, 
-                                   return = "per_locus")
+per_locus <- calculateMismatchLoad(rgeno,
+                                   dgeno,
+                                   return = "per_locus",
+                                   parallel = FALSE)
 per_locus
 ```
 
 ### Pairwise allele matrix for a locus
 
 ```{r}
-mB <- calculateMismatchLoad(rgeno, 
-                            dgeno, 
-                            return = "pairwise", 
-                            pairwise_locus = "B")
+mB <- calculateMismatchLoad(rgeno,
+                            dgeno,
+                            return = "pairwise",
+                            pairwise_locus = "B",
+                            parallel = FALSE)
 mB
 ```
 
-### Apply biophysical filters* 
+### Apply biophysical filters*
 
 Count only mismatches that change charge:
 
 ```{r}
-calculateMismatchLoad(rgeno, 
+calculateMismatchLoad(rgeno,
                       dgeno,
-                      filter_charge = TRUE)
+                      filter_charge = TRUE,
+                      parallel = FALSE)
 ```
 
 Count only mismatches that change polarity:
 
 ```{r}
-calculateMismatchLoad(rgeno, 
+calculateMismatchLoad(rgeno,
                       dgeno,
-                      filter_polarity = TRUE)
+                      filter_polarity = TRUE,
+                      parallel = FALSE)
 ```
 
 ### Restrict by locus (e.g., A)
 
 ```{r}
-calculateMismatchLoad(rgeno, 
+calculateMismatchLoad(rgeno,
                       dgeno,
-                      loci = "A")
+                      loci = "A",
+                      parallel = FALSE)
 ```
 
 ## Quantifying Eplet Mismatches with `quantifyEpletMismatch`

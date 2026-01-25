@@ -1,0 +1,253 @@
+---
+title: "Peptide Binding Prediction"
+author:
+- name: Nick Borcherding
+  affiliation: Washington University in St. Louis, School of Medicine, St. Louis, MO, USA
+date: 'Compiled: `r format(Sys.Date(), "%B %d, %Y")`'
+output:
+  BiocStyle::html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+package: deepMatchR
+vignette: >
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteIndexEntry{Peptide Binding Prediction}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, echo=FALSE, results="hide", message=FALSE}
+knitr::opts_chunk$set(
+  error = FALSE,
+  message = FALSE,
+  warning = FALSE,
+  tidy = FALSE,
+  collapse = TRUE,
+  comment = "#>"
+)
+library(BiocStyle)
+
+# Check if running on Windows (for skipping Python-dependent sections)
+is_windows <- .Platform$OS.type == "windows"
+```
+
+# Introduction
+
+Peptide-MHC binding prediction is central to understanding T cell-mediated immunity. In the context of transplantation, predicting how recipient HLA molecules might present donor-derived peptides helps assess immunological risk.
+
+This article covers:
+
+- Using MHCnuggets for peptide binding prediction
+- Calculating peptide binding load for donor-recipient pairs
+- Interpreting binding predictions
+
+# Loading the Package
+
+```{r load-package}
+library(deepMatchR)
+library(dplyr)
+```
+
+# Background
+
+## Peptide-MHC Binding
+
+MHC molecules present peptides to T cells. The binding affinity between a peptide and an MHC molecule determines:
+
+- **Presentation likelihood:** Strong binders are more likely to be presented
+- **T cell activation potential:** Better presentation leads to stronger T cell responses
+- **Immunogenicity:** Peptides that bind well and differ from self are immunogenic
+
+## Binding Thresholds
+
+Binding affinity is typically measured as IC50 (half-maximal inhibitory concentration):
+
+| IC50 (nM) | Classification |
+|-----------|----------------|
+| < 50 | Strong binder |
+| 50-500 | Intermediate binder |
+| 500-5000 | Weak binder |
+| > 5000 | Non-binder |
+
+# MHCnuggets Prediction
+
+## Overview
+
+`predictMHCnuggets()` provides an R interface to MHCnuggets, a deep learning model for peptide-MHC binding prediction.
+
+> **Note:** MHCnuggets requires Python dependencies via basilisk. This functionality is not available on Windows due to path length limitations.
+
+## Basic Usage
+
+```{r mhcnuggets, eval=!is_windows}
+# Define peptides and allele
+peptides <- c("SIINFEKL", "LLFGYPVYV", "GILGFVFTL")
+allele <- "A*02:01"
+
+# Predict binding affinity
+binding_results <- predictMHCnuggets(
+  peptides = peptides,
+  allele = allele,
+  mhc_class = "I"
+)
+
+print(binding_results)
+```
+
+## Interpretation
+
+The output includes:
+
+- **peptide:** Input peptide sequence
+- **allele:** HLA allele tested
+- **ic50:** Predicted binding affinity in nM
+- **rank:** Percentile rank (if `rank_output = TRUE`)
+
+# Peptide Binding Load
+
+## Concept
+
+The `calculatePeptideBindingLoad()` function estimates transplant risk by:
+
+1. Identifying mismatched peptides from donor sequences
+2. Predicting binding to recipient HLA molecules
+3. Aggregating predictions into a risk score
+
+## Creating Genotypes
+
+```{r create-genotypes}
+recipient <- data.frame(
+  A_1 = "A*02:01", A_2 = "A*03:01",
+  B_1 = "B*07:02", B_2 = "B*08:01"
+)
+
+donor <- data.frame(
+  A_1 = "A*01:01", A_2 = "A*24:02",
+  B_1 = "B*44:02", B_2 = "B*51:01"
+)
+
+rgeno <- hlaGeno(recipient)
+dgeno <- hlaGeno(donor)
+```
+
+## Total Risk Score
+
+```{r peptide-total}
+total_risk <- calculatePeptideBindingLoad(
+  recipient = rgeno,
+  donor = dgeno,
+  return = "total"
+)
+print(total_risk)
+```
+
+## Per-Allele Summary
+
+```{r peptide-summary}
+summary_load <- calculatePeptideBindingLoad(
+  recipient = rgeno,
+  donor = dgeno,
+  return = "summary"
+)
+print(summary_load)
+```
+
+## Detailed Peptide Results
+
+```{r peptide-detail}
+detailed_load <- calculatePeptideBindingLoad(
+  recipient = rgeno,
+  donor = dgeno,
+  return = "detail"
+)
+head(detailed_load)
+```
+
+# Backends
+
+## Available Backends
+
+`calculatePeptideBindingLoad()` supports multiple prediction backends:
+
+| Backend | Description | Requirements |
+|---------|-------------|--------------|
+| `pwm` | Position Weight Matrix (default) | R only |
+| `mhcnuggets` | Deep learning model | Python |
+| `netmhcpan` | External tool | NetMHCpan installed |
+| `mhcflurry` | Deep learning model | Python |
+
+## Using PWM (Default)
+
+The PWM backend uses pre-computed position-specific scoring matrices based on HLA supertypes:
+
+```{r pwm-backend}
+result_pwm <- calculatePeptideBindingLoad(
+  recipient = rgeno,
+  donor = dgeno,
+  backend = "pwm",
+  return = "summary"
+)
+print(result_pwm)
+```
+
+## Customizing Thresholds
+
+```{r custom-thresholds}
+# Adjust binding thresholds
+result_custom <- calculatePeptideBindingLoad(
+  recipient = rgeno,
+  donor = dgeno,
+  binding_threshold = 100,   # Strong binder threshold
+  weak_threshold = 1000,     # Weak binder threshold
+  return = "summary"
+)
+print(result_custom)
+```
+
+# Clinical Applications
+
+## Transplant Risk Assessment
+
+Peptide binding load can complement eplet-based analysis:
+
+1. **Eplet load:** Predicts antibody-mediated rejection risk
+2. **Peptide binding load:** Predicts T cell-mediated rejection risk
+
+## Integration with Other Metrics
+
+Consider combining peptide binding predictions with:
+
+- HLA mismatch count
+- Eplet mismatch load
+- Pre-existing antibody profiles
+- Clinical risk factors
+
+# Function Reference
+
+## `predictMHCnuggets()`
+
+| Argument | Default | Description |
+|----------|---------|-------------|
+| `peptides` | -- | Character vector of peptide sequences |
+| `allele` | -- | HLA allele (e.g., "A*02:01") |
+| `mhc_class` | `"I"` | MHC class: "I" or "II" |
+| `rank_output` | `FALSE` | Include percentile rank |
+
+## `calculatePeptideBindingLoad()`
+
+| Argument | Default | Description |
+|----------|---------|-------------|
+| `recipient` | -- | Recipient genotype or allele vector |
+| `donor` | -- | Donor peptides or genotype |
+| `backend` | `"pwm"` | Prediction backend |
+| `peptide_length` | `9L` | Peptide length for analysis |
+| `binding_threshold` | `500` | IC50 threshold for strong binding |
+| `weak_threshold` | `5000` | IC50 threshold for weak binding |
+| `return` | `"total"` | Output type: "total", "summary", "detail" |
+| `aggregate_method` | `"sum"` | Aggregation: "sum", "max", "mean" |
+
+# Session Information
+
+```{r sessioninfo}
+sessionInfo()
+```

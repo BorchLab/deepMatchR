@@ -4,7 +4,7 @@ template:
   bootstrap: 5
   bootswatch: flatly
   bslib:
-    primary: "#0d6efd"
+    primary: "#3288bd"
     border-radius: 0.5rem
     btn-border-radius: 0.25rem
 
@@ -52,6 +52,7 @@ reference:
   contents:
   - hlaGeno
   - validateHlaGeno
+  - print.hla_genotype
 
 - title: Sequence Analysis
   desc: Functions for retrieving and comparing HLA sequences
@@ -59,6 +60,8 @@ reference:
   - getAlleleSequence
   - quantifyMismatch
   - calculateMismatchLoad
+  - getSequenceStats
+  - clearSequenceCache
 
 - title: Eplet Analysis
   desc: Functions for eplet-based immunogenicity analysis
@@ -71,6 +74,7 @@ reference:
   contents:
   - predictMHCnuggets
   - calculatePeptideBindingLoad
+  - visualizePeptideBinding
 
 - title: Serology Conversion
   desc: Convert between molecular and serological HLA nomenclature
@@ -88,10 +92,14 @@ reference:
   - calculateAUC
 
 - title: Data
-
   desc: Built-in datasets
   contents:
   - deepMatchR_example
+  - deepMatchR_cregs
+  - deepMatchR_eplets
+  - deepMatchR_wmda_pgroups
+  - deepMatchR_wmda_serology
+  - deepMatchR_wmda_splits
   - starts_with("wmda_")
   - starts_with("eplet_")
 

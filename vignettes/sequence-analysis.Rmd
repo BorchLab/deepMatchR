@@ -1,0 +1,248 @@
+---
+title: "Sequence & Mismatch Analysis"
+author:
+- name: Nick Borcherding
+  affiliation: Washington University in St. Louis, School of Medicine, St. Louis, MO, USA
+date: 'Compiled: `r format(Sys.Date(), "%B %d, %Y")`'
+output:
+  BiocStyle::html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+package: deepMatchR
+vignette: >
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteIndexEntry{Sequence & Mismatch Analysis}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, echo=FALSE, results="hide", message=FALSE}
+knitr::opts_chunk$set(
+  error = FALSE,
+  message = FALSE,
+  warning = FALSE,
+  tidy = FALSE,
+  collapse = TRUE,
+ comment = "#>"
+)
+library(BiocStyle)
+```
+
+# Introduction
+
+This article covers sequence-level HLA analysis in **deepMatchR**, including:
+
+- Retrieving allele sequences from IMGT/HLA
+- Quantifying amino acid mismatches between sequences
+- Calculating mismatch load between donor-recipient pairs
+
+These tools provide the foundation for understanding immunogenicity at the molecular level.
+
+# Loading the Package
+
+```{r load-package}
+library(deepMatchR)
+library(dplyr)
+```
+
+# Retrieving HLA Sequences
+
+## Basic Usage
+
+The `getAlleleSequence()` function retrieves protein sequences from the IMGT/HLA database.
+
+```{r get-sequence, results='hide'}
+# Get the amino acid sequence for A*01:01
+a0101_seq <- getAlleleSequence("A*01:01")
+```
+
+```{r show-sequence}
+# View first 60 amino acids
+substr(a0101_seq, 1, 60)
+
+# Full sequence length
+nchar(a0101_seq)
+```
+
+## Batch Retrieval
+
+For multiple alleles, use `batchGetSequences()` for efficient parallel retrieval:
+```{r batch-sequences, results='hide'}
+alleles <- c("A*01:01", "A*02:01", "B*07:02")
+sequences <- batchGetSequences(alleles)
+```
+
+```{r show-batch}
+# View sequence lengths
+sapply(sequences, nchar)
+```
+
+# Quantifying Amino Acid Mismatches
+
+## Basic Mismatch Counting
+
+The `quantifyMismatch()` function compares two protein sequences and counts differences:
+
+```{r mismatch-basic}
+seq1 <- "YFAMYGEKVAHTHVDTLYVRYHY"
+seq2 <- "YFDMYGEKVAHTHVDTLYVRFHY"
+
+# Count all mismatches
+quantifyMismatch(seq1, seq2)
+```
+
+## Biophysical Property Filters
+
+You can filter mismatches by biophysical properties to focus on functionally significant changes:
+
+### Charge Classification
+
+- **Positive:** K, R, H
+- **Negative:** D, E
+- **Neutral:** All others
+
+### Polarity Classification
+
+- **Nonpolar:** A, V, L, I, P, M, F, W, G
+- **Polar:** S, T, N, Q, Y, C, H, K, R, D, E
+
+```{r mismatch-filters}
+# Only charge-changing mismatches
+quantifyMismatch(seq1, seq2, filter_charge = TRUE)
+
+# Only polarity-changing mismatches
+quantifyMismatch(seq1, seq2, filter_polarity = TRUE)
+
+# Both charge AND polarity changing
+quantifyMismatch(seq1, seq2, filter_charge = TRUE, filter_polarity = TRUE)
+```
+
+## Detailed Position Analysis
+
+Get position-by-position breakdown:
+
+```{r mismatch-detail}
+details <- quantifyMismatch(seq1, seq2, return = "detail")
+head(details)
+```
+
+The detail output includes:
+
+| Column | Description |
+|--------|-------------|
+| `position` | Position in the sequence |
+| `aa1` / `aa2` | Amino acid in each sequence |
+| `is_mismatch` | Whether amino acids differ |
+| `charge_change` | Whether charge class changed |
+| `polarity_change` | Whether polarity changed |
+| `counted` | Whether position counts toward total |
+
+## Handling Unknown Residues
+
+The `na_action` parameter controls how unknown residues (X, -, etc.) are handled:
+
+```{r na-action}
+seq_with_unknown <- "YFAMYGEKVAHTHVDTLYVRXHY"
+
+# Exclude unknown positions (default)
+quantifyMismatch(seq1, seq_with_unknown, na_action = "exclude")
+
+# Count unknowns as mismatches
+quantifyMismatch(seq1, seq_with_unknown, na_action = "count")
+```
+
+# Donor-Recipient Mismatch Load
+
+## Creating HLA Genotypes
+
+First, create genotype objects using `hlaGeno()`:
+
+```{r create-genotypes}
+recipient <- data.frame(
+  A_1 = "A*01:01", A_2 = "A*02:01",
+  B_1 = "B*07:02", B_2 = "B*08:01",
+  DRB1_1 = "DRB1*03:01", DRB1_2 = "DRB1*04:01"
+)
+
+donor <- data.frame(
+  A_1 = "A*03:01", A_2 = "A*24:02",
+  B_1 = "B*44:02", B_2 = "B*51:01",
+  DRB1_1 = "DRB1*07:01", DRB1_2 = "DRB1*11:01"
+)
+
+rgeno <- hlaGeno(recipient)
+dgeno <- hlaGeno(donor)
+```
+
+## Calculating Total Mismatch Load
+
+```{r mismatch-load-total}
+calculateMismatchLoad(rgeno, dgeno, parallel = FALSE)
+```
+
+## Per-Locus Breakdown
+
+```{r mismatch-load-locus}
+per_locus <- calculateMismatchLoad(
+  rgeno, dgeno,
+  return = "per_locus",
+  parallel = FALSE
+)
+per_locus
+```
+
+## Pairwise Allele Matrix
+
+View mismatches between each recipient-donor allele pair:
+
+```{r mismatch-load-pairwise}
+mB <- calculateMismatchLoad(
+  rgeno, dgeno,
+  return = "pairwise",
+  pairwise_locus = "B",
+  parallel = FALSE
+)
+mB
+```
+
+## Applying Filters
+
+```{r mismatch-load-filters}
+# Charge-changing mismatches only
+calculateMismatchLoad(rgeno, dgeno, filter_charge = TRUE, parallel = FALSE)
+
+# Polarity-changing mismatches only
+calculateMismatchLoad(rgeno, dgeno, filter_polarity = TRUE, parallel = FALSE)
+
+# Restrict to specific loci
+calculateMismatchLoad(rgeno, dgeno, loci = c("A", "B"), parallel = FALSE)
+```
+
+# Function Reference
+
+## `quantifyMismatch()`
+
+| Argument | Default | Description |
+|----------|---------|-------------|
+| `sequence1`, `sequence2` | -- | Two protein sequences (same length) |
+| `filter_charge` | `NULL` | Filter by charge change |
+| `filter_polarity` | `NULL` | Filter by polarity change |
+| `return` | `"count"` | Output type: `"count"` or `"detail"` |
+| `na_action` | `"exclude"` | Handle unknown residues: `"exclude"`, `"error"`, `"count"` |
+
+## `calculateMismatchLoad()`
+
+| Argument | Default | Description |
+|----------|---------|-------------|
+| `recipient_geno`, `donor_geno` | -- | HLA genotypes from `hlaGeno()` |
+| `loci` | `NULL` | Restrict to specific loci |
+| `filter_charge`, `filter_polarity` | `NULL` | Biophysical filters |
+| `return` | `"total"` | `"total"`, `"per_locus"`, or `"pairwise"` |
+| `pairwise_locus` | `NULL` | Locus for pairwise matrix |
+| `parallel` | `TRUE` | Use parallel processing |
+
+# Session Information
+
+```{r sessioninfo}
+sessionInfo()
+```

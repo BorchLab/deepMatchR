@@ -1,0 +1,213 @@
+---
+title: "Eplet Analysis"
+author:
+- name: Nick Borcherding
+  affiliation: Washington University in St. Louis, School of Medicine, St. Louis, MO, USA
+date: 'Compiled: `r format(Sys.Date(), "%B %d, %Y")`'
+output:
+  BiocStyle::html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+package: deepMatchR
+vignette: >
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteIndexEntry{Eplet Analysis}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, echo=FALSE, results="hide", message=FALSE}
+knitr::opts_chunk$set(
+  error = FALSE,
+  message = FALSE,
+  warning = FALSE,
+  tidy = FALSE,
+  collapse = TRUE,
+  comment = "#>"
+)
+library(BiocStyle)
+```
+
+# Introduction
+
+Eplets are short amino acid sequences that form antibody-binding epitopes on HLA molecules. They are key determinants of HLA immunogenicity and play a crucial role in:
+- Predicting antibody development risk in transplantation
+- Understanding patterns of HLA sensitization
+- Guiding donor selection strategies
+
+This article covers eplet-based analysis in **deepMatchR**.
+
+# Loading the Package
+
+```{r load-package}
+library(deepMatchR)
+library(dplyr)
+```
+
+# Understanding Eplets
+
+## What are Eplets?
+
+Eplets are small configurations of polymorphic amino acid residues on the molecular surface of HLA molecules. They were originally defined by the HLAMatchmaker algorithm and are catalogued in the [Eplet Registry](http://www.epregistry.com.br/).
+
+Key concepts:
+
+- **Evidence Level:** Indicates how well-characterized the eplet is
+  - A1/A2: Antibody-verified eplets
+  - B: Theoretically predicted
+  - D: Deprecated
+
+- **Exposition:** Surface accessibility
+  - High: Clearly exposed on molecular surface
+  - Intermediate/Low: Less accessible
+
+- **Reactivity:** Whether antibody binding has been confirmed
+
+# Quantifying Eplet Mismatches
+
+## Basic Comparison
+
+The `quantifyEpletMismatch()` function calculates non-shared eplets between two alleles:
+
+```{r eplet-basic}
+# Basic eplet comparison (A1/A2 evidence level by default)
+quantifyEpletMismatch("A*01:01", "A*02:01")
+```
+
+## Filtering by Evidence Level
+
+```{r eplet-evidence}
+# Only antibody-verified eplets (A1)
+quantifyEpletMismatch("A*01:01", "A*02:01", evidence_level = "A1")
+
+# All evidence levels including theoretical
+quantifyEpletMismatch("A*01:01", "A*02:01", evidence_level = NULL)
+```
+
+## Filtering by Exposition
+
+```{r eplet-exposition}
+# High-exposition eplets only
+quantifyEpletMismatch("B*07:02", "B*44:02", exposition_filter = "High")
+```
+
+## Filtering by Reactivity
+
+```{r eplet-reactivity}
+# Confirmed reactive eplets only
+quantifyEpletMismatch("C*07:01", "C*06:02",
+                      evidence_level = NULL,
+                      reactivity_filter = "Confirmed")
+```
+
+# Calculating Eplet Load
+
+For donor-recipient matching, use `calculateEpletLoad()` to compute total donor-specific eplets across all loci.
+
+## Creating Genotypes
+
+```{r create-genotypes}
+recipient <- data.frame(
+  A_1 = "A*01:01", A_2 = "A*02:01",
+  B_1 = "B*07:02", B_2 = "B*08:01",
+  DQB1_1 = "DQB1*02:02", DQB1_2 = "DQB1*03:01"
+)
+
+donor <- data.frame(
+  A_1 = "A*03:01", A_2 = "A*24:02",
+  B_1 = "B*44:02", B_2 = "B*51:01",
+  DQB1_1 = "DQB1*06:02", DQB1_2 = "DQB1*03:01"
+)
+
+rgeno <- hlaGeno(recipient)
+dgeno <- hlaGeno(donor)
+```
+
+## Total Eplet Load
+
+```{r eplet-load-total}
+calculateEpletLoad(rgeno, dgeno)
+```
+
+## Per-Locus Summary
+
+```{r eplet-load-locus}
+per_locus <- calculateEpletLoad(rgeno, dgeno, return = "per_locus")
+per_locus
+```
+
+## Pairwise Allele Matrix
+
+```{r eplet-load-pairwise}
+mB <- calculateEpletLoad(
+  rgeno, dgeno,
+  return = "pairwise",
+  pairwise_locus = "B"
+)
+mB
+```
+
+## Applying Filters
+
+```{r eplet-load-filters}
+# High-exposition eplets only
+calculateEpletLoad(rgeno, dgeno, exposition_filter = "High")
+
+# Antibody-confirmed eplets only
+calculateEpletLoad(rgeno, dgeno, reactivity_filter = "Confirmed")
+
+# All evidence levels (no filter)
+calculateEpletLoad(rgeno, dgeno, evidence_level = NULL)
+```
+
+# Clinical Interpretation
+
+## Eplet Load and DSA Risk
+
+Higher eplet mismatch loads are generally associated with increased risk of donor-specific antibody (DSA) development. However, interpretation should consider:
+
+1. **Evidence quality:** A1/A2 eplets have stronger clinical validation
+2. **Surface exposition:** High-exposition eplets are more accessible to antibodies
+3. **Previous sensitization:** Patient's existing antibody profile
+4. **Immunosuppression:** Treatment protocol intensity
+
+## Recommended Thresholds
+
+While specific thresholds vary by center and organ type, general guidelines suggest:
+
+| Eplet Load | Risk Level |
+|------------|------------|
+| 0-10 | Low |
+| 11-20 | Moderate |
+| >20 | High |
+
+> **Note:** These are general guidelines. Always consult your institution's protocols.
+
+# Function Reference
+
+## `quantifyEpletMismatch()`
+
+| Argument | Default | Description |
+|----------|---------|-------------|
+| `allele1`, `allele2` | -- | Two HLA alleles to compare |
+| `evidence_level` | `c("A1","A2")` | Filter by evidence level |
+| `exposition_filter` | `NULL` | Filter by surface exposition |
+| `reactivity_filter` | `NULL` | Filter by reactivity confirmation |
+
+## `calculateEpletLoad()`
+
+| Argument | Default | Description |
+|----------|---------|-------------|
+| `recipient_geno`, `donor_geno` | -- | HLA genotypes from `hlaGeno()` |
+| `loci` | `NULL` | Restrict to specific loci |
+| `evidence_level` | `c("A1","A2")` | Filter by evidence level |
+| `exposition_filter` | `NULL` | Filter by surface exposition |
+| `reactivity_filter` | `NULL` | Filter by reactivity confirmation |
+| `return` | `"total"` | `"total"`, `"per_locus"`, or `"pairwise"` |
+| `pairwise_locus` | `NULL` | Locus for pairwise matrix |
+
+# Session Information
+
+```{r sessioninfo}
+sessionInfo()
+```

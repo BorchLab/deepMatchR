@@ -1,0 +1,334 @@
+---
+title: "Antibody Visualization"
+author:
+- name: Nick Borcherding
+  affiliation: Washington University in St. Louis, School of Medicine, St. Louis, MO, USA
+date: 'Compiled: `r format(Sys.Date(), "%B %d, %Y")`'
+output:
+  BiocStyle::html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+package: deepMatchR
+vignette: >
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteIndexEntry{Antibody Visualization}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, echo=FALSE, results="hide", message=FALSE}
+knitr::opts_chunk$set(
+  error = FALSE,
+  message = FALSE,
+  warning = FALSE,
+  tidy = FALSE,
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 10,
+  fig.height = 8
+)
+library(BiocStyle)
+```
+
+# Introduction
+
+Visualizing HLA antibody data is essential for:
+
+- Monitoring patient sensitization
+- Identifying unacceptable antigens for transplant
+- Tracking antibody trends over time
+- Analyzing eplet-level reactivity patterns
+
+This article covers **deepMatchR**'s visualization tools for Single Antigen Bead (SAB) and Panel Reactive Antibody (PRA) assay results.
+
+# Loading the Package
+
+```{r load-package}
+library(deepMatchR)
+library(dplyr)
+library(ggplot2)
+```
+
+# Example Data
+
+**deepMatchR** includes simulated assay data for demonstrations:
+
+```{r load-data}
+data("deepMatchR_example")
+
+# Available datasets:
+# 1. Class I SAB
+# 2. Class II SAB
+# 3. PRA
+
+head(deepMatchR_example[[1]], 5)
+```
+
+## Data Format Requirements
+
+For downstream analysis, your data must include these columns:
+
+| Column | Description | Example |
+|--------|-------------|---------|
+| `BeadID` | Unique bead identifier | 1, 2, 3... |
+| `SpecAbbr` | Abbreviated specificity | A01, B35 |
+| `Specificity` | Full specificity string | "A*01:01, B*07:01" |
+| `NormalValue` | Measured MFI value | 15234 |
+
+# Plotting Antibodies
+
+## SAB Bar Plot
+
+The `plotAntibodies()` function creates publication-quality visualizations:
+
+```{r plot-sab}
+plotAntibodies(
+  result_file = deepMatchR_example[[1]],
+  type = "SAB",
+  bead_cutoffs = c(2000, 1000, 500, 250),
+  add_table = TRUE,
+  palette = "spectral"
+)
+```
+
+## Highlighting Specific Antigens
+
+Focus on antigens of interest using `highlight_antigen`:
+
+```{r plot-sab-highlight}
+plotAntibodies(
+  result_file = deepMatchR_example[[1]],
+  type = "SAB",
+  bead_cutoffs = c(2000, 1000, 500),
+  add_table = TRUE,
+  palette = "spectral",
+  highlight_antigen = c("Bw4", "Bw6")
+)
+```
+
+## PRA Bar Plot
+
+```{r plot-pra, fig.height=6}
+plotAntibodies(
+  result_file = deepMatchR_example[[3]],
+  type = "PRA",
+  class = "I",
+  add_table = TRUE,
+  palette = "spectral"
+)
+```
+
+## Time-Series Trend Plot
+
+Track antibody levels over multiple time points:
+
+```{r plot-trend, fig.height=6}
+# Simulate longitudinal data
+set.seed(123)
+sab_data_list <- list(
+  "01/01/2023" = deepMatchR_example[[1]],
+  "02/01/2023" = deepMatchR_example[[1]] %>%
+    mutate(NormalValue = NormalValue * runif(n(), 0.5, 0.8)),
+  "03/01/2023" = deepMatchR_example[[1]] %>%
+    mutate(NormalValue = NormalValue * runif(n(), 1, 3))
+)
+
+plotAntibodies(
+  result_file = sab_data_list,
+  type = "SAB",
+  plot_trend = TRUE,
+  highlight_threshold = 5000,
+  vline_dates = c("2023-02-15")
+)
+```
+
+# Eplet Visualization
+
+## `plotEplets()` Overview
+
+The `plotEplets()` function offers three visualization types:
+
+| Type | Best For |
+|------|----------|
+| `treemap` | Overview of eplet prominence |
+| `bar` | Ranking eplets by positivity |
+| `AUC` | Performance across thresholds |
+
+## Treemap View
+
+Tile area represents importance (positive beads × positivity rate):
+
+```{r plot-treemap}
+plotEplets(
+  result_file = deepMatchR_example[[1]],
+  plot_type = "treemap",
+  cutoff = 2000,
+  evidence_level = c("A1", "A2", "B"),
+  percPos_filter = 0.4,
+  palette = "spectral"
+)
+```
+
+## Bar Plot
+
+Ranks eplets by positivity rate at a specific threshold:
+
+```{r plot-bar, fig.height=6}
+plotEplets(
+  result_file = deepMatchR_example[[1]],
+  plot_type = "bar",
+  group_by = "loci",
+  cutoff = 2000,
+  evidence_level = c("A1", "A2", "B"),
+  percPos_filter = 0.4,
+  top_eplets = 20,
+  palette = "spectral"
+)
+```
+
+## AUC Bar Plot
+
+Ranks eplets by performance across multiple thresholds:
+
+```{r plot-auc-bar, fig.height=6}
+plotEplets(
+  result_file = deepMatchR_example[[1]],
+  plot_type = "AUC",
+  percPos_filter = 0.4,
+  group_by = "evidence_level",
+  cut_min = 250,
+  cut_max = 10000,
+  cut_step = 250,
+  top_eplets = 20,
+  palette = "spectral"
+)
+```
+
+# Eplet AUC Analysis
+
+## `epletAUC()` Function
+
+Calculates the Area Under the Curve for eplet reactivity across multiple MFI thresholds. This provides a more robust measure than a single cutoff.
+
+## Visualize Reactivity Curves
+
+```{r eplet-auc-plot, fig.height=6}
+epletAUC(
+  result_file = deepMatchR_example[[1]],
+  group_by = "evidence",
+  evidence_level = c("A1", "A2", "B", "D"),
+  plot_results = TRUE,
+  cut_min = 250,
+  cut_max = 10000,
+  cut_step = 250,
+  palette = "inferno"
+)
+```
+
+## Get AUC Values as Data
+
+```{r eplet-auc-data}
+auc_result <- epletAUC(
+  result_file = deepMatchR_example[[1]],
+  plot_results = FALSE,
+  cut_min = 250,
+  cut_max = 10000,
+  cut_step = 250
+)
+head(auc_result)
+```
+
+## Advanced Filtering
+
+```{r eplet-auc-filter, fig.height=6}
+epletAUC(
+  result_file = deepMatchR_example[[1]],
+  label = FALSE,
+  plot_results = TRUE,
+  eplet_filter = 10,      # Minimum bead count
+  percPos_filter = 1.0    # Minimum positivity threshold
+)
+```
+
+# Customization Options
+
+## Color Palettes
+
+Available palettes include:
+
+- `spectral` - Rainbow diverging
+- `inferno` - Yellow to purple
+- `viridis` - Green to purple
+- `plasma` - Yellow to magenta
+
+```{r palette-demo, fig.height=6}
+# Using inferno palette
+plotEplets(
+  result_file = deepMatchR_example[[1]],
+  plot_type = "bar",
+  cutoff = 2000,
+  top_eplets = 15,
+  palette = "inferno"
+)
+```
+
+## Table Options
+
+Control the summary table with `add_table`:
+
+```{r table-options, fig.height=6}
+# Without table
+plotAntibodies(
+  result_file = deepMatchR_example[[1]],
+  type = "SAB",
+  add_table = FALSE
+)
+```
+
+# Function Reference
+
+## `plotAntibodies()`
+
+| Argument | Default | Description |
+|----------|---------|-------------|
+| `result_file` | -- | SAB/PRA data frame or named list for trends |
+| `type` | `"SAB"` | Assay type: "SAB" or "PRA" |
+| `class` | `NULL` | HLA class filter: "I" or "II" |
+| `bead_cutoffs` | `c(2000,1000,500,250)` | MFI cutoff thresholds |
+| `add_table` | `TRUE` | Include summary table |
+| `palette` | `"spectral"` | Color palette |
+| `highlight_antigen` | `NULL` | Antigens to highlight |
+| `plot_trend` | `FALSE` | Create time-series plot |
+| `vline_dates` | `NULL` | Vertical line dates for trends |
+
+## `plotEplets()`
+
+| Argument | Default | Description |
+|----------|---------|-------------|
+| `result_file` | -- | SAB data frame |
+| `plot_type` | `"treemap"` | "treemap", "bar", or "AUC" |
+| `cutoff` | `2000` | MFI cutoff for positive |
+| `evidence_level` | `c("A1","A2","B")` | Evidence levels to include |
+| `percPos_filter` | `0.4` | Minimum positivity rate |
+| `top_eplets` | `20` | Number of top eplets for bar plots |
+| `group_by` | `"evidence"` | Grouping variable |
+| `palette` | `"spectral"` | Color palette |
+
+## `epletAUC()`
+
+| Argument | Default | Description |
+|----------|---------|-------------|
+| `result_file` | -- | SAB data frame |
+| `plot_results` | `TRUE` | Generate plot |
+| `cut_min`, `cut_max` | `250`, `10000` | MFI range |
+| `cut_step` | `250` | Step size |
+| `eplet_filter` | `NULL` | Minimum bead count |
+| `percPos_filter` | `NULL` | Minimum final positivity |
+| `label` | `TRUE` | Add labels to plot |
+| `palette` | `"spectral"` | Color palette |
+
+# Session Information
+
+```{r sessioninfo}
+sessionInfo()
+```

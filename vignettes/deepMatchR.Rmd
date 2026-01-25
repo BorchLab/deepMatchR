@@ -2,7 +2,6 @@
 title: "Getting Started with deepMatchR"
 author:
 - name: Nick Borcherding
-  email: ncborch@gmail.com
   affiliation: Washington University in St. Louis, School of Medicine, St. Louis, MO, USA
 date: 'Compiled: `r format(Sys.Date(), "%B %d, %Y")`'
 output:

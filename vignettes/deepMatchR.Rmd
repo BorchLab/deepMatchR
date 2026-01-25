@@ -28,6 +28,9 @@ knitr::opts_chunk$set(
   comment = "#>"
 )
 library(BiocStyle)
+
+# Check if running on Windows (for skipping Python-dependent sections)
+is_windows <- .Platform$OS.type == "windows"
 ```
 
 # Introduction
@@ -288,14 +291,17 @@ The `quantifyEpletMismatch()` function calculates the number of non-shared eplet
 
 ```{r eplet-mismatch}
 # Basic eplet comparison (A1/A2 evidence level)
-quantifyEpletMismatch("A*01:01", "A*02:01")
+quantifyEpletMismatch("A*01:01", 
+                      "A*02:01")
 
 # Filter by exposition level
-quantifyEpletMismatch("B*07:02", "B*44:02", 
+quantifyEpletMismatch("B*07:02", 
+                      "B*44:02", 
                       exposition_filter = "High")
 
 # Filter by reactivity confirmation
-quantifyEpletMismatch("C*07:01", "C*06:02",
+quantifyEpletMismatch("C*07:01", 
+                      "C*06:02",
                       evidence_level = NULL,
                       reactivity_filter = "Confirmed")
 ```
@@ -307,7 +313,8 @@ The `calculateEpletLoad()` function calculates total donor-specific eplets acros
 ### Total Eplet Load
 
 ```{r eplet-load-total}
-calculateEpletLoad(rgeno, dgeno)
+calculateEpletLoad(rgeno, 
+                   dgeno)
 ```
 
 ### Per-Locus Summary
@@ -355,7 +362,9 @@ calculateEpletLoad(rgeno,
 
 The `predictMHCnuggets()` function provides an R interface to the MHCnuggets deep learning model for peptide-MHC binding prediction.
 
-```{r mhcnuggets}
+> **Note:** This section requires Python dependencies and is skipped on Windows due to path length limitations with the TensorFlow/MHCnuggets installation.
+
+```{r mhcnuggets, eval=!is_windows}
 # Define peptides and allele
 peptides <- c("SIINFEKL", "LLFGYPVYV")
 allele <- "A*02:01"
@@ -578,5 +587,4 @@ sessionInfo()
 
 If you have questions, suggestions, or encounter issues:
 
-- **GitHub Issues:** [github.com/BorchLab/deepMatchR/issues](https://github.com/BorchLab/deepMatchR/issues)
-
+- **GitHub Issues:** [github.com/ncborcherding/deepMatchR/issues](https://github.com/ncborcherding/deepMatchR/issues)

@@ -95,7 +95,7 @@ the main functions:
 
 ## System requirements
 
-deepMatchR has been tested on R versions >= 4.0. Please consult the DESCRIPTION file for more details on required R packages. deepMatchR has been tested on OS X and Windows platforms.
+deepMatchR has been tested on R versions >= 4.5. Please consult the DESCRIPTION file for more details on required R packages. deepMatchR has been tested on OS X and Windows platforms.
 
 ### Setting up NetMHCpan (Optional)
 

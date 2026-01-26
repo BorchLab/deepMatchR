@@ -4,16 +4,18 @@
 #' Predicts transplant risk by calculating peptide-HLA binding affinities
 #' between recipient HLA molecules and donor-mismatched peptides. Supports
 #' multiple binding prediction backends: built-in position weight matrix (PWM),
-#' NetMHCpan, or MHCflurry.
+#' NetMHCpan, or MHCnuggets.
 #'
 #' @param recipient An `hla_genotype` object or character vector of HLA allele names.
 #' @param donor An `hla_genotype` object, character vector of HLA allele names, or
 #'   a character vector of peptide sequences. If `hla_genotype` or allele names,
 #'   mismatched peptides are derived automatically from sequence differences.
 #' @param backend Character. Binding prediction method: `"pwm"` (default, no external
-#'   dependencies), `"netmhcpan"`, or `"mhcflurry"`.
+#'   dependencies), `"netmhcpan"`, or `"mhcnuggets"`.
 #' @param backend_path Character. Path to external tool executable. Required for
-#'   `"netmhcpan"` backend.
+#'
+#'   `"netmhcpan"` backend. Download NetMHCpan from
+#'   \url{https://services.healthtech.dtu.dk/services/NetMHCpan-4.1/}.
 #' @param peptide_length Integer. Peptide length(s) to consider. Default `9L`.
 #' @param binding_threshold Numeric. IC50 threshold (nM) for "strong binder".
 #'   Default `500`.
@@ -40,7 +42,15 @@
 #' 4. **Risk calculation**: Aggregates binding predictions into a risk score
 #'
 #' The **PWM backend** uses simplified position weight matrices based on HLA supertypes.
-#' For production use with high accuracy requirements, NetMHCpan is recommended.
+#' For production use with high accuracy requirements, NetMHCpan or MHCnuggets is recommended.
+#'
+#' **External backends:**
+#' - **NetMHCpan**: A state-of-the-art method for predicting peptide-MHC class I binding
+#'   using artificial neural networks. Available at
+#'   \url{https://services.healthtech.dtu.dk/services/NetMHCpan-4.1/}.
+#' - **MHCnuggets**: A deep learning approach for MHC binding prediction. Available at
+#'   \url{https://github.com/KarchinLab/mhcnuggets}. See \code{\link{predictMHCnuggets}}
+#'   for direct access to MHCnuggets predictions.
 #'
 #' Risk score formula:
 #' \deqn{contribution = (1 - IC50/weak\_threshold) \times multiplier}
@@ -71,13 +81,28 @@
 #' calculatePeptideBindingLoad(rgeno, peptides)
 #' }
 #'
-#' @seealso \code{\link{calculateMismatchLoad}}, \code{\link{quantifyMismatch}}
+#' @references
+#' Reynisson B, Alvarez B, Paul S, Peters B, Nielsen M. (2020).
+#' NetMHCpan-4.1 and NetMHCIIpan-4.0: improved predictions of MHC antigen
+#' presentation by concurrent motif deconvolution and integration of MS MHC
+#' eluted ligand data. *Nucleic Acids Research*, 48(W1), W449-W454.
+#' \doi{10.1093/nar/gkaa379}
+#'
+#' Shao XM, Bhattacharya R, Huang J, Sivakumar IKA, Tokheim C, Zheng L,
+#' Hirsch D, Koop B, Cotto KC, Seesam C, Vickery TL, Schloemer DS, Ramineni V,
+#' Griffith M, Griffith OL, Zhang Q, Goedegebuure SP, Gillanders WE,
+#' Karchin R. (2020). High-Throughput Prediction of MHC Class I and II
+#' Neoantigens with MHCnuggets. *Cancer Immunology Research*, 8(3), 396-408.
+#' \doi{10.1158/2326-6066.CIR-19-0464}
+#'
+#' @seealso \code{\link{calculateMismatchLoad}}, \code{\link{quantifyMismatch}},
+#'   \code{\link{predictMHCnuggets}}
 #'
 #' @export
 calculatePeptideBindingLoad <- function(
     recipient,
     donor,
-    backend = c("pwm", "netmhcpan", "mhcflurry"),
+    backend = c("pwm", "netmhcpan", "mhcnuggets"),
     backend_path = NULL,
     peptide_length = 9L,
     binding_threshold = 500,
@@ -283,8 +308,8 @@ calculatePeptideBindingLoad <- function(
     return(.predictBindingPWM(peptides, alleles))
   } else if (backend == "netmhcpan") {
     return(.predictBindingNetMHCpan(peptides, alleles, backend_path))
-  } else if (backend == "mhcflurry") {
-    return(.predictBindingMHCflurry(peptides, alleles))
+  } else if (backend == "mhcnuggets") {
+    return(.predictBindingMHCnuggets(peptides, alleles))
   }
   stop("Unknown backend: ", backend)
 }
@@ -480,28 +505,13 @@ calculatePeptideBindingLoad <- function(
 }
 
 
-#' MHCflurry-based binding prediction
+#' MHCnuggets-based binding prediction
+#'
+#' Uses the predictMHCnuggets function for deep learning-based binding prediction.
+#' MHCnuggets is available at \url{https://github.com/KarchinLab/mhcnuggets}.
+#'
 #' @keywords internal
-.predictBindingMHCflurry <- function(peptides, alleles) {
-  if (!requireNamespace("reticulate", quietly = TRUE)) {
-    stop("Package 'reticulate' is required for MHCflurry backend. ",
-         "Install it with: install.packages('reticulate')")
-  }
-
-  # Check if mhcflurry is available
-  mhcflurry_available <- tryCatch({
-    reticulate::py_module_available("mhcflurry")
-  }, error = function(e) FALSE)
-
-  if (!mhcflurry_available) {
-    stop("Python package 'mhcflurry' is not available. ",
-         "Install it with: pip install mhcflurry && mhcflurry-downloads fetch")
-  }
-
-  # Import mhcflurry
-  mhcflurry <- reticulate::import("mhcflurry")
-  predictor <- mhcflurry$Class1PresentationPredictor$load()
-
+.predictBindingMHCnuggets <- function(peptides, alleles) {
   results <- data.frame(
     peptide = character(0),
     hla_allele = character(0),
@@ -509,33 +519,33 @@ calculatePeptideBindingLoad <- function(
     stringsAsFactors = FALSE
   )
 
-  # Format alleles for mhcflurry (e.g., HLA-A*02:01)
-  formatted_alleles <- paste0("HLA-", alleles)
 
-  # Run predictions
-  for (i in seq_along(formatted_alleles)) {
-    allele <- formatted_alleles[i]
-    original_allele <- alleles[i]
+  # Run predictions for each allele
+  for (allele in alleles) {
+    # Determine MHC class from allele name
+    locus <- sub("\\*.*", "", allele)
+    mhc_class <- if (locus %in% c("A", "B", "C")) "I" else "II"
 
     tryCatch({
-      predictions <- predictor$predict(
+      # Use the package's predictMHCnuggets function
+      pred_result <- predictMHCnuggets(
         peptides = peptides,
-        alleles = rep(allele, length(peptides))
+        allele = allele,
+        mhc_class = mhc_class
       )
 
-      pred_df <- reticulate::py_to_r(predictions)
-
       results <- rbind(results, data.frame(
-        peptide = pred_df$peptide,
-        hla_allele = original_allele,
-        predicted_ic50 = pred_df$mhcflurry_affinity,
+        peptide = pred_result$peptide,
+        hla_allele = allele,
+        predicted_ic50 = pred_result$ic50,
         stringsAsFactors = FALSE
       ))
     }, error = function(e) {
       # If prediction fails for this allele, add entries with high IC50
-      results <- rbind(results, data.frame(
+      warning(sprintf("MHCnuggets prediction failed for allele %s: %s", allele, e$message))
+      results <<- rbind(results, data.frame(
         peptide = peptides,
-        hla_allele = original_allele,
+        hla_allele = allele,
         predicted_ic50 = 50000,
         stringsAsFactors = FALSE
       ))

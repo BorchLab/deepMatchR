@@ -28,8 +28,12 @@
 #' variable \code{DEEPMATCHR_CACHE_DIR} to a new location.
 #'
 #' @examples
-#' \dontrun{
-#' # Update to latest WMDA data
+#' # Show default cache directory (does not download)
+#' cache_dir <- file.path(tempdir(), "wmda_test")
+#' print(cache_dir)
+#'
+#' \donttest{
+#' # Update to latest WMDA data (requires internet)
 #' updateWmdaData()
 #'
 #' # Update to a specific version
@@ -237,8 +241,13 @@ updateWmdaData <- function(version = "Latest",
 #' @return Invisibly returns TRUE if cache was cleared, FALSE if no cache existed.
 #'
 #' @examples
-#' \dontrun{
-#' # Clear cached WMDA data
+#' # Check if cache exists (safe operation, no side effects)
+#' cache_dir <- file.path(tempdir(), "wmda_cache_test")
+#' # This will report "No WMDA cache found" since we use a temp directory
+#' clearWmdaCache(cache_dir = cache_dir)
+#'
+#' \donttest{
+#' # Clear the default WMDA cache
 #' clearWmdaCache()
 #' }
 #'

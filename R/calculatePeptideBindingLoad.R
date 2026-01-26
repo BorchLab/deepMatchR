@@ -57,37 +57,69 @@
 #' where multiplier is 2 for strong binders, 1 for weak binders.
 #'
 #' @examples
-#' # Create donor and recipient genotypes
+#' # Example 1: Using raw peptides (no external data required)
+#' # Define recipient HLA alleles
+#' recipient_alleles <- c("A*02:01", "A*03:01", "B*07:02", "B*08:01")
+#'
+#' # Define peptides to test
+#' peptides <- c("GILGFVFTL", "NLVPMVATV", "FLKEKGGL", "SIINFEKL")
+#'
+#' # Calculate binding load with PWM backend
+#' result <- calculatePeptideBindingLoad(
+#'   recipient = recipient_alleles,
+#'   donor = peptides,
+#'   backend = "pwm",
+#'   return = "summary"
+#' )
+#' print(result)
+#'
+#' # Get detailed per-peptide results
+#' detail <- calculatePeptideBindingLoad(
+#'   recipient = recipient_alleles,
+#'   donor = peptides,
+#'   backend = "pwm",
+#'   return = "detail"
+#' )
+#' head(detail)
+#'
+#' # Example 2: Using hla_genotype objects with peptides
 #' recipient <- data.frame(
 #'   A_1 = "A*02:01", A_2 = "A*03:01",
 #'   B_1 = "B*07:02", B_2 = "B*44:02"
 #' )
+#' rgeno <- hlaGeno(recipient)
+#'
+#' # Calculate total risk score
+#' total_risk <- calculatePeptideBindingLoad(
+#'   recipient = rgeno,
+#'   donor = peptides,
+#'   return = "total"
+#' )
+#' print(total_risk)
+#'
+#' \donttest{
+#' # Example 3: Using genotypes (requires IMGT database connection)
 #' donor <- data.frame(
 #'   A_1 = "A*01:01", A_2 = "A*24:02",
 #'   B_1 = "B*08:01", B_2 = "B*35:01"
 #' )
-#' rgeno <- hlaGeno(recipient)
 #' dgeno <- hlaGeno(donor)
 #'
-#' \dontrun{
-#' # Calculate total binding load (requires sequence data)
-#' calculatePeptideBindingLoad(rgeno, dgeno)
-#'
-#' # Get detailed per-peptide results
-#' calculatePeptideBindingLoad(rgeno, dgeno, return = "detail")
-#'
-#' # Use with raw peptides
-#' peptides <- c("GILGFVFTL", "NLVPMVATV", "FLKEKGGL")
-#' calculatePeptideBindingLoad(rgeno, peptides)
+#' # Calculate binding load from sequence mismatches
+#' calculatePeptideBindingLoad(rgeno, dgeno, return = "summary")
 #' }
 #'
 #' @references
-#' Reynisson B, et al. (2020). NetMHCpan-4.1 and NetMHCIIpan-4.0: improved 
-#' predictions of MHC antigen presentation by concurrent motif 
-#' deconvolution and integration of MS MHC eluted ligand data. 
-#' *Nucleic Acids Research*, 48(W1), W449-W454. \doi{10.1093/nar/gkaa379}
+#' Reynisson B, Alvarez B, Paul S, Peters B, Nielsen M. (2020).
+#' NetMHCpan-4.1 and NetMHCIIpan-4.0: improved predictions of MHC antigen
+#' presentation by concurrent motif deconvolution and integration of MS MHC
+#' eluted ligand data. *Nucleic Acids Research*, 48(W1), W449-W454.
+#' \doi{10.1093/nar/gkaa379}
 #'
-#' Shao XM, et al. (2020). High-Throughput Prediction of MHC Class I and II
+#' Shao XM, Bhattacharya R, Huang J, Sivakumar IKA, Tokheim C, Zheng L,
+#' Hirsch D, Koop B, Cotto KC, Seesam C, Vickery TL, Schloemer DS, Ramineni V,
+#' Griffith M, Griffith OL, Zhang Q, Goedegebuure SP, Gillanders WE,
+#' Karchin R. (2020). High-Throughput Prediction of MHC Class I and II
 #' Neoantigens with MHCnuggets. *Cancer Immunology Research*, 8(3), 396-408.
 #' \doi{10.1158/2326-6066.CIR-19-0464}
 #'
@@ -555,14 +587,40 @@ calculatePeptideBindingLoad <- function(
 #' Visualize Cross-Locus Peptide Binding Results
 #'
 #' @description
-#' Creates visualizations of peptide binding predictions across all loci
+#' Creates visualizations of peptide binding predictions across all loci.
+#' This function is designed for advanced cross-locus analysis where peptides
+#' from multiple donor alleles are tested against multiple recipient alleles.
 #'
-#' @param binding_results Results from calculatePeptideBindingLoad with return="detailed"
+#' @param binding_results A list containing an `all_predictions` data.frame with columns:
+#'   `donor_allele`, `recipient_allele`, `binding` (logical), `recipient_locus`,
+#'   `mhc_class`, `donor_locus`, and optionally `ic50`.
 #' @param plot_type Type of plot: "heatmap", "bar_by_recipient", "bar_by_donor", or "scatter"
 #' @param palette Character. A color palette name. Defaults to "spectral".
 #' @param ... Additional arguments passed to the ggplot theme.
 #'
 #' @return ggplot object
+#'
+#' @examples
+#' # Create example binding results data structure
+#' binding_results <- list(
+#'   all_predictions = data.frame(
+#'     donor_allele = rep(c("A*01:01", "A*24:02"), each = 4),
+#'     recipient_allele = rep(c("A*02:01", "A*03:01"), 4),
+#'     recipient_locus = "A",
+#'     donor_locus = "A",
+#'     mhc_class = "I",
+#'     binding = c(TRUE, FALSE, TRUE, TRUE, FALSE, TRUE, FALSE, FALSE),
+#'     ic50 = c(100, 6000, 250, 150, 8000, 300, 7500, 9000)
+#'   )
+#' )
+#'
+#' # Create heatmap visualization
+#' p <- visualizePeptideBinding(binding_results, plot_type = "heatmap")
+#' print(p)
+#'
+#' # Create bar plot by recipient
+#' p2 <- visualizePeptideBinding(binding_results, plot_type = "bar_by_recipient")
+#' print(p2)
 #'
 #' @importFrom ggplot2 ggplot aes geom_tile geom_bar geom_point scale_fill_gradient2 theme_minimal labs
 #' @importFrom dplyr group_by summarise

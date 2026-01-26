@@ -45,8 +45,12 @@ and revert to bundled data, delete the cache directory or set the environment
 variable \code{DEEPMATCHR_CACHE_DIR} to a new location.
 }
 \examples{
-\dontrun{
-# Update to latest WMDA data
+# Show default cache directory (does not download)
+cache_dir <- file.path(tempdir(), "wmda_test")
+print(cache_dir)
+
+\donttest{
+# Update to latest WMDA data (requires internet)
 updateWmdaData()
 
 # Update to a specific version

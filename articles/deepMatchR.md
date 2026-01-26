@@ -479,7 +479,7 @@ total_risk <- calculatePeptideBindingLoad(
   return = "total"
 )
 print(total_risk)
-#> [1] 0
+#> [1] 2366
 ```
 
 #### Per-Allele Summary
@@ -492,14 +492,14 @@ summary_load <- calculatePeptideBindingLoad(
 )
 print(summary_load)
 #>   hla_allele n_peptides n_strong n_weak risk_contribution
-#> 1    A*01:01          0        0      0                 0
-#> 2    A*02:01          0        0      0                 0
-#> 3    B*07:02          0        0      0                 0
-#> 4    B*08:01          0        0      0                 0
-#> 5 DQA1*02:01          0        0      0                 0
-#> 6 DQA1*05:05          0        0      0                 0
-#> 7 DQB1*02:02          0        0      0                 0
-#> 8 DQB1*03:01          0        0      0                 0
+#> 1    A*01:01       1085        0    652            350.25
+#> 2    A*02:01       1085        0    652            350.25
+#> 3    B*07:02       1085        0    582            132.25
+#> 4    B*08:01       1085        0    582            132.25
+#> 5 DQA1*02:01       1085        0    652            350.25
+#> 6 DQA1*05:05       1085        0    652            350.25
+#> 7 DQB1*02:02       1085        0    652            350.25
+#> 8 DQB1*03:01       1085        0    652            350.25
 ```
 
 #### Detailed Peptide-Level Results
@@ -511,8 +511,13 @@ detailed_load <- calculatePeptideBindingLoad(
   return = "detail"
 )
 head(detailed_load)
-#> [1] peptide        hla_allele     predicted_ic50 binding_level  contribution  
-#> <0 rows> (or 0-length row.names)
+#>     peptide hla_allele predicted_ic50 binding_level contribution
+#> 1 FDSDAASQR    A*01:01          10000    non_binder          0.0
+#> 2 DSDAASQRM    A*01:01           2500          weak          0.5
+#> 3 SDAASQRME    A*01:01          10000    non_binder          0.0
+#> 4 DAASQRMEP    A*01:01           2500          weak          0.5
+#> 5 AASQRMEPR    A*01:01           2500          weak          0.5
+#> 6 ASQRMEPRA    A*01:01           2500          weak          0.5
 ```
 
 ## Visualizing Antibody Data
@@ -763,4 +768,4 @@ sessionInfo()
 If you have questions, suggestions, or encounter issues:
 
 - **GitHub Issues:**
-  [github.com/ncborcherding/deepMatchR/issues](https://github.com/ncborcherding/deepMatchR/issues)
+  [github.com/BorchLab/deepMatchR/issues](https://github.com/ncborcherding/deepMatchR/issues)

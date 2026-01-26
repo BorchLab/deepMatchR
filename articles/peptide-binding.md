@@ -132,7 +132,7 @@ total_risk <- calculatePeptideBindingLoad(
   return = "total"
 )
 print(total_risk)
-#> [1] 0
+#> [1] 507.75
 ```
 
 ### Per-Allele Summary
@@ -145,10 +145,10 @@ summary_load <- calculatePeptideBindingLoad(
 )
 print(summary_load)
 #>   hla_allele n_peptides n_strong n_weak risk_contribution
-#> 1    A*02:01          0        0      0                 0
-#> 2    A*03:01          0        0      0                 0
-#> 3    B*07:02          0        0      0                 0
-#> 4    B*08:01          0        0      0                 0
+#> 1    A*02:01        601        0    346           187.750
+#> 2    A*03:01        601        0    346           187.750
+#> 3    B*07:02        601        0    293            66.125
+#> 4    B*08:01        601        0    293            66.125
 ```
 
 ### Detailed Peptide Results
@@ -160,8 +160,13 @@ detailed_load <- calculatePeptideBindingLoad(
   return = "detail"
 )
 head(detailed_load)
-#> [1] peptide        hla_allele     predicted_ic50 binding_level  contribution  
-#> <0 rows> (or 0-length row.names)
+#>     peptide hla_allele predicted_ic50 binding_level contribution
+#> 1 AVMAPRTLL    A*02:01            625          weak        0.875
+#> 2 VMAPRTLLL    A*02:01            625          weak        0.875
+#> 3 MAPRTLLLL    A*02:01            625          weak        0.875
+#> 4 APRTLLLLL    A*02:01           2500          weak        0.500
+#> 5 PRTLLLLLS    A*02:01          10000    non_binder        0.000
+#> 6 RTLLLLLSG    A*02:01           2500          weak        0.500
 ```
 
 ## Backends
@@ -192,10 +197,10 @@ result_pwm <- calculatePeptideBindingLoad(
 )
 print(result_pwm)
 #>   hla_allele n_peptides n_strong n_weak risk_contribution
-#> 1    A*02:01          0        0      0                 0
-#> 2    A*03:01          0        0      0                 0
-#> 3    B*07:02          0        0      0                 0
-#> 4    B*08:01          0        0      0                 0
+#> 1    A*02:01        601        0    346           187.750
+#> 2    A*03:01        601        0    346           187.750
+#> 3    B*07:02        601        0    293            66.125
+#> 4    B*08:01        601        0    293            66.125
 ```
 
 ### Customizing Thresholds
@@ -211,10 +216,10 @@ result_custom <- calculatePeptideBindingLoad(
 )
 print(result_custom)
 #>   hla_allele n_peptides n_strong n_weak risk_contribution
-#> 1    A*02:01          0        0      0                 0
-#> 2    A*03:01          0        0      0                 0
-#> 3    B*07:02          0        0      0                 0
-#> 4    B*08:01          0        0      0                 0
+#> 1    A*02:01        601        0     78            29.250
+#> 2    A*03:01        601        0     78            29.250
+#> 3    B*07:02        601        0      3             1.125
+#> 4    B*08:01        601        0      3             1.125
 ```
 
 ## Clinical Applications

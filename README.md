@@ -146,13 +146,13 @@ devtools::install_github("BorchLab/deepMatchR")
 ***
 ## Bug Reports/New Features
 
-#### If you run into any issues or bugs please submit a [GitHub issue](https://github.com/ncborcherding/deepMatchR/issues) with details of the issue.
+#### If you run into any issues or bugs please submit a [GitHub issue](https://github.com/BorchLab/deepMatchR/issues) with details of the issue.
 
 - If possible please include a [reproducible example](https://reprex.tidyverse.org/). 
 Alternatively, an example with the internal **deepMatchR_example** would 
 be extremely helpful.
 
-#### Any requests for new features or enhancements can also be submitted as [GitHub issues](https://github.com/ncborcherding/deepMatchR/issues).
+#### Any requests for new features or enhancements can also be submitted as [GitHub issues](https://github.com/BorchLab/deepMatchR/issues).
 
-#### [Pull Requests](https://github.com/ncborcherding/deepMatchR/pulls) are welcome for bug fixes, new features, or enhancements.
+#### [Pull Requests](https://github.com/BorchLab/deepMatchR/pulls) are welcome for bug fixes, new features, or enhancements.
 

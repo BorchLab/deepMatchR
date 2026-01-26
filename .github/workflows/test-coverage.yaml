@@ -22,15 +22,9 @@ jobs:
         with:
           use-public-rspm: true
 
-      - name: Install immReferent from GitHub
-        run: |
-          install.packages("remotes")
-          remotes::install_github("BorchLab/immReferent")
-        shell: Rscript {0}
-
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::covr, any::xml2
+          extra-packages: any::covr, any::xml2, BorchLab/immReferent
           needs: coverage
 
       - name: Test coverage

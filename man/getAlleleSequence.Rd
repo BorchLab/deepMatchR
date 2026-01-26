@@ -29,17 +29,13 @@ Improved version with session-level caching to avoid redundant API calls.
 Uses memoise for automatic caching. Supports both nucleotide and protein sequences.
 }
 \examples{
-# Collecting A*02:01 Protein Sequence:
-getAlleleSequence("A*02:01")
+\donttest{
+# Collecting A*02:01 Protein Sequence (requires internet):
+seq <- getAlleleSequence("A*02:01")
+nchar(seq)  # Length of sequence
 
 # Collecting A*02:01 Nucleotide Sequence:
-getAlleleSequence("A*02:01", type = "NUC")
-
-
-\dontrun{
-# Get amino acid sequence for an HLA-A allele
-seq <- getAlleleSequence("A*01:01")
-nchar(seq)  # Length of sequence
+seq_nuc <- getAlleleSequence("A*02:01", type = "NUC")
 
 # Get sequence for HLA-B allele
 seq_b <- getAlleleSequence("B*07:02")

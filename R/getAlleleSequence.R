@@ -13,18 +13,13 @@
 #' @return A character string representing the sequence (amino acid or nucleotide)
 #' 
 #' @examples
-#' # Collecting A*02:01 Protein Sequence:
-#' getAlleleSequence("A*02:01")
-#' 
-#' # Collecting A*02:01 Nucleotide Sequence:
-#' getAlleleSequence("A*02:01", type = "NUC")
-#' 
-#'
-#' @examples
-#' \dontrun{
-#' # Get amino acid sequence for an HLA-A allele
-#' seq <- getAlleleSequence("A*01:01")
+#' \donttest{
+#' # Collecting A*02:01 Protein Sequence (requires internet):
+#' seq <- getAlleleSequence("A*02:01")
 #' nchar(seq)  # Length of sequence
+#'
+#' # Collecting A*02:01 Nucleotide Sequence:
+#' seq_nuc <- getAlleleSequence("A*02:01", type = "NUC")
 #'
 #' # Get sequence for HLA-B allele
 #' seq_b <- getAlleleSequence("B*07:02")

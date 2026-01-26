@@ -586,4 +586,4 @@ sessionInfo()
 
 If you have questions, suggestions, or encounter issues:
 
-- **GitHub Issues:** [github.com/ncborcherding/deepMatchR/issues](https://github.com/ncborcherding/deepMatchR/issues)
+- **GitHub Issues:** [github.com/BorchLab/deepMatchR/issues](https://github.com/ncborcherding/deepMatchR/issues)

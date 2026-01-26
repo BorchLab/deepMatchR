@@ -4,16 +4,18 @@
 #' Predicts transplant risk by calculating peptide-HLA binding affinities
 #' between recipient HLA molecules and donor-mismatched peptides. Supports
 #' multiple binding prediction backends: built-in position weight matrix (PWM),
-#' NetMHCpan, or MHCflurry.
+#' NetMHCpan, or MHCnuggets.
 #'
 #' @param recipient An `hla_genotype` object or character vector of HLA allele names.
 #' @param donor An `hla_genotype` object, character vector of HLA allele names, or
 #'   a character vector of peptide sequences. If `hla_genotype` or allele names,
 #'   mismatched peptides are derived automatically from sequence differences.
 #' @param backend Character. Binding prediction method: `"pwm"` (default, no external
-#'   dependencies), `"netmhcpan"`, or `"mhcflurry"`.
+#'   dependencies), `"netmhcpan"`, or `"mhcnuggets"`.
 #' @param backend_path Character. Path to external tool executable. Required for
-#'   `"netmhcpan"` backend.
+#'
+#'   `"netmhcpan"` backend. Download NetMHCpan from
+#'   \url{https://services.healthtech.dtu.dk/services/NetMHCpan-4.1/}.
 #' @param peptide_length Integer. Peptide length(s) to consider. Default `9L`.
 #' @param binding_threshold Numeric. IC50 threshold (nM) for "strong binder".
 #'   Default `500`.
@@ -40,44 +42,91 @@
 #' 4. **Risk calculation**: Aggregates binding predictions into a risk score
 #'
 #' The **PWM backend** uses simplified position weight matrices based on HLA supertypes.
-#' For production use with high accuracy requirements, NetMHCpan is recommended.
+#' For production use with high accuracy requirements, NetMHCpan or MHCnuggets is recommended.
+#'
+#' **External backends:**
+#' - **NetMHCpan**: A state-of-the-art method for predicting peptide-MHC class I binding
+#'   using artificial neural networks. Available at
+#'   \url{https://services.healthtech.dtu.dk/services/NetMHCpan-4.1/}.
+#' - **MHCnuggets**: A deep learning approach for MHC binding prediction. Available at
+#'   \url{https://github.com/KarchinLab/mhcnuggets}. See \code{\link{predictMHCnuggets}}
+#'   for direct access to MHCnuggets predictions.
 #'
 #' Risk score formula:
 #' \deqn{contribution = (1 - IC50/weak\_threshold) \times multiplier}
 #' where multiplier is 2 for strong binders, 1 for weak binders.
 #'
 #' @examples
-#' # Create donor and recipient genotypes
+#' # Example 1: Using raw peptides (no external data required)
+#' # Define recipient HLA alleles
+#' recipient_alleles <- c("A*02:01", "A*03:01", "B*07:02", "B*08:01")
+#'
+#' # Define peptides to test
+#' peptides <- c("GILGFVFTL", "NLVPMVATV", "FLKEKGGL", "SIINFEKL")
+#'
+#' # Calculate binding load with PWM backend
+#' result <- calculatePeptideBindingLoad(
+#'   recipient = recipient_alleles,
+#'   donor = peptides,
+#'   backend = "pwm",
+#'   return = "summary"
+#' )
+#' print(result)
+#'
+#' # Get detailed per-peptide results
+#' detail <- calculatePeptideBindingLoad(
+#'   recipient = recipient_alleles,
+#'   donor = peptides,
+#'   backend = "pwm",
+#'   return = "detail"
+#' )
+#' head(detail)
+#'
+#' # Example 2: Using hla_genotype objects with peptides
 #' recipient <- data.frame(
 #'   A_1 = "A*02:01", A_2 = "A*03:01",
 #'   B_1 = "B*07:02", B_2 = "B*44:02"
 #' )
+#' rgeno <- hlaGeno(recipient)
+#'
+#' # Calculate total risk score
+#' total_risk <- calculatePeptideBindingLoad(
+#'   recipient = rgeno,
+#'   donor = peptides,
+#'   return = "total"
+#' )
+#' print(total_risk)
+#'
+#' \donttest{
+#' # Example 3: Using genotypes (requires IMGT database connection)
 #' donor <- data.frame(
 #'   A_1 = "A*01:01", A_2 = "A*24:02",
 #'   B_1 = "B*08:01", B_2 = "B*35:01"
 #' )
-#' rgeno <- hlaGeno(recipient)
 #' dgeno <- hlaGeno(donor)
 #'
-#' \dontrun{
-#' # Calculate total binding load (requires sequence data)
-#' calculatePeptideBindingLoad(rgeno, dgeno)
-#'
-#' # Get detailed per-peptide results
-#' calculatePeptideBindingLoad(rgeno, dgeno, return = "detail")
-#'
-#' # Use with raw peptides
-#' peptides <- c("GILGFVFTL", "NLVPMVATV", "FLKEKGGL")
-#' calculatePeptideBindingLoad(rgeno, peptides)
+#' # Calculate binding load from sequence mismatches
+#' calculatePeptideBindingLoad(rgeno, dgeno, return = "summary")
 #' }
 #'
-#' @seealso \code{\link{calculateMismatchLoad}}, \code{\link{quantifyMismatch}}
+#' @references
+#' Reynisson B, et al. (2020). NetMHCpan-4.1 and NetMHCIIpan-4.0: improved 
+#' predictions of MHC antigen presentation by concurrent motif deconvolution 
+#' and integration of MS MHC eluted ligand data. *Nucleic Acids Research*, 
+#' 48(W1), W449-W454. \doi{10.1093/nar/gkaa379}
+#'
+#' Shao XM, et al. (2020). High-Throughput Prediction of MHC Class I and II
+#' Neoantigens with MHCnuggets. *Cancer Immunology Research*, 8(3), 396-408.
+#' \doi{10.1158/2326-6066.CIR-19-0464}
+#'
+#' @seealso \code{\link{calculateMismatchLoad}}, \code{\link{quantifyMismatch}},
+#'   \code{\link{predictMHCnuggets}}
 #'
 #' @export
 calculatePeptideBindingLoad <- function(
     recipient,
     donor,
-    backend = c("pwm", "netmhcpan", "mhcflurry"),
+    backend = c("pwm", "netmhcpan", "mhcnuggets"),
     backend_path = NULL,
     peptide_length = 9L,
     binding_threshold = 500,
@@ -248,10 +297,12 @@ calculatePeptideBindingLoad <- function(
 
       # Find mismatch positions
       mismatch_detail <- quantifyMismatch(r_seq, d_seq, return = "detail")
+      # Filter to only actual mismatches
+      mismatch_detail <- mismatch_detail[mismatch_detail$is_mismatch, , drop = FALSE]
       if (nrow(mismatch_detail) == 0) next
 
       # Generate peptides around mismatch positions
-      mismatch_positions <- mismatch_detail$position
+      mismatch_positions <- mismatch_detail$alignment_position
 
       for (pos in mismatch_positions) {
         # Generate all peptides that include this position
@@ -281,8 +332,8 @@ calculatePeptideBindingLoad <- function(
     return(.predictBindingPWM(peptides, alleles))
   } else if (backend == "netmhcpan") {
     return(.predictBindingNetMHCpan(peptides, alleles, backend_path))
-  } else if (backend == "mhcflurry") {
-    return(.predictBindingMHCflurry(peptides, alleles))
+  } else if (backend == "mhcnuggets") {
+    return(.predictBindingMHCnuggets(peptides, alleles))
   }
   stop("Unknown backend: ", backend)
 }
@@ -478,28 +529,13 @@ calculatePeptideBindingLoad <- function(
 }
 
 
-#' MHCflurry-based binding prediction
+#' MHCnuggets-based binding prediction
+#'
+#' Uses the predictMHCnuggets function for deep learning-based binding prediction.
+#' MHCnuggets is available at \url{https://github.com/KarchinLab/mhcnuggets}.
+#'
 #' @keywords internal
-.predictBindingMHCflurry <- function(peptides, alleles) {
-  if (!requireNamespace("reticulate", quietly = TRUE)) {
-    stop("Package 'reticulate' is required for MHCflurry backend. ",
-         "Install it with: install.packages('reticulate')")
-  }
-
-  # Check if mhcflurry is available
-  mhcflurry_available <- tryCatch({
-    reticulate::py_module_available("mhcflurry")
-  }, error = function(e) FALSE)
-
-  if (!mhcflurry_available) {
-    stop("Python package 'mhcflurry' is not available. ",
-         "Install it with: pip install mhcflurry && mhcflurry-downloads fetch")
-  }
-
-  # Import mhcflurry
-  mhcflurry <- reticulate::import("mhcflurry")
-  predictor <- mhcflurry$Class1PresentationPredictor$load()
-
+.predictBindingMHCnuggets <- function(peptides, alleles) {
   results <- data.frame(
     peptide = character(0),
     hla_allele = character(0),
@@ -507,33 +543,33 @@ calculatePeptideBindingLoad <- function(
     stringsAsFactors = FALSE
   )
 
-  # Format alleles for mhcflurry (e.g., HLA-A*02:01)
-  formatted_alleles <- paste0("HLA-", alleles)
 
-  # Run predictions
-  for (i in seq_along(formatted_alleles)) {
-    allele <- formatted_alleles[i]
-    original_allele <- alleles[i]
+  # Run predictions for each allele
+  for (allele in alleles) {
+    # Determine MHC class from allele name
+    locus <- sub("\\*.*", "", allele)
+    mhc_class <- if (locus %in% c("A", "B", "C")) "I" else "II"
 
     tryCatch({
-      predictions <- predictor$predict(
+      # Use the package's predictMHCnuggets function
+      pred_result <- predictMHCnuggets(
         peptides = peptides,
-        alleles = rep(allele, length(peptides))
+        allele = allele,
+        mhc_class = mhc_class
       )
 
-      pred_df <- reticulate::py_to_r(predictions)
-
       results <- rbind(results, data.frame(
-        peptide = pred_df$peptide,
-        hla_allele = original_allele,
-        predicted_ic50 = pred_df$mhcflurry_affinity,
+        peptide = pred_result$peptide,
+        hla_allele = allele,
+        predicted_ic50 = pred_result$ic50,
         stringsAsFactors = FALSE
       ))
     }, error = function(e) {
       # If prediction fails for this allele, add entries with high IC50
-      results <- rbind(results, data.frame(
+      warning(sprintf("MHCnuggets prediction failed for allele %s: %s", allele, e$message))
+      results <<- rbind(results, data.frame(
         peptide = peptides,
-        hla_allele = original_allele,
+        hla_allele = allele,
         predicted_ic50 = 50000,
         stringsAsFactors = FALSE
       ))
@@ -547,14 +583,40 @@ calculatePeptideBindingLoad <- function(
 #' Visualize Cross-Locus Peptide Binding Results
 #'
 #' @description
-#' Creates visualizations of peptide binding predictions across all loci
+#' Creates visualizations of peptide binding predictions across all loci.
+#' This function is designed for advanced cross-locus analysis where peptides
+#' from multiple donor alleles are tested against multiple recipient alleles.
 #'
-#' @param binding_results Results from calculatePeptideBindingLoad with return="detailed"
+#' @param binding_results A list containing an `all_predictions` data.frame with columns:
+#'   `donor_allele`, `recipient_allele`, `binding` (logical), `recipient_locus`,
+#'   `mhc_class`, `donor_locus`, and optionally `ic50`.
 #' @param plot_type Type of plot: "heatmap", "bar_by_recipient", "bar_by_donor", or "scatter"
 #' @param palette Character. A color palette name. Defaults to "spectral".
 #' @param ... Additional arguments passed to the ggplot theme.
 #'
 #' @return ggplot object
+#'
+#' @examples
+#' # Create example binding results data structure
+#' binding_results <- list(
+#'   all_predictions = data.frame(
+#'     donor_allele = rep(c("A*01:01", "A*24:02"), each = 4),
+#'     recipient_allele = rep(c("A*02:01", "A*03:01"), 4),
+#'     recipient_locus = "A",
+#'     donor_locus = "A",
+#'     mhc_class = "I",
+#'     binding = c(TRUE, FALSE, TRUE, TRUE, FALSE, TRUE, FALSE, FALSE),
+#'     ic50 = c(100, 6000, 250, 150, 8000, 300, 7500, 9000)
+#'   )
+#' )
+#'
+#' # Create heatmap visualization
+#' p <- visualizePeptideBinding(binding_results, plot_type = "heatmap")
+#' print(p)
+#'
+#' # Create bar plot by recipient
+#' p2 <- visualizePeptideBinding(binding_results, plot_type = "bar_by_recipient")
+#' print(p2)
 #'
 #' @importFrom ggplot2 ggplot aes geom_tile geom_bar geom_point scale_fill_gradient2 theme_minimal labs
 #' @importFrom dplyr group_by summarise

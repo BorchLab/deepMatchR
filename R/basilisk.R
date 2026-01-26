@@ -21,7 +21,26 @@
 )
 
 #' Return a Basilisk environment tailored to the current platform
-#' @param platform "auto", "linux", or "macos"
+#'
+#' @description
+#' Returns the appropriate Basilisk environment for MHCnuggets based on
+#' the current operating system. This environment is used internally by
+#' \code{\link{predictMHCnuggets}} for Python integration.
+#'
+#' @param platform Character. One of "auto" (default), "linux", or "macos".
+#'   When "auto", the platform is detected automatically.
+#'
+#' @return A \code{BasiliskEnvironment} object configured for the current platform.
+#'
+#' @examples
+#' # Get the environment for the current platform
+#' env <- deepmatchrEnv()
+#' print(class(env))
+#'
+#' # Explicitly request Linux environment
+#' env_linux <- deepmatchrEnv(platform = "linux")
+#'
+#' @seealso \code{\link{predictMHCnuggets}}
 #' @export
 deepmatchrEnv <- function(platform = c("auto","linux","macos")) {
   platform <- match.arg(platform)

@@ -20,8 +20,13 @@ Removes the cached WMDA data, causing \code{\link{toSerology}} to revert
 to using the bundled package data.
 }
 \examples{
-\dontrun{
-# Clear cached WMDA data
+# Check if cache exists (safe operation, no side effects)
+cache_dir <- file.path(tempdir(), "wmda_cache_test")
+# This will report "No WMDA cache found" since we use a temp directory
+clearWmdaCache(cache_dir = cache_dir)
+
+\donttest{
+# Clear the default WMDA cache
 clearWmdaCache()
 }
 

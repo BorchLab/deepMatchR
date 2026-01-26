@@ -45,10 +45,8 @@ Suggests:
 	testthat (>= 3.0.0),
 	treemapify,
 	withr
-Remotes:
-    BorchLab/immReferent
 SystemRequirements: Python (via basilisk)
 VignetteBuilder: knitr
 Language: en-US
-URL: https://github.com/BorchLab/deepMatchR
+URL: https://www.borch.dev/uploads/deepMatchR
 BugReports: https://github.com/BorchLab/deepMatchR/issues

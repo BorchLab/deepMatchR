@@ -7,7 +7,7 @@
 calculatePeptideBindingLoad(
   recipient,
   donor,
-  backend = c("pwm", "netmhcpan", "mhcflurry"),
+  backend = c("pwm", "netmhcpan", "mhcnuggets"),
   backend_path = NULL,
   peptide_length = 9L,
   binding_threshold = 500,
@@ -24,10 +24,12 @@ a character vector of peptide sequences. If `hla_genotype` or allele names,
 mismatched peptides are derived automatically from sequence differences.}
 
 \item{backend}{Character. Binding prediction method: `"pwm"` (default, no external
-dependencies), `"netmhcpan"`, or `"mhcflurry"`.}
+dependencies), `"netmhcpan"`, or `"mhcnuggets"`.}
 
 \item{backend_path}{Character. Path to external tool executable. Required for
-`"netmhcpan"` backend.}
+
+  `"netmhcpan"` backend. Download NetMHCpan from
+  \url{https://services.healthtech.dtu.dk/services/NetMHCpan-4.1/}.}
 
 \item{peptide_length}{Integer. Peptide length(s) to consider. Default `9L`.}
 
@@ -54,7 +56,7 @@ Depends on `return`:
 Predicts transplant risk by calculating peptide-HLA binding affinities
 between recipient HLA molecules and donor-mismatched peptides. Supports
 multiple binding prediction backends: built-in position weight matrix (PWM),
-NetMHCpan, or MHCflurry.
+NetMHCpan, or MHCnuggets.
 }
 \details{
 The function works in several steps:
@@ -65,7 +67,15 @@ The function works in several steps:
 4. **Risk calculation**: Aggregates binding predictions into a risk score
 
 The **PWM backend** uses simplified position weight matrices based on HLA supertypes.
-For production use with high accuracy requirements, NetMHCpan is recommended.
+For production use with high accuracy requirements, NetMHCpan or MHCnuggets is recommended.
+
+**External backends:**
+- **NetMHCpan**: A state-of-the-art method for predicting peptide-MHC class I binding
+  using artificial neural networks. Available at
+  \url{https://services.healthtech.dtu.dk/services/NetMHCpan-4.1/}.
+- **MHCnuggets**: A deep learning approach for MHC binding prediction. Available at
+  \url{https://github.com/KarchinLab/mhcnuggets}. See \code{\link{predictMHCnuggets}}
+  for direct access to MHCnuggets predictions.
 
 Risk score formula:
 \deqn{contribution = (1 - IC50/weak\_threshold) \times multiplier}
@@ -97,6 +107,17 @@ calculatePeptideBindingLoad(rgeno, peptides)
 }
 
 }
+\references{
+Reynisson B, et al. (2020). NetMHCpan-4.1 and NetMHCIIpan-4.0: improved 
+predictions of MHC antigen presentation by concurrent motif 
+deconvolution and integration of MS MHC eluted ligand data. 
+*Nucleic Acids Research*, 48(W1), W449-W454. \doi{10.1093/nar/gkaa379}
+
+Shao XM, et al. (2020). High-Throughput Prediction of MHC Class I and II
+Neoantigens with MHCnuggets. *Cancer Immunology Research*, 8(3), 396-408.
+\doi{10.1158/2326-6066.CIR-19-0464}
+}
 \seealso{
-\code{\link{calculateMismatchLoad}}, \code{\link{quantifyMismatch}}
+\code{\link{calculateMismatchLoad}}, \code{\link{quantifyMismatch}},
+  \code{\link{predictMHCnuggets}}
 }

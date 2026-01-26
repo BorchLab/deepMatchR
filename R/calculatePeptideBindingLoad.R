@@ -82,16 +82,12 @@
 #' }
 #'
 #' @references
-#' Reynisson B, Alvarez B, Paul S, Peters B, Nielsen M. (2020).
-#' NetMHCpan-4.1 and NetMHCIIpan-4.0: improved predictions of MHC antigen
-#' presentation by concurrent motif deconvolution and integration of MS MHC
-#' eluted ligand data. *Nucleic Acids Research*, 48(W1), W449-W454.
-#' \doi{10.1093/nar/gkaa379}
+#' Reynisson B, et al. (2020). NetMHCpan-4.1 and NetMHCIIpan-4.0: improved 
+#' predictions of MHC antigen presentation by concurrent motif 
+#' deconvolution and integration of MS MHC eluted ligand data. 
+#' *Nucleic Acids Research*, 48(W1), W449-W454. \doi{10.1093/nar/gkaa379}
 #'
-#' Shao XM, Bhattacharya R, Huang J, Sivakumar IKA, Tokheim C, Zheng L,
-#' Hirsch D, Koop B, Cotto KC, Seesam C, Vickery TL, Schloemer DS, Ramineni V,
-#' Griffith M, Griffith OL, Zhang Q, Goedegebuure SP, Gillanders WE,
-#' Karchin R. (2020). High-Throughput Prediction of MHC Class I and II
+#' Shao XM, et al. (2020). High-Throughput Prediction of MHC Class I and II
 #' Neoantigens with MHCnuggets. *Cancer Immunology Research*, 8(3), 396-408.
 #' \doi{10.1158/2326-6066.CIR-19-0464}
 #'

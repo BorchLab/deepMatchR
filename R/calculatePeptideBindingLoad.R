@@ -248,10 +248,12 @@ calculatePeptideBindingLoad <- function(
 
       # Find mismatch positions
       mismatch_detail <- quantifyMismatch(r_seq, d_seq, return = "detail")
+      # Filter to only actual mismatches
+      mismatch_detail <- mismatch_detail[mismatch_detail$is_mismatch, , drop = FALSE]
       if (nrow(mismatch_detail) == 0) next
 
       # Generate peptides around mismatch positions
-      mismatch_positions <- mismatch_detail$position
+      mismatch_positions <- mismatch_detail$alignment_position
 
       for (pos in mismatch_positions) {
         # Generate all peptides that include this position

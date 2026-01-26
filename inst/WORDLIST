@@ -51,13 +51,11 @@ XM
 al
 batchGetSequences
 bioRxiv
-calculatePeptideBindingLoad
 catalogued
 creg
 curation
 deconvolution
 detectCores
-doi
 eluted
 epitope
 epitopes
@@ -67,7 +65,6 @@ et
 filesystem
 ggplot
 github
-gkaa
 grDevices
 hcl
 hla
@@ -81,9 +78,9 @@ macos
 memoise
 mer
 mers
+mhc
 mhcnuggets
 nM
-nar
 netmhcpan
 nucleotides
 positivity

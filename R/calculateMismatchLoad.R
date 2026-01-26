@@ -161,7 +161,15 @@ calculateMismatchLoad <- function(recipient_geno,
     }, pairs$r, pairs$d))
   }
   
-  if (parallel && length(shared_loci) > 1 && !is.null(n_cores) && n_cores > 1) {
+  # mclapply with mc.cores > 1 is not supported on Windows
+
+  use_parallel <- parallel &&
+                  length(shared_loci) > 1 &&
+                  !is.null(n_cores) &&
+                  n_cores > 1 &&
+                  .Platform$OS.type != "windows"
+
+  if (use_parallel) {
     loads <- unlist(parallel::mclapply(shared_loci, locus_calc, mc.cores = n_cores))
   } else {
     loads <- vapply(shared_loci, locus_calc, FUN.VALUE = integer(1))

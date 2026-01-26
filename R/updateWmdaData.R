@@ -36,10 +36,7 @@
 #' # Update to latest WMDA data (requires internet)
 #' updateWmdaData()
 #'
-#' # Update to a specific version
-#' updateWmdaData(version = "3.54.0")
-#'
-#' # Force re-download
+#' # Force re-download even if cache exists
 #' updateWmdaData(force = TRUE)
 #' }
 #'

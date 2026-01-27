@@ -536,13 +536,20 @@ calculatePeptideBindingLoad <- function(
 #'
 #' @keywords internal
 .predictBindingMHCnuggets <- function(peptides, alleles) {
+  # Windows not supported for MHCnuggets
+
+  if (.Platform$OS.type == "windows") {
+    stop("MHCnuggets backend is not supported on Windows due to TensorFlow/HDF5 path limitations. ",
+         "Please use backend='pwm' or backend='netmhcpan' instead.",
+         call. = FALSE)
+  }
+
   results <- data.frame(
     peptide = character(0),
     hla_allele = character(0),
     predicted_ic50 = numeric(0),
     stringsAsFactors = FALSE
   )
-
 
   # Run predictions for each allele
   for (allele in alleles) {

@@ -41,13 +41,18 @@
 #' }
 #'
 #' @examples
-#' res <- predictMHCnuggets(
-#'   peptides = c("SIINFEKL","LLFGYPVYV"),
-#'   allele   = "A*02:01",
-#'   mhc_class = "I",
-#'   rank_output = TRUE
-#' )
-#' head(res)
+#' \donttest{
+#' # MHCnuggets requires Python/TensorFlow and is not available on Windows
+#' if (.Platform$OS.type != "windows") {
+#'   res <- predictMHCnuggets(
+#'     peptides = c("SIINFEKL","LLFGYPVYV"),
+#'     allele   = "A*02:01",
+#'     mhc_class = "I",
+#'     rank_output = TRUE
+#'   )
+#'   head(res)
+#' }
+#' }
 #'
 #' @section License and Citation:
 #' mhcnuggets is licensed under the GNU General Public License v3.0.
@@ -73,6 +78,13 @@ predictMHCnuggets <- function(peptides,
                               ba_models        = FALSE,
                               rank_output      = FALSE,
                               hla_env          = deepmatchrEnv()) {
+  # ---- Windows not supported ----
+  if (.Platform$OS.type == "windows") {
+    stop("MHCnuggets is not supported on Windows due to TensorFlow/HDF5 path limitations. ",
+         "Please use the 'pwm' or 'netmhcpan' backend, or run on Linux/macOS.",
+         call. = FALSE)
+  }
+
   # ---- fast input checks ----
   if (!is.character(peptides)) stop("`peptides` must be character.")
   if (!length(peptides)) return(data.frame(peptide = character(0L)))

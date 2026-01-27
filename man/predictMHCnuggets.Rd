@@ -87,12 +87,17 @@ GitHub: https://github.com/KarchinLab/mhcnuggets
 }
 
 \examples{
-res <- predictMHCnuggets(
-  peptides = c("SIINFEKL","LLFGYPVYV"),
-  allele   = "A*02:01",
-  mhc_class = "I",
-  rank_output = TRUE
-)
-head(res)
+\donttest{
+# MHCnuggets requires Python/TensorFlow and is not available on Windows
+if (.Platform$OS.type != "windows") {
+  res <- predictMHCnuggets(
+    peptides = c("SIINFEKL","LLFGYPVYV"),
+    allele   = "A*02:01",
+    mhc_class = "I",
+    rank_output = TRUE
+  )
+  head(res)
+}
+}
 
 }

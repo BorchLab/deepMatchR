@@ -4,6 +4,18 @@ testthat::local_edition(3)
 testthat::skip_if_not_installed("basilisk")
 testthat::skip_if_not_installed("reticulate")
 
+# Test Windows error handling first (before skipping on Windows)
+test_that("predictMHCnuggets errors on Windows", {
+ testthat::skip_if_not(.Platform$OS.type == "windows", "Only runs on Windows")
+ expect_error(
+    predictMHCnuggets(peptides = "SIINFEKL", allele = "A*02:01"),
+    "not supported on Windows"
+  )
+})
+
+# Skip remaining tests on Windows since MHCnuggets is not supported
+testthat::skip_on_os("windows")
+
 # Capture arguments passed through basiliskRun for assertions
 .observed <- new.env(parent = emptyenv())
 

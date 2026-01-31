@@ -34,6 +34,7 @@ This article covers sequence-level HLA analysis in **deepMatchR**, including:
 
 - Retrieving allele sequences from IMGT/HLA
 - Quantifying amino acid mismatches between sequences
+- Visualizing and comparing multiple HLA sequences
 - Calculating mismatch load between donor-recipient pairs
 
 These tools provide the foundation for understanding immunogenicity at the molecular level.
@@ -51,12 +52,10 @@ library(dplyr)
 
 The `getAlleleSequence()` function retrieves protein sequences from the IMGT/HLA database.
 
-```{r get-sequence, results='hide'}
+```{r get-sequence}
 # Get the amino acid sequence for A*01:01
 a0101_seq <- getAlleleSequence("A*01:01")
-```
 
-```{r show-sequence}
 # View first 60 amino acids
 substr(a0101_seq, 1, 60)
 
@@ -151,6 +150,153 @@ quantifyMismatch(seq1, seq_with_unknown, na_action = "exclude")
 quantifyMismatch(seq1, seq_with_unknown, na_action = "count")
 ```
 
+# Visualizing HLA Sequence Alignments
+
+## Introduction to plotHLASequences
+
+The `plotHLASequences()` function provides comprehensive visualization for comparing
+two or more HLA allele sequences. It combines sequence retrieval via `getAlleleSequence()`
+with mismatch analysis using `quantifyMismatch()` to create publication-quality alignment
+visualizations.
+
+## Basic Usage: Comparing Two Sequences
+
+```{r plot-basic, fig.width=10, fig.height=6}
+# Compare two HLA-A alleles
+result <- plotHLASequences(
+  alleles = c("A*01:01", "A*02:01"),
+  seq_type = "protein"
+)
+
+# Display the plot
+print(result)
+```
+
+The function returns a list containing:
+
+- `plot`: Combined visualization using patchwork
+- `mismatch_summary`: Data frame of pairwise mismatch statistics
+- `mismatch_details`: Detailed position-by-position comparisons
+- `sequences`: The sequences used for comparison
+- `plots`: Individual plot components for customization
+
+```{r mismatch-summary}
+# View mismatch summary
+result$mismatch_summary
+```
+
+## Comparing Three or More Sequences
+
+`plotHLASequences()` supports any number of sequences (2 or more):
+
+```{r plot-three, fig.width=10, fig.height=8}
+# Compare three DRB1 alleles
+result_drb1 <- plotHLASequences(
+  alleles = c("DRB1*03:01", "DRB1*04:01", "DRB1*07:01"),
+  seq_type = "protein"
+)
+
+print(result_drb1)
+```
+
+## Using Custom Sequences
+
+You can also provide your own sequences instead of fetching from IMGT/HLA:
+
+```{r plot-custom, fig.width=10, fig.height=5}
+# Define custom sequences
+custom_seqs <- list(
+  "Peptide_A" = "YFAMYGEKVAHTHVDTLYVRYHY",
+  "Peptide_B" = "YFDMYGEKVAHTHVDTLYVRFHY",
+  "Peptide_C" = "YFAMYGEKVAHTHVDTLYVRFHY"
+)
+
+# Compare custom sequences
+result_custom <- plotHLASequences(
+  alleles = names(custom_seqs),
+  sequences = custom_seqs,
+  seq_type = "protein",
+  show_exons = FALSE  # No exon boundaries for custom sequences
+)
+print(result_custom)
+```
+
+## Applying Biophysical Filters
+
+Filter mismatches by charge or polarity changes:
+
+```{r plot-filters, fig.width=10, fig.height=6}
+# Only show charge-changing mismatches
+result_charge <- plotHLASequences(
+  alleles = c("A*01:01", "A*02:01"),
+  seq_type = "protein",
+  filter_charge = TRUE
+)
+
+# Compare filtered vs unfiltered counts
+result_charge$mismatch_summary
+```
+
+## Focusing on Mismatch Regions
+
+Use `focus_on_mismatches = TRUE` to add a zoomed view:
+
+```{r plot-zoom, fig.width=10, fig.height=8}
+result_zoom <- plotHLASequences(
+  alleles = c("A*01:01", "A*02:01"),
+  seq_type = "protein",
+  focus_on_mismatches = TRUE,
+  context_window = 10  # Show 10 positions around mismatches
+)
+
+print(result_zoom)
+```
+
+## Nucleotide Sequence Comparison
+
+Compare nucleotide sequences by setting `seq_type = "nucleotide"`:
+
+```{r plot-nuc, fig.width=10, fig.height=6}
+result_nuc <- plotHLASequences(
+  alleles = c("A*01:01", "A*02:01"),
+  seq_type = "nucleotide"
+)
+
+print(result_nuc)
+```
+
+## Color Schemes
+
+Three color schemes are available for protein sequences:
+
+- `"properties"` (default): Groups amino acids by physicochemical properties
+- `"hydropathy"`: Colors by hydrophobicity (red = hydrophobic, blue = hydrophilic)
+- `"classic"`: Rainbow color scheme
+
+```{r plot-hydropathy, fig.width=10, fig.height=6}
+result_hydro <- plotHLASequences(
+  alleles = c("A*01:01", "A*02:01"),
+  seq_type = "protein",
+  color_scheme = "hydropathy"
+)
+
+print(result_hydro)
+```
+
+## Accessing Detailed Results
+
+The returned object contains detailed mismatch information:
+
+```{r detailed-results}
+# Get detailed mismatch data for the first comparison
+details <- result$mismatch_details[[1]]
+
+# Filter to only mismatch positions
+mismatches_only <- details[details$is_mismatch, ]
+head(mismatches_only[, c("alignment_position", "ref", "alt",
+                         "charge_change", "polarity_change")])
+```
+
 # Donor-Recipient Mismatch Load
 
 ## Creating HLA Genotypes
@@ -240,6 +386,24 @@ calculateMismatchLoad(rgeno, dgeno, loci = c("A", "B"), parallel = FALSE)
 | `return` | `"total"` | `"total"`, `"per_locus"`, or `"pairwise"` |
 | `pairwise_locus` | `NULL` | Locus for pairwise matrix |
 | `parallel` | `TRUE` | Use parallel processing |
+
+## `plotHLASequences()`
+
+| Argument | Default | Description |
+|----------|---------|-------------|
+| `alleles` | -- | Character vector of HLA allele names (2 or more) |
+| `sequences` | `NULL` | Optional named list of sequences (overrides IMGT/HLA fetch) |
+| `locus` | `NULL` | HLA locus for exon boundaries (auto-inferred if NULL) |
+| `seq_type` | `"protein"` | Sequence type: `"protein"` or `"nucleotide"` |
+| `focus_on_mismatches` | `FALSE` | Add zoomed view of mismatch regions |
+| `context_window` | `20` | Positions to show around mismatches in zoom view |
+| `show_exons` | `TRUE` | Display exon/domain boundaries |
+| `color_scheme` | `"properties"` | Color scheme: `"properties"`, `"hydropathy"`, or `"classic"` |
+| `reference_idx` | `1` | Index of reference sequence for comparisons |
+| `filter_charge` | `NULL` | Filter by charge change (passed to `quantifyMismatch()`) |
+| `filter_polarity` | `NULL` | Filter by polarity change (passed to `quantifyMismatch()`) |
+| `use_cache` | `TRUE` | Use caching for sequence retrieval |
+| `verbose` | `TRUE` | Print progress messages |
 
 # Session Information
 

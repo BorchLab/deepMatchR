@@ -208,6 +208,135 @@ The detail output includes:
 | `return` | `"count"` | Output type: `"count"` or `"detail"` |
 | `na_action` | `"exclude"` | Handle unknown residues: `"exclude"`, `"error"`, `"count"` |
 
+## Visuaizing Sequence Differences
+
+The `plotHLASequences()` function provides comprehensive visualization for comparing
+two or more HLA allele sequences. It combines sequence retrieval via `getAlleleSequence()`
+with mismatch analysis using `quantifyMismatch()` to create publication-quality alignment
+visualizations.
+
+### Basic Usage: Comparing Two Sequences
+
+```{r plot-basic, fig.width=10, fig.height=6}
+# Compare two HLA-A alleles
+result <- plotHLASequences(
+  alleles = c("A*01:01", "A*02:01"),
+  seq_type = "protein"
+)
+
+print(result)
+```
+
+The function returns a list containing:
+
+- `plot`: Combined visualization using patchwork
+- `mismatch_summary`: Data frame of pairwise mismatch statistics
+- `mismatch_details`: Detailed position-by-position comparisons
+- `sequences`: The sequences used for comparison
+- `plots`: Individual plot components for customization
+
+```{r mismatch-summary}
+# View mismatch summary
+result$mismatch_summary
+```
+
+### Comparing Three or More Sequences
+
+`plotHLASequences()` supports any number of sequences (2 or more):
+
+```{r plot-three, fig.width=10, fig.height=8}
+# Compare three DRB1 alleles
+result_drb1 <- plotHLASequences(
+  alleles = c("DRB1*03:01", "DRB1*04:01", "DRB1*07:01"),
+  seq_type = "protein"
+)
+
+print(result_drb1)
+```
+
+### Using Custom Sequences
+
+You can also provide your own sequences instead of fetching from IMGT/HLA:
+
+```{r plot-custom, fig.width=10, fig.height=5}
+# Define custom sequences
+custom_seqs <- list(
+  "Peptide_A" = "YFAMYGEKVAHTHVDTLYVRYHY",
+  "Peptide_B" = "YFDMYGEKVAHTHVDTLYVRFHY",
+  "Peptide_C" = "YFAMYGEKVAHTHVDTLYVRFHY"
+)
+
+# Compare custom sequences
+result_custom <- plotHLASequences(
+  alleles = names(custom_seqs),
+  sequences = custom_seqs,
+  seq_type = "protein",
+  show_exons = FALSE  # No exon boundaries for custom sequences
+)
+print(result_custom)
+```
+
+### Applying Biophysical Filters
+
+Filter mismatches by charge or polarity changes:
+
+```{r plot-filters, fig.width=10, fig.height=6, results='hide'}
+# Only show charge-changing mismatches
+result_charge <- plotHLASequences(
+  alleles = c("A*01:01", "A*02:01"),
+  seq_type = "protein",
+  filter_charge = TRUE
+)
+
+# Compare filtered vs unfiltered counts
+result_charge$mismatch_summary
+```
+
+### Focusing on Mismatch Regions
+
+Use `focus_on_mismatches = TRUE` to add a zoomed view:
+
+```{r plot-zoom, fig.width=10, fig.height=8, results='hide'}
+result_zoom <- plotHLASequences(
+  alleles = c("A*01:01", "A*02:01"),
+  seq_type = "protein",
+  focus_on_mismatches = TRUE,
+  context_window = 10  # Show 10 positions around mismatches
+)
+
+print(result_zoom)
+```
+
+### Nucleotide Sequence Comparison
+
+Compare nucleotide sequences by setting `seq_type = "nucleotide"`:
+
+```{r plot-nuc, fig.width=10, fig.height=6}
+result_nuc <- plotHLASequences(
+  alleles = c("A*01:01", "A*02:01"),
+  seq_type = "nucleotide"
+)
+
+print(result_nuc)
+```
+
+### Color Schemes
+
+Three color schemes are available for protein sequences:
+
+- `"properties"` (default): Groups amino acids by physicochemical properties
+- `"hydropathy"`: Colors by hydrophobicity (red = hydrophobic, blue = hydrophilic)
+- `"classic"`: Rainbow color scheme
+
+```{r plot-hydropathy, fig.width=10, fig.height=6}
+result_hydro <- plotHLASequences(
+  alleles = c("A*01:01", "A*02:01"),
+  seq_type = "protein",
+  color_scheme = "hydropathy"
+)
+print(result_hydro)
+```
+
 # Donor-Recipient Matching
 
 ## Calculating Mismatch Load

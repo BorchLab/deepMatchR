@@ -43,6 +43,7 @@ Serologic
 Serological
 Shao
 Treemap
+Visuaizing
 WMDA
 WSL
 XLS
@@ -63,12 +64,15 @@ eplet
 eplets
 et
 filesystem
+getAlleleSequence
 ggplot
 github
 grDevices
 hcl
 hla
 https
+hydropathy
+hydrophobicity
 ic
 immunogenic
 immunogenicity
@@ -83,6 +87,8 @@ mhcnuggets
 nM
 netmhcpan
 nucleotides
+physicochemical
+plotHLASequences
 positivity
 pre
 predictMHCnuggets
@@ -90,7 +96,6 @@ pwm
 quantifyMismatch
 serologic
 serological
-silico
 specificities
 supertypes
 tibble

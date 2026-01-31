@@ -1,14 +1,12 @@
 Package: deepMatchR
 Title: Deep Learning Models for HLA Matching
 Version: 0.99.0
-Date: 2024-07-24
 Authors@R:
     person(given = "Nick", family = "Borcherding", role = c("aut", "cre"),
            email = "ncborch@gmail.com")
 Description: A set of tools and models for analyzing HLA matching. This includes
-    the identification and quantification of immunogenicity mismatches, the
-    generation of in silico patients based on frequency table, and interaction
-    with common tools in HLA.
+    the identification and quantification of immunogenicity mismatches, visualization
+    of sequence alignments with mismatch highlighting, and interaction with common tools in HLA.
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
